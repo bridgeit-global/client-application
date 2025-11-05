@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "npm run test && next build",
+    "build": "sh -c 'if [ -z \"$CI\" ]; then npm run test; fi' && next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier . --write",

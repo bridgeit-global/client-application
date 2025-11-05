@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from '@/components/ui/toaster';
 import '@uploadthing/react/styles.css';
 import NextTopLoader from 'nextjs-toploader';

@@ -1,4 +1,4 @@
-export const ABNORMAL_BILL_STATUS_COLOR = "#2d2d30";
+export const ABNORMAL_BILL_STATUS_COLOR = "#FEF2F2"; // Light red background for better contrast
 
 // Consistent color palette for charts - used index-wise
 export const CHART_COLORS = [

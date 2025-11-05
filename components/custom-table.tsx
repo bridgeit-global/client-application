@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { type ColumnDef, flexRender, Table as TableInstance } from "@tanstack/react-table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ABNORMAL_BILL_STATUS_COLOR } from "@/constants/colors"
+import { cn } from "@/lib/utils"
 
 
 interface CustomTableProps<TData> {
@@ -188,7 +189,10 @@ export default function CustomTable<TData>({
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row: any) => (
                 <TableRow
-                  className="border-none items-start"
+                  className={cn(
+                    "border-none items-start",
+                    row.original?.bill_type?.toLowerCase() === "abnormal" ? "[&_td]:text-gray-900" : ""
+                  )}
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   style={{

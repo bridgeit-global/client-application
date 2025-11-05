@@ -495,7 +495,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
               <LoadingButton
                 onClick={() => router.push('/support/registration')}
                 variant="outline"
-                className="flex-1 transition-colors"
+                className="flex-1 transition-colors text-gray-900 border-2 border-gray-300 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"
                 disabled={isLoader}
               >
                 Go To Support
@@ -503,7 +503,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
               <LoadingButton
                 onClick={() => router.push('/portal/dashboard')}
                 variant="outline"
-                className="flex-1 transition-colors"
+                className="flex-1 transition-colors text-gray-900 border-2 border-gray-300 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"
                 disabled={isLoader}
               >
                 Go To Portal

@@ -59,7 +59,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Bill Date
                     {column.getIsSorted() === "asc" ? (
@@ -81,7 +81,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Due Date
                     {column.getIsSorted() === "asc" ? (
@@ -103,7 +103,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Bill Amount
                     {column.getIsSorted() === "asc" ? (
@@ -125,7 +125,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Bill Type
                     {column.getIsSorted() === "asc" ? (
@@ -142,7 +142,8 @@ const columns: ColumnDef<AllBillTableProps>[] = [
         accessorKey: 'bill_type'
     },
     {
-        header: 'Days to Pay',
+        id: 'days_to_pay',
+        header: () => <span className="text-gray-900 font-medium">Days to Pay</span>,
         cell: ({ row }: any) => <DaysToPayCell row={row} />
     },
     {
@@ -151,7 +152,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Billed Unit
                     {column.getIsSorted() === "asc" ? (
@@ -172,7 +173,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Start Date
                     {column.getIsSorted() === "asc" ? (
@@ -194,7 +195,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     End Date
                     {column.getIsSorted() === "asc" ? (
@@ -216,7 +217,7 @@ const columns: ColumnDef<AllBillTableProps>[] = [
                 <Button
                     variant="ghost"
                     onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                    className="p-0 hover:bg-transparent"
+                    className="p-0 hover:bg-transparent text-gray-900 font-medium"
                 >
                     Unit Cost
                     {column.getIsSorted() === "asc" ? (
@@ -233,14 +234,16 @@ const columns: ColumnDef<AllBillTableProps>[] = [
         accessorKey: 'unit_cost'
     },
     {
-        header: 'Bill Copy',
+        id: 'bill_copy',
+        header: () => <span className="text-gray-900 font-medium">Bill Copy</span>,
         cell: ({ row }) => row.original.content ? <DocumentViewerModal
             contentType={row.original.content_type}
             documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
         /> : null
     },
     {
-        header: 'Arrear & Penalty',
+        id: 'arrear_penalty',
+        header: () => <span className="text-gray-900 font-medium">Arrear & Penalty</span>,
         cell: ({ row }) => {
             const arrear = Number(row.original.additional_charges?.arrears || 0);
             const penalty = Object.values(row.original.adherence_charges || {})
@@ -302,15 +305,15 @@ export function BillTable({ data }: { data: AllBillTableProps[] }) {
 
     return (
         <div className="space-y-4 border rounded-lg p-4">
-            <div className="text-lg font-bold">Bills</div>
-            <div className="flex flex-col items-center justify-end gap-2 space-x-2 py-4 text-muted-foreground sm:flex-row">
+            <div className="text-lg font-bold text-gray-900">Bills</div>
+            <div className="flex flex-col items-center justify-end gap-2 space-x-2 py-4 sm:flex-row">
                 <div className="flex w-full items-center justify-between">
-                    <div className="text-sm">
+                    <div className="text-sm text-gray-900 font-medium">
                         Showing {table.getFilteredRowModel().rows.length} of {data.length} items
                     </div>
                     <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8">
                         <div className="flex items-center space-x-2">
-                            <p className="whitespace-nowrap text-sm font-medium">Rows per page</p>
+                            <p className="whitespace-nowrap text-sm font-medium text-gray-900">Rows per page</p>
                             <Select
                                 value={`${pageSize}`}
                                 onValueChange={(value) => {
@@ -333,7 +336,7 @@ export function BillTable({ data }: { data: AllBillTableProps[] }) {
                     </div>
                 </div>
                 <div className="flex w-full items-center justify-between gap-2 sm:justify-end">
-                    <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+                    <div className="flex w-[100px] items-center justify-center text-sm font-medium text-gray-900">
                         Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
                     </div>
                     <div className="flex items-center space-x-2">
@@ -405,6 +408,7 @@ export function BillTable({ data }: { data: AllBillTableProps[] }) {
                                     style={{
                                         backgroundColor: row.original?.bill_type?.toLowerCase() === "abnormal" ? ABNORMAL_BILL_STATUS_COLOR : "",
                                     }}
+                                    className={row.original?.bill_type?.toLowerCase() === "abnormal" ? "[&_td]:text-gray-900" : ""}
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>
@@ -420,7 +424,7 @@ export function BillTable({ data }: { data: AllBillTableProps[] }) {
                             <TableRow>
                                 <TableCell
                                     colSpan={columns.length}
-                                    className="h-24 text-center"
+                                    className="h-24 text-center text-gray-900"
                                 >
                                     No results.
                                 </TableCell>

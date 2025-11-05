@@ -16,7 +16,7 @@ const BillTypeCell = ({ row }: { row: { original: BillsProps | SingleBillProps }
       <HoverCardTrigger asChild>
         <div
           className={cn(
-            isAbnormal ? ' text-red-600 underline cursor-pointer' : ''
+            isAbnormal ? 'text-red-700 font-semibold underline cursor-pointer' : ''
           )}
         >
           {bill_type}

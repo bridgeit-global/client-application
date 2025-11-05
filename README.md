@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BridgeIT - Utility Management Platform
+
+BridgeIT is a comprehensive utility management platform designed to streamline electricity bill processing for businesses in India's complex electricity sector. The platform offers automated bill discovery, digitization, financial delegation, payments, and analytics capabilities.
+
+## Features
+
+### 🔍 Bill Discovery
+
+- Automated bill tracking from generation to fetching
+- Handles multiple locations and generation dates
+- API integration with 100+ Biller boards
+- Automated alerts for delayed bills
+
+### 📄 Bill Digitization
+
+- Extracts static consumer information
+- Captures dynamic billing details
+- Reduces manual processing costs
+- Monitors payment against consumption
+- Tracks carbon sequestration
+
+### 👥 Financial Delegation
+
+- Built-in compliance checks
+- Configurable approval matrix
+- Internal compliance adherence
+- Cash flow management forecasting
+
+### 💳 Bill Payments
+
+- Streamlined cash flow planning
+- Multiple payment options
+- Payment confirmation tracking
+- Receipt reconciliation
+- Proactive reversal handling
+
+### 📊 Analytics
+
+- Historical data analysis
+- Performance improvement insights
+- Outlier identification
+- Site-specific performance metrics
+- Penalty reduction strategies
+
+## Tech Stack
+
+- **Frontend**: Next.js, TypeScript, Tailwind CSS
+- **UI Components**: Shadcn UI
+- **Icons**: Lucide React
+- **Styling**: CSS Modules
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/bridgeit.git
+```
+
+2. Install dependencies:
+
+```bash
+cd bridgeit
+npm install
+# or
+yarn install
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+bridgeit/
+├── components/
+│   ├── ui/
+│   └── landing-page.tsx
+├── public/
+├── styles/
+├── pages/
+├── package.json
+└── README.md
+```
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
 
-## Deploy on Vercel
+## Metrics
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 1 Million+ Bills Processed
+- 10 Million+ Bill Parameters Handled
+- 1000+ Crore Rupees in Payments Processed
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Acknowledgments
+
+- Thanks to all contributors who have helped shape BridgeIT
+- Special thanks to our early adopters and customers

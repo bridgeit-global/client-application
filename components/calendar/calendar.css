@@ -1,0 +1,710 @@
+.rbc-calendar {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(60, 64, 67, 0.15);
+  font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.rbc-toolbar {
+  background: #f8fafc;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 24px;
+  border-radius: 12px 12px 0 0;
+  font-size: 1.1rem;
+}
+
+.rbc-toolbar button {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #1967d2;
+  font-weight: 500;
+  margin: 0 4px;
+  padding: 6px 16px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.rbc-toolbar button:active,
+.rbc-toolbar button.rbc-active {
+  background: #1967d2;
+  color: #fff;
+}
+
+.rbc-month-view {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e1e4e8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.rbc-month-row {
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.rbc-month-row+.rbc-month-row {
+  border-top: 1px solid #e1e4e8;
+}
+
+.rbc-month-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e1e4e8;
+  padding: 12px 0 !important;
+}
+
+.rbc-header {
+  font-weight: 600 !important;
+  padding: 12px 0 !important;
+  font-size: 14px !important;
+  color: #555 !important;
+  text-transform: uppercase;
+}
+
+.rbc-date-cell {
+  text-align: right;
+  padding: 4px 8px 0 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+}
+
+.rbc-date-cell:hover {
+  background-color: rgba(25, 103, 210, 0.05);
+}
+
+.rbc-date-cell:active {
+  background-color: rgba(25, 103, 210, 0.1);
+}
+
+.rbc-today {
+  background-color: rgba(25, 103, 210, 0.08) !important;
+}
+
+.rbc-event {
+  margin: 0.5px 0;
+  padding: 0 3px;
+  border-radius: 3px;
+  font-size: 0.78em;
+  line-height: 1.15;
+  min-height: 18px;
+  max-height: 22px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  font-weight: 400;
+}
+
+.rbc-event.rbc-selected {
+  background-color: #174ea6;
+}
+
+.rbc-off-range-bg {
+  background: #f8fafc;
+}
+
+.rbc-show-more {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+.rbc-row-segment {
+  padding: 0 1px;
+  margin: 0.5px 0;
+}
+
+.rbc-row-bg {
+  height: auto !important;
+}
+
+.rbc-row-content {
+  height: auto !important;
+}
+
+.rbc-event-content {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rbc-agenda-view .rbc-agenda-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Event card styles for better user experience */
+.event-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 6px;
+  margin: 3px 0;
+  border-radius: 6px;
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.event-card:hover,
+.event-card:focus {
+  background-color: rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.event-card:focus-visible {
+  outline: 2px solid #1967d2;
+  outline-offset: 1px;
+}
+
+/* Today's date highlight */
+.rbc-date-cell .today-dot {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  border-radius: 50%;
+}
+
+/* Custom toolbar styling */
+.rbc-toolbar {
+  padding: 12px !important;
+}
+
+.rbc-toolbar button {
+  border-radius: 6px !important;
+}
+
+.calendar-container,
+.datepicker-container {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+
+/* Calendar Controls */
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+/* Date Type Buttons */
+.date-type-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Today Button */
+.today-button {
+  background: #1967d2 !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 18px !important;
+  font-weight: 500 !important;
+  font-size: 16px !important;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(25, 103, 210, 0.08) !important;
+  transition: background 0.2s !important;
+}
+
+.today-button:hover {
+  background: #0d4d99 !important;
+}
+
+/* Date Type Button */
+.date-type-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.date-type-button:hover {
+  background: #f5f5f5;
+}
+
+.date-type-button.active-due {
+  background: #fbbc04 !important;
+  color: #222 !important;
+  border-color: #fbbc04 !important;
+  font-weight: 600;
+}
+
+.date-type-button.active-bill {
+  background: #34a853 !important;
+  color: #fff !important;
+  border-color: #34a853 !important;
+  font-weight: 600;
+}
+
+/* DatePicker Container */
+.datepicker-container {
+  background: white;
+  border-radius: 8px;
+}
+
+/* Custom Calendar Styles */
+.custom-calendar,
+.custom-calendar .react-datepicker__month-container,
+.custom-calendar .react-datepicker__month {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.custom-calendar .react-datepicker__week {
+  display: flex !important;
+  width: 100% !important;
+}
+
+.custom-calendar .react-datepicker__day,
+.custom-calendar .react-datepicker__day-name {
+  width: 14.2857% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Header day names styling */
+.custom-calendar .react-datepicker__day-name {
+  width: 14.28% !important;
+  margin: 0 !important;
+  padding: 12px 0 !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+  color: #555 !important;
+  text-transform: uppercase !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+}
+
+.custom-calendar .react-datepicker__day-name:last-child {
+  border-right: none;
+}
+
+/* Day cells styling */
+.custom-calendar .react-datepicker__day {
+  width: 14.28% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  height: 180px !important;
+  min-height: 180px !important;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.custom-calendar .react-datepicker__day:last-child {
+  border-right: none;
+}
+
+/* Fix last row cells to ensure proper display */
+.custom-calendar .react-datepicker__week:last-child .react-datepicker__day {
+  border-bottom: none;
+}
+
+.custom-calendar .react-datepicker__day--selected {
+  background-color: rgba(25, 103, 210, 0.05) !important;
+  border: 2px solid rgba(25, 103, 210, 0.2) !important;
+}
+
+.custom-calendar .react-datepicker__day--selected:hover {
+  background-color: rgba(25, 103, 210, 0.08) !important;
+}
+
+/* Header styling */
+.custom-datepicker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  position: relative;
+  border-bottom: 1px solid #eee;
+}
+
+/* Month navigation buttons */
+.month-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 1rem;
+}
+
+.month-label {
+  font-size: 1.1rem;
+  font-weight: 500;
+  min-width: 120px;
+  text-align: center;
+}
+
+.month-nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.month-nav-button:hover {
+  color: #000;
+}
+
+/* Custom Day Cell */
+.custom-day-cell {
+  position: relative;
+  height: 100%;
+  min-height: 180px;
+  padding: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-day-cell:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.custom-day-cell.selected {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.day-number {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.day-number.today {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.day-number.selected {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.bill-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: hidden;
+  padding-right: 4px;
+  max-height: calc(100% - 32px);
+  transition: overflow-y 0.2s ease;
+}
+
+/* Show scrollbar on cell hover */
+.custom-day-cell:hover .bill-container {
+  overflow-y: auto;
+}
+
+/* Customize scrollbar for bill container */
+.bill-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bill-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bill-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bill-container:hover::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+/* Ensure smooth scrolling */
+.bill-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bill-status-badge {
+  padding: 6px 8px;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
+.bill-status-badge:hover {
+  background-color: #e5e7eb;
+}
+
+.bill-status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bill-count {
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.bill-amount {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.empty-bill-container {
+  height: 24px;
+}
+
+/* Modal styles */
+.custom-datepicker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.month-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.month-nav-button {
+  padding: 4px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.month-nav-button:hover {
+  background-color: #f3f4f6;
+}
+
+.month-label {
+  font-weight: 500;
+  min-width: 120px;
+  text-align: center;
+}
+
+.date-type-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.date-type-button {
+  padding: 4px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.date-type-button:hover {
+  background-color: #f3f4f6;
+}
+
+.date-type-button.active-due {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.date-type-button.active-bill {
+  background-color: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+/* Calendar container styles */
+.calendar-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 8px;
+}
+
+.datepicker-container {
+  padding: 16px;
+}
+
+/* Status badge colors */
+.bill-status-badge-new {
+  background-color: rgba(251, 188, 4, 0.1);
+}
+
+.bill-status-badge-approved {
+  background-color: rgba(251, 188, 4, 0.1);
+}
+
+.bill-status-badge-batch {
+  background-color: rgba(251, 188, 4, 0.1);
+}
+
+.bill-status-badge-payment {
+  background-color: rgba(102, 102, 102, 0.1);
+}
+
+.bill-status-badge-paid {
+  background-color: rgba(52, 168, 83, 0.1);
+}
+
+.bill-status-badge-rejected {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+
+/* Modal styles */
+[data-dialog-content] {
+  max-width: 32rem;
+  width: 100%;
+}
+
+[data-dialog-content]>div {
+  padding: 1.5rem;
+}
+
+[data-dialog-content] h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+[data-dialog-content] .grid {
+  display: grid;
+  gap: 1rem;
+}
+
+[data-dialog-content] .grid>div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-dialog-content] .grid>div:hover {
+  background-color: #f9fafb;
+}
+
+[data-dialog-content] .grid>div>div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+[data-dialog-content] .grid>div>div>span:first-child {
+  font-weight: 500;
+}
+
+[data-dialog-content] .grid>div>div>span:last-child {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+[data-dialog-content] .grid>div>span {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .calendar-container {
+    padding: 0.5rem;
+  }
+
+  .custom-datepicker-header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+
+  .month-navigation {
+    position: static;
+    transform: none;
+    margin: 0.5rem 0;
+  }
+
+  .date-type-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .custom-day-cell {
+    min-height: 140px;
+  }
+
+  .bill-status-badge {
+    padding: 4px 6px;
+  }
+
+  .bill-count {
+    font-size: 0.7rem;
+  }
+
+  .bill-amount {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .custom-calendar .react-datepicker__day {
+    height: 160px !important;
+    min-height: 160px !important;
+  }
+
+  .custom-day-cell {
+    min-height: 160px !important;
+  }
+}

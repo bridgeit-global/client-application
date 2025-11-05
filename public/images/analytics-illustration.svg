@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#F9FAFB" x="0" y="0" width="800" height="600"/>
+        <g transform="translate(100, 100)">
+            <!-- Dashboard Container -->
+            <rect x="0" y="0" width="600" height="400" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="2"/>
+            <!-- Chart Area -->
+            <g transform="translate(20, 20)">
+                <!-- Bar Chart -->
+                <rect x="0" y="280" width="40" height="80" rx="4" fill="#3B82F6"/>
+                <rect x="60" y="200" width="40" height="160" rx="4" fill="#10B981"/>
+                <rect x="120" y="240" width="40" height="120" rx="4" fill="#F59E0B"/>
+                <rect x="180" y="160" width="40" height="200" rx="4" fill="#6366F1"/>
+                <!-- Line Chart -->
+                <path d="M300,320 L360,240 L420,280 L480,200" stroke="#EF4444" stroke-width="3" fill="none"/>
+                <circle cx="300" cy="320" r="4" fill="#EF4444"/>
+                <circle cx="360" cy="240" r="4" fill="#EF4444"/>
+                <circle cx="420" cy="280" r="4" fill="#EF4444"/>
+                <circle cx="480" cy="200" r="4" fill="#EF4444"/>
+            </g>
+            <!-- Legend -->
+            <g transform="translate(20, 380)">
+                <rect x="0" y="0" width="560" height="1" fill="#E5E7EB"/>
+            </g>
+        </g>
+    </g>
+</svg> 

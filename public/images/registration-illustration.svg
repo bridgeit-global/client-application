@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#F9FAFB" x="0" y="0" width="800" height="600"/>
+        <g transform="translate(100, 50)">
+            <!-- Form Container -->
+            <rect x="0" y="0" width="400" height="500" rx="8" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="2"/>
+            <!-- Form Header -->
+            <rect x="20" y="20" width="360" height="40" rx="4" fill="#F3F4F6"/>
+            <!-- Form Fields -->
+            <rect x="20" y="80" width="360" height="50" rx="4" fill="#F3F4F6"/>
+            <rect x="20" y="150" width="360" height="50" rx="4" fill="#F3F4F6"/>
+            <rect x="20" y="220" width="360" height="50" rx="4" fill="#F3F4F6"/>
+            <!-- Submit Button -->
+            <rect x="20" y="290" width="360" height="50" rx="4" fill="#3B82F6"/>
+            <!-- Decorative Elements -->
+            <circle cx="500" cy="150" r="30" fill="#10B981"/>
+            <circle cx="550" cy="250" r="20" fill="#F59E0B"/>
+            <circle cx="480" cy="350" r="25" fill="#6366F1"/>
+        </g>
+    </g>
+</svg> 

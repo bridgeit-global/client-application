@@ -18,6 +18,7 @@ import FilterChips from '@/components/filter-chip'
 import { Button } from '@/components/ui/button'
 import { getFilterDataLength } from '@/lib/utils/table'
 import { getWalletColumns } from './columns'
+import { useUtilizeAndThresholdAmount } from '@/hooks/use-utilize-amount'
 
 interface WalletBalanceCalculatorProps {
   transactions: WalletProps[]
@@ -43,6 +44,14 @@ export default function WalletTable({
   const router = useRouter()
   const pathname = usePathname()
   const [isLoading, setIsLoading] = useState(false)
+  const { thresholdAmount, utilizeAmount, isLoading: isUtilizeLoading } = useUtilizeAndThresholdAmount()
+
+  const availableLimit = useMemo(
+    () => Math.max(thresholdAmount - utilizeAmount, 0),
+    [thresholdAmount, utilizeAmount]
+  )
+
+  const availableLimitClass = (thresholdAmount - utilizeAmount) >= 0 ? 'text-green-500' : 'text-red-500'
 
   // Filter state
   const [filterBody, setFilterBody] = useState<any>({
@@ -194,10 +203,10 @@ export default function WalletTable({
       {/* Balance Overview */}
       <Card>
         <CardContent className="pt-6 flex justify-between">
-          <div className="text-center text-green-500 p-4 rounded-lg w-1/2">
+          <div className="text-center p-4 rounded-lg w-1/2">
             <div className="text-sm opacity-90"> Available Limit</div>
-            <div className="text-3xl font-bold mb-1">
-              {formatRupees(summary.balance - pendingAmount)}
+            <div className={`text-3xl font-bold mb-1 ${availableLimitClass}`}>
+              {isUtilizeLoading ? '—' : formatRupees(availableLimit)}
             </div>
           </div>
           <div className="text-center text-red-500 p-4 rounded-lg w-1/2">

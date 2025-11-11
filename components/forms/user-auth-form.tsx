@@ -522,7 +522,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                     setOtpResendTimer(30);
                     setCanResendOtp(false);
                   }}
-                  className="text-xs hover:bg-gray-100 transition-colors"
+                  className="text-xs text-background hover:bg-background/20 hover:text-background transition-colors"
                   disabled={isLoader}
                 >
                   <span className="mr-2">←</span>

@@ -6,6 +6,7 @@ export async function updateSession(request: NextRequest) {
   const isSupportRoute = path.startsWith('/support');
   const isPortalRoute = path.startsWith('/portal');
   const isProtectedRoute = isSupportRoute || isPortalRoute;
+  const isLoginRoute = path === '/login';
   // Home page is not a protected route, so both logged-in and non-logged-in users can access it
 
   const supabase = createClient();
@@ -13,6 +14,13 @@ export async function updateSession(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
   const url = request.nextUrl.clone();
+  const isOperator = user?.user_metadata?.role === 'operator';
+
+  if (isLoginRoute && (user?.email || (isOperator && user?.phone_confirmed_at))) {
+    url.pathname = isOperator ? '/portal/meter-reading-list' : '/portal/dashboard';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
 
   // if not protected route, redirect to requested route
   if (!isProtectedRoute) {
@@ -21,7 +29,6 @@ export async function updateSession(request: NextRequest) {
 
   // If the user is not logged in, redirect to /login
   // For operators, email is optional so we check for user existence and phone confirmation
-  const isOperator = user?.user_metadata?.role === 'operator';
   const shouldRedirectToLogin = isProtectedRoute && (!user || (!user.email && !isOperator) || (isOperator && !user.phone_confirmed_at));
 
   if (shouldRedirectToLogin) {

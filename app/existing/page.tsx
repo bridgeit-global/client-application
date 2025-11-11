@@ -22,7 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
-import { createClient, createPublicClient } from '@/lib/supabase/client';
+import { createPublicClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/landing/header';
 import Footer from '@/components/layout/landing/footer';
@@ -73,19 +73,6 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 type DocumentType = 'gst' | 'pan' | 'cin';
-
-interface ContactRequest {
-    first_name: string;
-    last_name: string;
-    email: string | null;
-    phone: string | null;
-    company_name: string;
-    document_type: DocumentType;
-    document_number: string;
-    created_at: string;
-    step_completed: number;
-    status: 'pending' | 'approved' | 'rejected';
-}
 
 function SignUpContent() {
     const searchParams = useSearchParams();
@@ -160,228 +147,289 @@ function SignUpContent() {
     };
 
     return (
-        <>
+        <div className="relative flex min-h-screen flex-col">
+            <div className="pointer-events-none absolute inset-0 bg-theme-mesh" aria-hidden="true" />
             <Header />
-            <div className="w-full relative min-h-screen bg-theme-gradient-animate">
-                {/* Mesh overlay */}
-                <div className="absolute inset-0 bg-theme-mesh pointer-events-none" />
-                <div className="container relative h-screen max-w-2xl overflow-y-auto py-10 pt-16">
-                    <Card className="bg-white/10 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="text-2xl text-white">Request for User Access</CardTitle>
-                            <CardDescription className="text-white/80">
-                                Get in touch with us to learn more about BridgeIT&apos;s electricity management platform
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                            <FormField
-                                                control={form.control}
-                                                name="first_name"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">First Name *</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="Enter your first name"
-                                                                {...field}
-                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage className="text-red-200" />
-                                                    </FormItem>
-                                                )}
-                                            />
-
-                                            <FormField
-                                                control={form.control}
-                                                name="last_name"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">Last Name *</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="Enter your last name"
-                                                                {...field}
-                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage className="text-red-200" />
-                                                    </FormItem>
-                                                )}
-                                            />
+            <main className="relative z-10 flex flex-1 flex-col pt-24 pb-16">
+                <section className="container relative z-10 flex-1 px-4">
+                    <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)]">
+                        <div className="space-y-6 text-white">
+                            <span className="inline-flex w-fit items-center rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white/70">
+                                Existing customers
+                            </span>
+                            <div className="space-y-4">
+                                <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+                                    Request user access
+                                </h1>
+                                <p className="max-w-xl text-base text-white/70 md:text-lg">
+                                    Add teammates to your BridgeIT workspace in a few steps. Share their details and supporting document information so our team can enable secure access quickly.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <Button
+                                    variant="outline"
+                                    className="h-auto justify-start gap-3 rounded-xl border-white/20 bg-white/5 px-6 py-4 text-left text-white transition hover:bg-white/10"
+                                    asChild
+                                >
+                                    <a href="tel:9970257506">
+                                        <span className="block text-xs uppercase tracking-wide text-white/60">Call Us</span>
+                                        <span className="text-lg font-medium text-primary">+91 99702 57506</span>
+                                    </a>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-auto justify-start gap-3 rounded-xl border-white/20 bg-white/5 px-6 py-4 text-left text-white transition hover:bg-white/10"
+                                    asChild
+                                >
+                                    <a href="mailto:support@bridgeit.in">
+                                        <span className="block text-xs uppercase tracking-wide text-white/60">Email Us</span>
+                                        <span className="text-lg font-medium text-primary">support@bridgeit.in</span>
+                                    </a>
+                                </Button>
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm md:p-8">
+                                <h2 className="text-lg font-semibold text-white md:text-xl">What happens next</h2>
+                                <ul className="mt-4 space-y-4 text-sm text-white/70 md:text-base">
+                                    <li className="flex gap-3">
+                                        <span className="mt-2 h-2 w-2 rounded-full bg-primary" />
+                                        <div>
+                                            <span className="font-medium text-white">Review & verification.</span> We validate the document details you provide to keep your organization&apos;s data secure.
                                         </div>
-                                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                            <FormField
-                                                control={form.control}
-                                                name="email"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">Email</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                type="email"
-                                                                placeholder="Enter your email"
-                                                                {...field}
-                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage className="text-red-200" />
-                                                    </FormItem>
-                                                )}
-                                            />
+                                    </li>
+                                    <li className="flex gap-3">
+                                        <span className="mt-2 h-2 w-2 rounded-full bg-primary" />
+                                        <div>
+                                            <span className="font-medium text-white">Response within 1 business day.</span> Our support team gets in touch with status updates or follow-up questions.
+                                        </div>
+                                    </li>
+                                    <li className="flex gap-3">
+                                        <span className="mt-2 h-2 w-2 rounded-full bg-primary" />
+                                        <div>
+                                            <span className="font-medium text-white">Access confirmation.</span> Approved users receive onboarding instructions and login credentials over email.
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
 
-                                            <FormField
-                                                control={form.control}
-                                                name="phone"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">Phone Number</FormLabel>
-                                                        <FormControl>
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="text-sm text-white/80">+91</p>
+                        <Card className="relative overflow-hidden border border-white/10 bg-white/5 shadow-xl backdrop-blur-sm">
+                            <CardHeader className="space-y-2 border-b border-white/10 bg-white/[0.03]">
+                                <CardTitle className="text-2xl text-white">Request for User Access</CardTitle>
+                                <CardDescription className="text-white/70">
+                                    Share the details of the colleague who needs access to your BridgeIT portal.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 md:p-8">
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="first_name"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">First Name *</FormLabel>
+                                                            <FormControl>
                                                                 <Input
-                                                                    maxLength={10}
-                                                                    type="tel"
-                                                                    placeholder="Enter phone number"
+                                                                    placeholder="Jordan"
                                                                     {...field}
-                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
                                                                 />
-                                                            </div>
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="last_name"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">Last Name *</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="Singh"
+                                                                    {...field}
+                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="email"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">Email</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    type="email"
+                                                                    placeholder="name@company.com"
+                                                                    {...field}
+                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+
+                                                <FormField
+                                                    control={form.control}
+                                                    name="phone"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">Phone Number</FormLabel>
+                                                            <FormControl>
+                                                                <div className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-1 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40">
+                                                                    <span className="text-sm font-medium text-white/80">+91</span>
+                                                                    <Input
+                                                                        maxLength={10}
+                                                                        type="tel"
+                                                                        placeholder="9876543210"
+                                                                        {...field}
+                                                                        className="h-10 border-0 bg-transparent px-0 text-white placeholder:text-white/50 focus-visible:ring-0"
+                                                                    />
+                                                                </div>
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <FormField
+                                                control={form.control}
+                                                name="company_name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-white">Company Name *</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                placeholder="BridgeIT Pvt. Ltd."
+                                                                {...field}
+                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                                                            />
                                                         </FormControl>
                                                         <FormMessage className="text-red-200" />
                                                     </FormItem>
                                                 )}
                                             />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="document_type"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-white">Document Type *</FormLabel>
+                                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                            <FormControl>
+                                                                <SelectTrigger className="bg-white/10 border-white/20 text-white focus:ring-primary/40 focus:border-primary/60">
+                                                                    <SelectValue placeholder="Select document type" className="text-white/50" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent className="border border-white/10 bg-slate-950/90 backdrop-blur-sm">
+                                                                <SelectItem value="gst" className="text-white hover:bg-white/10">GST</SelectItem>
+                                                                <SelectItem value="pan" className="text-white hover:bg-white/10">PAN</SelectItem>
+                                                                <SelectItem value="cin" className="text-white hover:bg-white/10">CIN</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage className="text-red-200" />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {documentType === 'gst' && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="gst_number"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">GST Number *</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="27ABCDE1234F1Z5"
+                                                                    {...field}
+                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
+
+                                            {documentType === 'pan' && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="pan_number"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">PAN Number *</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="ABCDE1234F"
+                                                                    {...field}
+                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
+
+                                            {documentType === 'cin' && (
+                                                <FormField
+                                                    control={form.control}
+                                                    name="cin_number"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-white">CIN Number *</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="U12345AB6789CDE123456"
+                                                                    {...field}
+                                                                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage className="text-red-200" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            )}
                                         </div>
 
-                                        <FormField
-                                            control={form.control}
-                                            name="company_name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-white">Company Name *</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="Enter your company name"
-                                                            {...field}
-                                                            className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage className="text-red-200" />
-                                                </FormItem>
+                                        <Button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="w-full bg-primary text-primary-foreground transition hover:bg-primary/90"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Submitting...
+                                                </>
+                                            ) : (
+                                                'Submit request'
                                             )}
-                                        />
-
-                                        <FormField
-                                            control={form.control}
-                                            name="document_type"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-white">Document Type *</FormLabel>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                        <FormControl>
-                                                            <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                                                                <SelectValue placeholder="Select document type" className="text-white/50" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent className="bg-white/10 backdrop-blur-sm border-white/20">
-                                                            <SelectItem value="gst" className="text-white hover:bg-white/20">GST</SelectItem>
-                                                            <SelectItem value="pan" className="text-white hover:bg-white/20">PAN</SelectItem>
-                                                            <SelectItem value="cin" className="text-white hover:bg-white/20">CIN</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage className="text-red-200" />
-                                                </FormItem>
-                                            )}
-                                        />
-
-                                        {documentType === 'gst' && (
-                                            <FormField
-                                                control={form.control}
-                                                name="gst_number"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">GST Number *</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="Enter GST number (e.g., 27ABCDE1234F1Z5)"
-                                                                {...field}
-                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage className="text-red-200" />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )}
-
-                                        {documentType === 'pan' && (
-                                            <FormField
-                                                control={form.control}
-                                                name="pan_number"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">PAN Number *</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="Enter PAN number (e.g., ABCDE1234F)"
-                                                                {...field}
-                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage className="text-red-200" />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )}
-
-                                        {documentType === 'cin' && (
-                                            <FormField
-                                                control={form.control}
-                                                name="cin_number"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-white">CIN Number *</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="Enter CIN number (e.g., U12345AB6789CDE123456)"
-                                                                {...field}
-                                                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage className="text-red-200" />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )}
-                                    </div>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Submitting...
-                                            </>
-                                        ) : (
-                                            'Submit'
-                                        )}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </section>
+            </main>
             <Footer />
-        </>
+        </div>
     );
 }
 

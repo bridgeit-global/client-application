@@ -48,6 +48,8 @@ BridgeIT is a comprehensive utility management platform designed to streamline e
 - **UI Components**: Shadcn UI
 - **Icons**: Lucide React
 - **Styling**: CSS Modules
+- **Testing**: Jest, React Testing Library
+- **Package Manager**: pnpm
 
 ## Getting Started
 
@@ -82,6 +84,69 @@ yarn dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Testing
+
+This project uses **Test-Driven Development (TDD)** practices. All tests must pass before any deployment can occur.
+
+### Running Tests
+
+```bash
+# Run tests in watch mode (for development)
+pnpm test:watch
+
+# Run tests once
+pnpm test
+
+# Run tests with coverage report
+pnpm test:coverage
+
+# Run tests in CI mode (used during builds)
+pnpm test:ci
+```
+
+### Test-Driven Development Workflow
+
+1. **Write Tests First**: Before implementing a feature, write tests that describe the expected behavior
+2. **Run Tests**: Ensure the new tests fail (Red phase)
+3. **Implement Feature**: Write the minimum code needed to make tests pass (Green phase)
+4. **Refactor**: Improve code quality while keeping tests passing (Refactor phase)
+5. **Deploy**: Tests run automatically on Vercel before deployment
+
+### Deployment Protection
+
+**All deployments are blocked if tests fail.** The build process on Vercel automatically runs tests before building:
+
+- Tests run via `pnpm test:ci` command
+- If any test fails, the build fails and deployment is blocked
+- Coverage reports are generated during CI builds
+- Test results are visible in Vercel deployment logs
+
+### Test Coverage
+
+- Coverage reports are generated in the `coverage/` directory
+- Coverage thresholds are configured in `jest.config.ts`
+- View coverage reports: `pnpm test:coverage` and open `coverage/lcov-report/index.html`
+
+### Writing Tests
+
+Tests are located next to the components/pages they test:
+- Component tests: `components/**/__tests__/*.test.tsx`
+- Page tests: `app/**/__tests__/*.test.tsx`
+- Service tests: `services/**/__tests__/*.test.ts`
+
+Example test structure:
+```typescript
+import { render, screen } from '@testing-library/react';
+import Component from '../component';
+
+describe('Component', () => {
+  it('renders correctly', () => {
+    render(<Component />);
+    expect(screen.getByText('Expected Text')).toBeInTheDocument();
+  });
+});
+```
 
 ## Project Structure
 

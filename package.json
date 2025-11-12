@@ -8,13 +8,16 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "sh -c 'if [ -z \"$CI\" ]; then npm run test; fi' && next build",
+    "build": "pnpm run test:ci && next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier . --write",
     "prepare": "husky",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:coverage": "jest --coverage",
+    "test:ci:watch": "jest --watch --coverage"
   },
   "lint-staged": {
     "**/*": [

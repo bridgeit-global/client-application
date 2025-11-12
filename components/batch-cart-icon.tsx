@@ -134,7 +134,7 @@ function SelectedBillTable({
                 case 2:
                     return <div className="flex flex-col gap-1">
                         <p className="text-xs text-muted-foreground">
-                            Today's Amount
+                            Today&apos;s Amount
                         </p>
                         <p className="text-sm font-semibold">
                             <TodaysPayableAmountCell bill={item} />
@@ -550,40 +550,24 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
 
             const billIds = bills.map(item => item.id);
             const rechargeIds = recharges.map(item => item.id);
-            const { error: batchUpdateError } = await supabase
-                .from('batches')
-                .update({
-                    updated_by: user?.id,
-                    updated_at: new Date().toISOString()
+
+            // Use API route to handle updates in chunks and avoid timeouts
+            const response = await fetch('/api/batch/add-items', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    batchId,
+                    billIds,
+                    rechargeIds
                 })
-                .eq('batch_id', batchId);
+            });
 
-            if (batchUpdateError) {
-                throw new Error(`Failed to update batch: ${batchUpdateError.message}`);
-            }
+            const data = await response.json();
 
-            // Update bills
-            if (billIds.length > 0) {
-                const { error: billError } = await supabase
-                    .from('bills')
-                    .update({ batch_id: batchId, bill_status: 'batch' })
-                    .in('id', billIds);
-
-                if (billError) {
-                    throw new Error(`Failed to add bills: ${billError.message}`);
-                }
-            }
-
-            // Update recharges
-            if (rechargeIds.length > 0) {
-                const { error: rechargeError } = await supabase
-                    .from('prepaid_recharge')
-                    .update({ batch_id: batchId, recharge_status: 'batch' })
-                    .in('id', rechargeIds);
-
-                if (rechargeError) {
-                    throw new Error(`Failed to add recharges: ${rechargeError.message}`);
-                }
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to add items to batch');
             }
 
             toast({
@@ -782,7 +766,7 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
                                     {minDate < today && (
                                         <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
                                             <Clock className="h-3 w-3" />
-                                            Using today's date due to overdue items
+                                            Using today&apos;s date due to overdue items
                                         </p>
                                     )}
                                 </div>

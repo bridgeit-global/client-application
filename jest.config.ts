@@ -15,6 +15,8 @@ const config: Config = {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/services/(.*)$': '<rootDir>/services/$1',
     '^@/constants/(.*)$': '<rootDir>/constants/$1',
+    // Mock canvas module to avoid native dependency issues in CI
+    '^canvas$': '<rootDir>/__mocks__/canvas.js',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   transformIgnorePatterns: [

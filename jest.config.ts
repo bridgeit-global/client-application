@@ -18,6 +18,7 @@ const config: Config = {
     // Mock canvas module to avoid native dependency issues in CI
     '^canvas$': '<rootDir>/__mocks__/canvas.js',
   },
+  setupFiles: ['<rootDir>/jest.setup.before.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   transformIgnorePatterns: [
     'node_modules/(?!(lucide-react|@radix-ui|@babel/runtime|@?react-?|next|react-error-boundary)/)',

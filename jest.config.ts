@@ -17,6 +17,9 @@ const config: Config = {
     '^@/constants/(.*)$': '<rootDir>/constants/$1',
     // Mock canvas module to avoid native dependency issues in CI
     '^canvas$': '<rootDir>/__mocks__/canvas.js',
+    '^mapbox-gl$': '<rootDir>/__mocks__/mapbox-gl.js',
+    '^@mapbox/mapbox-gl-geocoder$': '<rootDir>/__mocks__/@mapbox/mapbox-gl-geocoder.js',
+    '\\.(css|scss|sass)$': '<rootDir>/__mocks__/styleMock.js',
   },
   setupFiles: ['<rootDir>/jest.setup.before.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],

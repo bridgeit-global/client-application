@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from './use-toast';
@@ -39,6 +40,9 @@ const formatNumberWithCommas = (value: string | number) => {
   return `${formattedOtherNumbers},${lastThree}`;
 };
 
+const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const getTodayDate = () => formatDate(new Date());
+
 const UploadFormModal: React.FC<UploadFormModalProps> = ({
   isOpen,
   onClose,
@@ -46,9 +50,25 @@ const UploadFormModal: React.FC<UploadFormModalProps> = ({
 }) => {
   const { toast } = useToast();
   const [file, setFile] = React.useState<File | null>(null);
-  const [collectionDate, setCollectionDate] = React.useState('');
+  const [collectionDate, setCollectionDate] = React.useState<string>(() =>
+    getTodayDate()
+  );
   const [payableAmount, setPayableAmount] = React.useState<number | ''>('');
   const [utrId, setUtrId] = React.useState<string>('');
+
+  const adjustCollectionDate = React.useCallback((days: number) => {
+    setCollectionDate((prev) => {
+      const baseDate = prev ? new Date(prev) : new Date();
+      baseDate.setDate(baseDate.getDate() + days);
+      return formatDate(baseDate);
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setCollectionDate((prev) => prev || getTodayDate());
+    }
+  }, [isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
@@ -97,7 +117,7 @@ const UploadFormModal: React.FC<UploadFormModalProps> = ({
 
     onSubmit(formData);
     setFile(null);
-    setCollectionDate('');
+    setCollectionDate(getTodayDate());
     setPayableAmount('');
     setUtrId('');
     onClose();
@@ -131,14 +151,32 @@ const UploadFormModal: React.FC<UploadFormModalProps> = ({
             <Label htmlFor="collection-date" className="mb-1 block">
               Collection Date
             </Label>
-            <Input
-              required
-              id="collection-date"
-              type="date"
-              value={collectionDate}
-              onChange={(e) => setCollectionDate(e.target.value)}
-              className="mb-2 w-full"
-            />
+            <div className="mb-2 flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => adjustCollectionDate(-1)}
+                aria-label="Previous collection date"
+              >
+                Prev
+              </Button>
+              <Input
+                required
+                id="collection-date"
+                type="date"
+                value={collectionDate}
+                onChange={(e) => setCollectionDate(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => adjustCollectionDate(1)}
+                aria-label="Next collection date"
+              >
+                Next
+              </Button>
+            </div>
           </div>
           <div>
             <Label htmlFor="payable-amount" className="mb-1 block">

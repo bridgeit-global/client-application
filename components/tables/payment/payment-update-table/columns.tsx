@@ -22,7 +22,7 @@ const payStatusUpdate = async (id: string | number, dataWithRow: Record<string, 
   try {
     // Insert payment record in payments table
     const userId = await supabase.auth.getUser().then((res) => res.data.user?.id);
-    const { count, error: paymentError } = await supabase
+    const { data: paymentData, count, error: paymentError } = await supabase
       .from('payments')
       .select('id', { count: 'exact' })
       .eq('connection_id', dataWithRow.connection_id)
@@ -35,11 +35,11 @@ const payStatusUpdate = async (id: string | number, dataWithRow: Record<string, 
         .upsert([{ ...dataWithRow, created_by: userId }], { onConflict: 'id' });
       if (insertError) throw insertError;
     } else {
-      console.log('updating payment', dataWithRow);
+      console.log('updating payment', paymentData);
       const { error: updateError } = await supabase
         .from('payments')
         .update({ ...dataWithRow, updated_by: userId })
-        .eq('id', dataWithRow.id);
+        .eq('id', paymentData[0].id);
       if (updateError) throw updateError;
     }
     // Update bill payment_status in bills table

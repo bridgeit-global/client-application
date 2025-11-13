@@ -25,14 +25,17 @@ const payStatusUpdate = async (id: string | number, dataWithRow: Record<string, 
     const { count, error: paymentError } = await supabase
       .from('payments')
       .select('id', { count: 'exact' })
-      .eq('id', dataWithRow.id)
+      .eq('connection_id', dataWithRow.connection_id)
+      .eq('collection_date', dataWithRow.collection_date)
     if (paymentError) throw paymentError;
     if (count === 0) {
+      console.log('inserting payment', dataWithRow);
       const { error: insertError } = await supabase
         .from('payments')
-        .insert([{ ...dataWithRow, created_by: userId }]);
+        .upsert([{ ...dataWithRow, created_by: userId }], { onConflict: 'id' });
       if (insertError) throw insertError;
     } else {
+      console.log('updating payment', dataWithRow);
       const { error: updateError } = await supabase
         .from('payments')
         .update({ ...dataWithRow, updated_by: userId })

@@ -30,6 +30,7 @@ import {
   fetchPrepaidBalanceLag
 } from '@/services/sites';
 import { fetchSubmeterReadings } from '@/services/submeter-readings';
+import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 
@@ -50,6 +51,124 @@ function getParams(queryString: string): Record<string, string> {
   );
 }
 
+async function fetchMeterReadingsForBills(
+  searchParams: Record<string, string>,
+  table: string,
+  param?: string
+): Promise<any[]> {
+  const supabase = createClient();
+  
+  try {
+    // First, query bills with the same filters to get bill IDs
+    let billsQuery = supabase
+      .from('bills')
+      .select('id, bill_date, connections!inner(site_id, account_number, biller_list!inner(alias))')
+      .eq('is_deleted', false);
+
+    // Apply filters based on search params
+    if (searchParams.bill_date_start && searchParams.bill_date_end) {
+      billsQuery = billsQuery
+        .gte('bill_date', searchParams.bill_date_start)
+        .lte('bill_date', searchParams.bill_date_end);
+    }
+
+    if (searchParams.site_id) {
+      const value = searchParams.site_id.split(',').map(v => v.trim());
+      billsQuery = billsQuery.in('connections.site_id', value);
+    }
+
+    if (searchParams.account_number) {
+      const value = searchParams.account_number.split(',').map(v => v.trim());
+      billsQuery = billsQuery.in('connections.account_number', value);
+    }
+
+    if (searchParams.biller_id) {
+      const value = searchParams.biller_id.split(',').map(v => v.trim());
+      billsQuery = billsQuery.in('connections.biller_list.alias', value);
+    }
+
+    // Apply table-specific filters
+    if (table === 'bills_in_batches') {
+      const batchId = searchParams.batch_id || param;
+      if (batchId) {
+        billsQuery = billsQuery.eq('batch_id', batchId);
+      }
+    }
+
+    if (table === 'postpaid_paid') {
+      billsQuery = billsQuery
+        .eq('payment_status', true)
+        .eq('is_active', true)
+        .eq('is_valid', true);
+    }
+
+    if (table === 'new_bills') {
+      billsQuery = billsQuery
+        .eq('bill_status', 'new')
+        .eq('payment_status', false)
+        .eq('is_active', true)
+        .eq('is_valid', true);
+    }
+
+    if (table === 'all_bill') {
+      billsQuery = billsQuery.eq('connections.is_active', true);
+    }
+
+    const { data: billsData, error: billsError } = await billsQuery;
+
+    if (billsError || !billsData || billsData.length === 0) {
+      return [];
+    }
+
+    // Extract bill IDs
+    const billIds = billsData.map((bill: any) => bill.id);
+
+    // Now query meter_readings for these bills
+    const { data: meterReadingsData, error: meterReadingsError } = await supabase
+      .from('meter_readings')
+      .select('*')
+      .in('bill_id', billIds);
+
+    if (meterReadingsError || !meterReadingsData) {
+      console.error('Error fetching meter readings:', meterReadingsError);
+      return [];
+    }
+
+    // Create a map of bill_id to bill data for quick lookup
+    const billMap = new Map();
+    billsData.forEach((bill: any) => {
+      billMap.set(bill.id, bill);
+    });
+
+    // Map the data to the required format
+    const mappedData = meterReadingsData.map((reading: any) => {
+      const bill = billMap.get(reading.bill_id);
+      // Handle both array and single object cases for connections
+      const connection = Array.isArray(bill?.connections) 
+        ? bill.connections[0] 
+        : bill?.connections;
+      
+      return {
+        'Bill Date': bill?.bill_date || '',
+        'Site Id': connection?.site_id || '',
+        'Account Number': connection?.account_number || '',
+        'Meter No': reading.meter_no || '',
+        'Type': reading.type || '',
+        'Start Reading': reading.start_reading || '',
+        'Start Date': reading.start_date || '',
+        'End Reading': reading.end_reading || '',
+        'End Date': reading.end_date || '',
+        'Multiplication Factor': reading.multiplication_factor || ''
+      };
+    });
+
+    return mappedData;
+  } catch (error) {
+    console.error('Error in fetchMeterReadingsForBills:', error);
+    return [];
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { table: string } }
@@ -58,6 +177,7 @@ export async function GET(
   const param = referer.split('/').slice(-1)[0].split("?")[0]
   const searchParams = getParams(referer);
   const { table } = params;
+  console.log(table)
   try {
     let fetchData: any = [];
     let fetchError = null;
@@ -243,6 +363,17 @@ export async function GET(
 
     // Append the worksheet to the workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, table);
+
+    // For bill-related exports, add meter readings sheet
+    const billExportTables = ['all_bill', 'new_bills', 'bills_in_batches', 'postpaid_paid', 'bill_report'];
+    if (billExportTables.includes(table)) {
+      const meterReadingsData = await fetchMeterReadingsForBills(searchParams, table, param);
+      console.log(meterReadingsData)
+      if (meterReadingsData.length > 0) {
+        const meterReadingsWorksheet = XLSX.utils.json_to_sheet(meterReadingsData);
+        XLSX.utils.book_append_sheet(workbook, meterReadingsWorksheet, 'Meter Readings');
+      }
+    }
 
     // Convert workbook to a binary string
     const excelBuffer = XLSX.write(workbook, {

@@ -52,7 +52,8 @@ export function BillReportTable({
         }
       ];
     }
-    return [];
+    // Default to sorting by bill_date in descending order (latest bills first)
+    return [{ id: 'bill_date', desc: true }];
   });
 
   // Search params
@@ -126,12 +127,12 @@ export function BillReportTable({
     setIsLoading(true);
     // Reset pagination first
     setPagination({ pageIndex: 0, pageSize: fallbackPerPage });
-    // Clear the filter body and sorting
+    // Clear the filter body and reset sorting to default (bill_date desc)
     setFilterBody({});
-    setSorting([]);
-    // Navigate to clean URL with only pagination params
+    setSorting([{ id: 'bill_date', desc: true }]);
+    // Navigate to clean URL with pagination and default sorting params
     router.push(
-      `${pathname}?page=1&limit=${fallbackPerPage}`,
+      `${pathname}?page=1&limit=${fallbackPerPage}&sort=bill_date&order=desc`,
       { scroll: false }
     );
     setIsLoading(false);

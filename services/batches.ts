@@ -299,8 +299,8 @@ export const fetchAllBatches = cache(
         `*,
         bills(*,connections!inner(paytype,biller_list!inner(*))),
         prepaid_recharge(*,connections!inner(paytype,biller_list!inner(*))),
-        created_by_user:user_view!batches_created_by_fkey(*),
-        updated_by_user:user_view!batches_updated_by_fkey(*)
+        created_by_user:users!batches_created_by_fkey(*),
+        updated_by_user:users!batches_updated_by_fkey(*)
         `,
         {
           count: 'estimated'
@@ -351,7 +351,7 @@ export const fetchAllBatches = cache(
 
     const { data, count, error } = await query;
     if (error) {
-      console.error('error', error);
+      console.error('error batches', error);
       return {
         data: [],
         totalCount: 0,
@@ -385,7 +385,7 @@ export const fetchBatchItems = cache(
       .eq('batch_id', id).single();
     const { data, error } = await query;
     if (error) {
-      console.error('error', error);
+      console.error('error batch items', error);
       return {
         data: [],
         totalCount: 0,

@@ -19,7 +19,7 @@ export const fetchAllUsers = cache(
     ): Promise<Result<UserTableProps>> => {
         const supabase = createClient();
         let query = supabase
-            .from('user_view')
+            .from('users')
             .select(`*`, { count: 'estimated' })
             .not('email_confirmed_at', 'is', null)
             .not('phone_confirmed_at', 'is', null)

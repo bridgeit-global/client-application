@@ -1,3 +1,3 @@
-import { ViewRow } from "./supabase-type";
+import { TableRow } from "./supabase-type";
 
-export type UserTableProps = ViewRow<'user_view'>;
+export type UserTableProps = TableRow<'users'>;

@@ -6,7 +6,7 @@ export function useAllUsers() {
     const supabase = createClient();
     useEffect(() => {
         const getUser = async () => {
-            const { data, error } = await supabase.from('user_view').select('*')
+            const { data, error } = await supabase.from('users').select('*')
             if (error) {
                 console.error(error);
             } else {

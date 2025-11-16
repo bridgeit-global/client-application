@@ -40,7 +40,7 @@ export const fetchRegistrations = cache(
 
     let query = supabase
       .from('registrations')
-      .select(`*, user_view!inner(*)`, { count: 'estimated' })
+      .select(`*, users!inner(*)`, { count: 'estimated' })
       .eq('is_bulk', false)
     query = query.order('created_at', { ascending: false });
 

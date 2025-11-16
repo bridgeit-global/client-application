@@ -15,13 +15,13 @@ export const columns: ColumnDef<RegistrationsProps>[] = [
           <Avatar className='h-9 w-9 rounded-lg border-2 border-border/60'>
             <AvatarImage
               src={''}
-              alt={row.original.user_view?.first_name || ''}
+              alt={row.original.users?.first_name || ''}
             />
             <AvatarFallback className='rounded-lg bg-sidebar-accent text-foreground'>
-              {row.original.user_view?.first_name?.[0].toUpperCase() || '?'}{row.original.user_view?.first_name?.[1].toUpperCase() || ''}
+              {row.original.users?.first_name?.[0].toUpperCase() || '?'}{row.original.users?.first_name?.[1].toUpperCase() || ''}
             </AvatarFallback>
           </Avatar>
-          <span>{row.original.created_by ? `${row.original.user_view.first_name} ${row.original.user_view.last_name}` : 'N/A'}</span>
+          <span>{row.original.created_by ? `${row.original.users.first_name} ${row.original.users.last_name}` : 'N/A'}</span>
         </div>
       );
     }

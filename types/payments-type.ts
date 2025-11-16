@@ -1,7 +1,7 @@
 import { BatchesProps } from './batches-type';
 import { AllBillTableProps } from './bills-type';
 import { ConnectionTableProps, PrepaidRechargeTableProps } from './connections-type';
-import { TableRow, ViewRow } from './supabase-type';
+import { TableRow } from './supabase-type';
 
 export type PaymentsProps = TableRow<'payments'>;
 
@@ -15,7 +15,7 @@ export type ClientPaymentsProps = TableRow<'client_payments'> & {
 };
 
 export type PaymentGatewayTransactionsProps = TableRow<'payment_gateway_transactions'> & {
-  user_view: ViewRow<'user_view'>;
+  users: TableRow<'users'>;
 };
 
 export type RefundPaymentTransactionsProps = TableRow<'refund_payment_transactions'>;

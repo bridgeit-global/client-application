@@ -192,7 +192,7 @@ export function UserTable({ users }: UserTableProps) {
                                                             user.user?.email || user.email || user.phone
                                                         }
                                                     </span>
-                                                    {(user.user?.email || user.user?.phone || user.phone) && (
+                                                    {(user.user?.email || user.user?.phone_no || user.phone) && (
                                                         <svg
                                                             className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors"
                                                             fill="none"
@@ -204,7 +204,7 @@ export function UserTable({ users }: UserTableProps) {
                                                     )}
                                                 </div>
 
-                                                {(user.user?.email || user.user?.phone || user.phone) && (
+                                                {(user.user?.email || user.user?.phone_no || user.phone) && (
                                                     <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                                                         <div className="py-1">
                                                             <div className="px-4 py-2 text-sm text-gray-700 border-b">

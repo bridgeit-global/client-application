@@ -46,7 +46,7 @@ export function BillPaymentTimeline({ items, className, title = 'Payment History
     const sorted = [...items].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
     const getUserName = async (userId: string) => {
-        const { data, error } = await supabase.from('user_view').select('first_name, last_name').eq('id', userId).single()
+        const { data, error } = await supabase.from('users').select('first_name, last_name').eq('id', userId).single()
         if (error) {
             console.error('Error fetching user name:', error)
             return userId

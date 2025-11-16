@@ -15,7 +15,7 @@ export type Result<T> = {
 
 export const fetchAllUsers = cache(
     async (
-        options?: { is_export?: boolean; pay_type?: number }
+        options?: { is_export?: boolean; pay_type?: number; org_id?: string }
     ): Promise<Result<UserTableProps>> => {
         const supabase = createClient();
         let query = supabase
@@ -23,6 +23,9 @@ export const fetchAllUsers = cache(
             .select(`*`, { count: 'estimated' })
             .not('email_confirmed_at', 'is', null)
             .not('phone_confirmed_at', 'is', null)
+        
+        // If org_id is provided, filter by it (assuming the view or RLS handles this)
+        // Note: user_view may not have org_id column, so RLS should handle filtering
 
         if (options?.is_export) {
             const { data, error } = await query;

@@ -10,7 +10,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient, createPublicClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import { useUserStore } from '@/lib/store/user-store';
 import { useBillerBoardStore } from '@/lib/store/biller-board-store';
 import { LoadingButton } from '../buttons/loading-button';
@@ -18,7 +18,6 @@ import { LoadingButton } from '../buttons/loading-button';
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
 const supabase = createClient();
-const supabasePublic = createPublicClient();
 
 // Utility function to check if email is valid and not empty/null
 const isValidEmail = (email: string): boolean => {
@@ -35,7 +34,6 @@ export default function PhoneOtpForm({ users }: { users: any }) {
   const [otp, setOtp] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [orgId, setOrgId] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const [isLoader, setIsLoader] = useState(false);
@@ -56,52 +54,14 @@ export default function PhoneOtpForm({ users }: { users: any }) {
     }
     setIsLoader(true);
     try {
-      const { data, error } = await supabasePublic
-        .from('user_requests')
-        .select('*')
-        .eq('phone', phoneNumber)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116: No rows returned for single()
-
-      if (data && data.request_type) {
-        const { request_type, first_name, last_name, email, role, org_id } = data;
-
-        // Pre-fill known fields
-        setFirstName(first_name || '');
-        setLastName(last_name || '');
-        setEmail(email || '');
-        setRole(role || '');
-        setOrgId(org_id || '');
-
-        if (request_type === 'user-request') {
-          toast({
-            title: 'Pending Request',
-            description: 'Your account has not been accepted by admin yet',
-            variant: 'default'
-          });
-          setIsLoader(false);
-          return;
-        }
-
-        // Invitation/approved: proceed to OTP login directly
-        await handleLogin(null);
-      } else {
-        // Not found in user_requests → route to account creation flow
-        toast({
-          title: 'No account found',
-          description: 'Create a new account',
-          variant: 'destructive'
-        });
-        router.push(`/existing?phone=${phoneNumber}`);
-      }
+      // Directly send OTP via Supabase auth
+      await handleLogin(null);
     } catch (parseError) {
       toast({
-        title: 'No account found',
-        description: 'Create a new account',
+        title: 'Error',
+        description: 'Failed to send OTP. Please try again.',
         variant: 'destructive'
       });
-      router.push(`/existing?phone=${phoneNumber}`);
     } finally {
       setIsLoader(false);
     }
@@ -200,12 +160,26 @@ export default function PhoneOtpForm({ users }: { users: any }) {
     }
     setOtp('');
 
-    // For operators, email is optional - allow proceeding without email
+    // Check if user has org_id in metadata
+    const userOrgId = data.user?.user_metadata?.org_id;
     const isOperator = data.user?.user_metadata?.role === 'operator';
 
+    // If no org_id, redirect to signup for account creation
+    if (!userOrgId) {
+      toast({
+        title: 'Account Setup Required',
+        description: 'Please complete your account setup',
+        variant: 'default'
+      });
+      router.push(`/existing?phone=${phoneNumber}`);
+      setIsLoader(false);
+      return;
+    }
+
+    // User has org_id, proceed with portal access
     if (data.user?.email || isOperator) {
       try {
-        const { data: organization, error: org_error } = await supabase.from('organizations').select('*').eq('id', orgId).single();
+        const { data: organization, error: org_error } = await supabase.from('organizations').select('*').eq('id', userOrgId).single();
         if (org_error) {
           // For operators, we can continue without organization data if needed
           if (!isOperator) {
@@ -247,10 +221,8 @@ export default function PhoneOtpForm({ users }: { users: any }) {
           setIsLoader(false);
           return;
         }
-        handleUpdateRole(data.user?.user_metadata?.role);
         router.push('/portal/meter-reading');
       } else {
-        handleUpdateRole(data.user?.user_metadata?.role);
         router.push('/portal/dashboard');
       }
       toast({
@@ -264,19 +236,6 @@ export default function PhoneOtpForm({ users }: { users: any }) {
   };
 
 
-  const handleUpdateRole = async (role: string) => {
-
-    const { data } = await supabasePublic.from('user_requests').select('*').eq('org_id', orgId).eq('phone', phoneNumber).single();
-
-    if (data.role !== role) {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          role: data.role
-        }
-      });
-      if (error) throw error;
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,8 +258,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
         data: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          role: role.trim(),
-          org_id: orgId.trim() || null
+          role: role.trim()
         }
       };
 
@@ -316,7 +274,6 @@ export default function PhoneOtpForm({ users }: { users: any }) {
       setLastName('');
       setEmail('');
       setRole('');
-      setOrgId('');
       setStep('phone');
 
       if (isValidEmail(email)) {

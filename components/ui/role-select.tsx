@@ -50,8 +50,7 @@ export function RoleSelect({ currentRole, currentUserId, userId, phone, isVerifi
                 },
                 body: JSON.stringify({
                     userId,
-                    newRole: selectedRole,
-                    phone
+                    newRole: selectedRole
                 }),
             })
 

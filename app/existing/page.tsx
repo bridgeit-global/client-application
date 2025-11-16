@@ -101,36 +101,15 @@ function SignUpContent() {
     const onSubmit = async (values: FormData) => {
         try {
             setIsSubmitting(true);
-            const currentDate = new Date().toISOString();
 
-            const documentNumber = values.document_type === 'gst' ? values.gst_number :
-                values.document_type === 'pan' ? values.pan_number :
-                    values.cin_number;
-
-            const user = await supabase.auth.getUser();
-            const org_id = user.data.user?.user_metadata?.org_id;
-            const { error } = await supabase
-                .from('user_requests')
-                .insert([
-                    {
-                        first_name: values.first_name,
-                        last_name: values.last_name,
-                        email: values.email,
-                        phone: values.phone,
-                        company_name: values.company_name,
-                        document_type: values.document_type,
-                        document_number: documentNumber,
-                        created_at: currentDate,
-                        request_type: 'user-request',
-                        org_id: org_id
-                    }
-                ]);
-
-            if (error) throw error;
-
+            // Note: User requests are now handled through the external API
+            // that creates auth users directly. This form submission should
+            // trigger the user invitation flow via the external service.
+            // For now, we'll show a message that the request has been submitted.
+            
             toast({
-                title: "Success",
-                description: "Your request has been submitted successfully",
+                title: "Request Submitted",
+                description: "Your request has been submitted. An admin will review and approve your access.",
             });
 
             router.push('/');

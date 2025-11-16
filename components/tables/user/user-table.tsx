@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trash2, Plus, UserPlus } from "lucide-react"
+import { Trash2, Plus } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { ddmmyy } from "@/lib/utils/date-format"
 import { useRouter } from "next/navigation"
@@ -19,9 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
 import { UserFormModal } from "@/components/modal/register-modal/user-form-modal"
 import { camelCaseToTitleCase } from '@/lib/utils/string-format'
-import IconButtonHover from "@/components/buttons/icon-button-hover"
-import { User } from "lucide-react"
-import { createClient, createPublicClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { RoleSelect } from "@/components/ui/role-select"
 import {
     AlertDialog,
@@ -55,8 +53,6 @@ type UserProps = {
     last_name: string
     email: string
     user: User
-    request_type?: 'user-request' | string
-    created_at?: string
     role: string,
 }
 
@@ -70,12 +66,10 @@ export function UserTable({ users }: UserTableProps) {
 
 
     const supabase = createClient();
-    const supabasePublic = createPublicClient();
     const { user: currentUser } = useUserStore();
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null)
     const [searchQuery, setSearchQuery] = React.useState("")
     const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
-    const [isAccepting, setIsAccepting] = React.useState<string | null>(null);
     const [userToDelete, setUserToDelete] = React.useState<UserProps | null>(null);
 
     const router = useRouter();
@@ -98,19 +92,25 @@ export function UserTable({ users }: UserTableProps) {
     const handleDelete = async (user: UserProps) => {
         try {
             setIsDeleting(user?.phone)
-            const { error } = await supabasePublic.from('user_requests').delete().eq('phone', user?.phone).single();
-            if (error) throw error;
-            if (user?.request_type === 'user-request') {
-                await supabase.functions.invoke('user-status-notification', {
-                    method: "POST",
-                    body: JSON.stringify({
-                        "name": user?.first_name + " " + user?.last_name,
-                        "email": user?.email,
-                        "status": "rejected",
-                        "url": `https://${window.location.host}`
-                    })
-                })
+            const userId = user.user?.id;
+            
+            if (!userId) {
+                throw new Error('User ID not found');
             }
+
+            const response = await fetch('/api/user/delete', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to delete user');
+            }
+
             toast({
                 title: "Success",
                 description: "User deleted successfully",
@@ -119,45 +119,11 @@ export function UserTable({ users }: UserTableProps) {
         } catch (error) {
             toast({
                 title: "Error",
-                description: "Failed to delete user",
+                description: error instanceof Error ? error.message : "Failed to delete user",
                 variant: "destructive",
             })
         } finally {
             setIsDeleting(null)
-        }
-    }
-
-    const handleAccept = async (user: UserProps) => {
-        try {
-            setIsAccepting(user?.phone)
-            const { error } = await supabasePublic.from('user_requests').update({
-                request_type: 'invitation'
-            }).eq('phone', user?.phone).single();
-            if (error) throw error;
-            if (user?.request_type === 'user-request') {
-                await supabase.functions.invoke('user-status-notification', {
-                    method: "POST",
-                    body: JSON.stringify({
-                        "name": user?.first_name + " " + user?.last_name,
-                        "email": user?.email,
-                        "status": "accepted",
-                        "url": `https://${window.location.host}`
-                    })
-                })
-            }
-            toast({
-                title: "Success",
-                description: "User request accepted successfully",
-            })
-            router.refresh();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: "Failed to accept user request",
-                variant: "destructive",
-            })
-        } finally {
-            setIsAccepting(null)
         }
     }
 
@@ -173,7 +139,7 @@ export function UserTable({ users }: UserTableProps) {
                 <div className="relative max-w-md w-full">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                        placeholder="Search by phone, name, email or role..."
+                        placeholder="Search by name, email, phone or role..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 w-full transition-all duration-200 border-gray-200 focus:border-gray-400"
@@ -192,7 +158,7 @@ export function UserTable({ users }: UserTableProps) {
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-gray-50">
-                                <TableHead className="py-4 font-semibold text-gray-900 w-[100px]">Phone</TableHead>
+                                <TableHead className="py-4 font-semibold text-gray-900 w-[200px]">Name</TableHead>
                                 <TableHead className="py-4 font-semibold text-gray-900 w-[100px]"></TableHead>
                                 <TableHead className="py-4 font-semibold text-gray-900 w-[150px]">Role</TableHead>
                                 <TableHead className="py-4 font-semibold text-gray-900 w-[150px]">Status</TableHead>
@@ -218,12 +184,15 @@ export function UserTable({ users }: UserTableProps) {
                                         className="hover:bg-gray-50 transition-colors duration-150"
                                     >
                                         <TableCell className="font-medium">
-                                            {(user.user?.first_name || user.user?.email) ? (
-                                                <div className="relative group">
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-sm font-medium hover:text-primary cursor-pointer">
-                                                            {user.phone}
-                                                        </span>
+                                            <div className="relative group">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm font-medium hover:text-primary cursor-pointer">
+                                                        {user.user?.first_name || user.first_name ? 
+                                                            `${user.user?.first_name || user.first_name} ${user.user?.last_name || user.last_name || ''}`.trim() :
+                                                            user.user?.email || user.email || user.phone
+                                                        }
+                                                    </span>
+                                                    {(user.user?.email || user.user?.phone || user.phone) && (
                                                         <svg
                                                             className="w-4 h-4 text-gray-400 group-hover:text-primary transition-colors"
                                                             fill="none"
@@ -232,26 +201,27 @@ export function UserTable({ users }: UserTableProps) {
                                                         >
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                         </svg>
-                                                    </div>
+                                                    )}
+                                                </div>
 
+                                                {(user.user?.email || user.user?.phone || user.phone) && (
                                                     <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                                                         <div className="py-1">
                                                             <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                                                                {user.user?.first_name && (
-                                                                    <div className="font-medium">{user.user?.first_name} {user.user?.last_name}</div>
-                                                                )}
                                                                 {user.user?.email && (
-                                                                    <div className="text-gray-500">{user.user?.email}</div>
+                                                                    <div className="text-gray-500 mb-1">{user.user?.email}</div>
+                                                                )}
+                                                                {user.user?.phone_no && (
+                                                                    <div className="text-gray-500">{user.user?.phone_no}</div>
+                                                                )}
+                                                                {!user.user?.phone_no && user.phone && (
+                                                                    <div className="text-gray-500">{user.phone}</div>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ) : (
-                                                <span className="text-sm font-medium">
-                                                    {user.phone}
-                                                </span>
-                                            )}
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
@@ -267,23 +237,6 @@ export function UserTable({ users }: UserTableProps) {
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>}
-
-                                                {user?.request_type === 'user-request' && user?.role !== 'admin' && (
-                                                    <IconButtonHover
-                                                        icon={UserPlus}
-                                                        text="Accept"
-                                                        onClick={() => handleAccept(user)}
-                                                        disabled={isDeleting === user?.phone || isAccepting === user?.phone}
-                                                        className={`
-                                                            rounded-full p-2 bg-green-50 text-green-600 hover:bg-green-100 
-                                                            transition-colors duration-200 border border-green-200
-                                                            ${(isDeleting === user?.phone || isAccepting === user?.phone)
-                                                                ? 'opacity-50 cursor-not-allowed'
-                                                                : ''
-                                                            }
-                                                        `}
-                                                    />
-                                                )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -299,24 +252,13 @@ export function UserTable({ users }: UserTableProps) {
                                         <TableCell>
                                             <Badge
                                                 variant={'outline'}
-                                                className={`
-                                                    px-3 py-1 rounded-full font-medium
-                                                    ${user?.request_type === 'user-request'
-                                                        ? "bg-yellow-50 text-yellow-700 border-yellow-300"
-                                                        : user.verified
-                                                            ? "bg-green-50 text-green-700 border-green-300"
-                                                            : "bg-gray-50 text-gray-700 border-gray-300"
-                                                    }
-                                                `}
+                                                className="px-3 py-1 rounded-full font-medium bg-green-50 text-green-700 border-green-300"
                                             >
-                                                {user?.request_type === 'user-request' ? "Request" : user.verified ? "Verified" : "Pending"}
+                                                Verified
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {user.verified
-                                                ? user?.user?.created_at && ddmmyy(user?.user?.created_at)
-                                                : user?.created_at && ddmmyy(user.created_at)
-                                            }
+                                            {user?.user?.created_at && ddmmyy(user?.user?.created_at)}
                                         </TableCell>
 
                                     </TableRow>

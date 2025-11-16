@@ -1,10 +1,10 @@
 import { SearchParamsProps } from '@/types';
-import { fetchAllUsers } from '@/services/user';
 import { UserTable } from '@/components/tables/user/user-table';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { createClient, createPublicClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { fetchAllUsers } from '@/services/user';
 
 export default async function Page({
     searchParams
@@ -12,19 +12,59 @@ export default async function Page({
     searchParams: SearchParamsProps;
 }) {
     const supabase = createClient();
-    const supabasePublic = createPublicClient();
     const { data: { user } } = await supabase.auth.getUser();
-
+    
     if (user?.user_metadata?.role === 'admin') {
         try {
-            const { data } = await fetchAllUsers(searchParams);
-            const { data: users } = await supabasePublic.from('user_requests').select('*').eq('org_id', user?.user_metadata?.org_id);
-            const modifiedUsers = users?.map((user: any) => ({
-                ...user,
-                verified: data.some((item: any) => '+' + item.phone_no === "+91" + user.phone),
-                user: data.some((item: any) => '+' + item.phone_no === "+91" + user.phone) ? data.find((item: any) => '+' + item.phone_no === "+91" + user.phone) : user
-            })).sort((a: any, b: any) => {
-                return (a.verified === b.verified) ? 0 : a.verified ? 1 : -1;
+            const orgId = user?.user_metadata?.org_id;
+            
+            if (!orgId) {
+                throw new Error('Organization ID not found');
+            }
+
+            // Fetch all users from user_view
+            // The view should be filtered by RLS policies to only show users from the current org
+            const { data: allUsers, error: fetchError } = await fetchAllUsers({
+                ...searchParams,
+                org_id: orgId
+            });
+
+            if (fetchError) {
+                throw fetchError;
+            }
+
+            if (!allUsers || allUsers.length === 0) {
+                return (
+                    <div id="sites">
+                        <UserTable users={[]} />
+                    </div>
+                );
+            }
+
+            // Map users from user_view to UserTable format
+            // RLS policies on user_view should ensure only users from the current org are returned
+            const modifiedUsers = allUsers.map((viewUser: any) => {
+                const phone = viewUser.phone_no?.replace('+91', '') || '';
+                return {
+                    phone: phone,
+                    verified: true,
+                    first_name: viewUser.first_name || '',
+                    last_name: viewUser.last_name || '',
+                    email: viewUser.email || '',
+                    role: viewUser.role || 'user',
+                    user: {
+                        id: viewUser.id,
+                        first_name: viewUser.first_name || '',
+                        last_name: viewUser.last_name || '',
+                        email: viewUser.email || '',
+                        phone_no: viewUser.phone_no || '',
+                        role: viewUser.role || 'user',
+                        phone_confirmed_at: viewUser.phone_confirmed_at,
+                        email_confirmed_at: viewUser.email_confirmed_at,
+                        created_at: viewUser.created_at,
+                        updated_at: viewUser.updated_at
+                    }
+                };
             });
 
             return (

@@ -31,14 +31,16 @@ export default async function Page({
       <div className="overflow-y-auto max-h-screen">
         <BillForm initialValue={data} />
       </div>
-      {data?.content_type == 'pdf' ? (
-        <PDFViewer
-          pdfUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
-        />
-      ) : (
-        <HTMLViewer
-          htmlUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
-        />
+      {data?.content && typeof data.content === 'string' && data.content.trim() !== '' && (
+        data?.content_type == 'pdf' ? (
+          <PDFViewer
+            pdfUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
+          />
+        ) : (
+          <HTMLViewer
+            htmlUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
+          />
+        )
       )}
     </div>
   );

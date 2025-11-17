@@ -29,17 +29,19 @@ export default async function Page({
             <div className="bg-white rounded-lg shadow-sm border">
                 <BillDetails bill={data} />
             </div>
-            <div className="bg-white rounded-lg shadow-sm border">
-                {data?.content_type == 'pdf' ? (
-                    <PDFViewer
-                        pdfUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
-                    />
-                ) : (
-                    <HTMLViewer
-                        htmlUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
-                    />
-                )}
-            </div>
+            {data?.content && typeof data.content === 'string' && data.content.trim() !== '' && (
+                <div className="bg-white rounded-lg shadow-sm border">
+                    {data?.content_type == 'pdf' ? (
+                        <PDFViewer
+                            pdfUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
+                        />
+                    ) : (
+                        <HTMLViewer
+                            htmlUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
+                        />
+                    )}
+                </div>
+            )}
         </div>
     );
 }

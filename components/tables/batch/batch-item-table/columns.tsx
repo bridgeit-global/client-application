@@ -99,7 +99,7 @@ export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [
   {
     id: 'bill',
     header: 'Bill',
-    cell: ({ row }) => [1, -1].includes(row.original.connections.paytype) && row.original.content ? <ViewBillButton billId={row.original.id} /> : null
+    cell: ({ row }) => [1, -1].includes(row.original.connections.paytype) && row.original.content && typeof row.original.content === 'string' && row.original.content.trim() !== '' ? <ViewBillButton billId={row.original.id} /> : null
   },
 ];
 

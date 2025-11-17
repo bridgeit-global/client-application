@@ -105,6 +105,6 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
     id: 'bill',
     header: 'Bill',
     enableResizing: false,
-    cell: ({ row }) => row.original.connections.paytype === 1 ? <ViewBillButton billId={row.original.id} /> : null
+    cell: ({ row }) => [1, -1].includes(row.original.connections.paytype) && row.original.content ? <ViewBillButton billId={row.original.id} /> : null
   }
 ];

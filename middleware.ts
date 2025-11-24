@@ -5,7 +5,9 @@ export const runtime = 'nodejs';
 
 export async function middleware(request: NextRequest) {
   // update user's auth session
-  return await updateSession(request);
+  const response = await updateSession(request);
+  response.headers.set('X-Frame-Options', 'DENY');
+  return response;
 }
 
 export const config = {

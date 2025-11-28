@@ -28,9 +28,10 @@ export async function POST(req: Request) {
 
   if (error) {
     console.error('Error uploading file:', error.message);
-    return new Response(`Error uploading file: ${error.message}`, {
-      status: 500
-    })
+    return NextResponse.json(
+      { error: `Error uploading file: ${error.message}` },
+      { status: 500 }
+    )
   }
 
   // Get public URL for the uploaded file

@@ -391,6 +391,9 @@ export async function GET(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
+    headers.append('X-Content-Type-Options', 'nosniff');
+    headers.append('X-Frame-Options', 'DENY');
+    headers.append('X-XSS-Protection', '1; mode=block');
 
     // Return the Excel file as a response
     return new NextResponse(excelBuffer, {

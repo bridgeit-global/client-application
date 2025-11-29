@@ -14,6 +14,7 @@ import {
     SidebarMenuSub,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import {
     ChevronRight,
@@ -29,6 +30,13 @@ import { useEffect, useState } from 'react';
 function ContentSidebar({ items }: { items: NavItem[] }) {
     const supabase = createClient();
     const [sidebarItems, setSidebarItems] = useState<NavItem[]>(items);
+    const { setOpenMobile, isMobile } = useSidebar();
+
+    const handleLinkClick = () => {
+        if (isMobile) {
+            setOpenMobile(false);
+        }
+    };
 
     const getUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -87,7 +95,7 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
                                             isActive={pathname === item.url}
                                         >
                                             {item.icon && <Icon />}
-                                            <Link className='hover:text-primary hover:underline' href={item.url}><span>{item.title}</span></Link>
+                                            <Link className='hover:text-primary hover:underline' href={item.url} onClick={handleLinkClick}><span>{item.title}</span></Link>
                                             <ChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
                                         </SidebarMenuButton>
                                     </CollapsibleTrigger>
@@ -99,7 +107,7 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
                                                         asChild
                                                         isActive={pathname === subItem.url}
                                                     >
-                                                        <Link href={subItem.url}>
+                                                        <Link href={subItem.url} onClick={handleLinkClick}>
                                                             <span>{subItem.title}</span>
                                                         </Link>
                                                     </SidebarMenuSubButton>
@@ -116,7 +124,7 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
                                     tooltip={item.title}
                                     isActive={pathname === item.url}
                                 >
-                                    <Link href={item.url}>
+                                    <Link href={item.url} onClick={handleLinkClick}>
                                         <Icon />
                                         <span>{item.title}</span>
                                     </Link>

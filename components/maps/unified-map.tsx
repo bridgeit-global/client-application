@@ -630,6 +630,33 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
         }
     }, [stationsData, paymentsData, mapLoaded, convertToGeoJSON]);
 
+    // Update legend when SITE_TYPES change (fetched from org_master)
+    useEffect(() => {
+        if (!map.current || !mapLoaded) return;
+
+        const legendSection = document.getElementById('legend-stations');
+        if (!legendSection) return;
+
+        const station_colors: Record<string, string> = {};
+        SITE_TYPES.forEach((type, index) => {
+            station_colors[type.value] = CHART_COLORS[index];
+        });
+
+        const legendContent = `
+            <div class="text-sm font-medium mb-2">${site_name} Types</div>
+            <div class="space-y-2">
+                ${Object.entries(station_colors).map(([key, color]) => `
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
+                        <span class="text-sm">${key}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        legendSection.innerHTML = legendContent;
+    }, [SITE_TYPES, mapLoaded, site_name]);
+
     return (
         <div
             ref={mapContainer}

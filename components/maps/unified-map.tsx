@@ -92,6 +92,7 @@ export interface MapLocation {
     id?: string;
     site_id?: string;
     station_type?: string;
+    zone_id?: string;
     paytype?: number;
     latitude: number;
     longitude: number;
@@ -114,6 +115,8 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const [mapLoaded, setMapLoaded] = useState(false);
+    const [sourcesInitialized, setSourcesInitialized] = useState(false);
+    const prevSiteTypesRef = useRef<string>('');
     const popupRef = useRef<mapboxgl.Popup | null>(null);
     // Separate markers for each type
     const markers = useRef<{
@@ -197,7 +200,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
         };
     }, [getMapConfig, SITE_TYPES]);
 
-    // Initialize map
+    // Initialize map (only create the map container, not the sources)
     useEffect(() => {
         if (!mapContainer.current || map.current) return;
 
@@ -214,276 +217,6 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
             mapInstance.on('load', () => {
                 setMapLoaded(true);
 
-                // Ensure data is available before creating sources
-                if (!stationsData || !paymentsData) {
-                    return;
-                }
-
-                // Add sources for each data type
-                const sources = {
-                    stations: convertToGeoJSON(stationsData, 'stations'),
-                    payments: convertToGeoJSON(paymentsData, 'payments')
-                };
-                // Add each source to the map
-                Object.entries(sources).forEach(([type, data]) => {
-                    const sourceId = `${type}-source`;
-                    const config = getMapConfig(type as MapType);
-
-                    mapInstance.addSource(sourceId, {
-                        type: 'geojson',
-                        data,
-                        cluster: true,
-                        clusterMaxZoom: 14,
-                        clusterRadius: 50,
-                        clusterProperties: config.clusterProperties
-                    });
-
-                    // Add cluster layer
-                    mapInstance.addLayer({
-                        id: `${type}-clusters`,
-                        type: 'circle',
-                        source: sourceId,
-                        filter: ['has', 'point_count'],
-                        paint: {
-                            'circle-color': '#ffffff',
-                            'circle-radius': [
-                                'step',
-                                ['get', 'point_count'],
-                                20,
-                                10,
-                                30,
-                                30,
-                                40
-                            ],
-                            'circle-stroke-width': 1,
-                            'circle-stroke-color': '#000000'
-                        }
-                    });
-
-                    // Add cluster count layer
-                    mapInstance.addLayer({
-                        id: `${type}-counts`,
-                        type: 'symbol',
-                        source: sourceId,
-                        filter: ['has', 'point_count'],
-                        layout: {
-                            'text-field': [
-                                'number-format',
-                                ['+', ...Object.keys(config.clusterProperties).map(key =>
-                                    ['coalesce', ['get', key], 0]
-                                )],
-                                {}
-                            ],
-                            'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                            'text-size': 12
-                        },
-                        paint: {
-                            'text-color': '#000000'
-                        }
-                    });
-
-                    // Hide default cluster layers
-                    mapInstance.setLayoutProperty(`${type}-clusters`, 'visibility', 'none');
-                    mapInstance.setLayoutProperty(`${type}-counts`, 'visibility', 'none');
-
-                    // Add unclustered point layer
-                    mapInstance.addLayer({
-                        id: `${type}-points`,
-                        type: 'circle',
-                        source: sourceId,
-                        filter: ['!', ['has', 'point_count']],
-                        paint: {
-                            'circle-color': ['get', 'color'],
-                            'circle-radius': 8,
-                            'circle-stroke-width': 2,
-                            'circle-stroke-color': '#ffffff'
-                        }
-                    });
-
-                    // Initially hide all layers except stations
-                    if (type !== 'stations') {
-                        mapInstance.setLayoutProperty(`${type}-clusters`, 'visibility', 'none');
-                        mapInstance.setLayoutProperty(`${type}-counts`, 'visibility', 'none');
-                        mapInstance.setLayoutProperty(`${type}-points`, 'visibility', 'none');
-                    }
-                });
-
-                // Add render event listener for markers
-                const updateAllMarkers = () => {
-                    Object.entries(sources).forEach(([type, data]) => {
-                        const sourceId = `${type}-source`;
-                        if (!mapInstance.isSourceLoaded(sourceId)) return;
-
-                        const config = getMapConfig(type as MapType);
-                        updateMarkers(
-                            mapInstance,
-                            markers.current[type as MapType],
-                            markersOnScreen.current[type as MapType],
-                            config.chartCreator,
-                            sourceId,
-                            type as MapType
-                        );
-                    });
-                };
-
-                // Initial update
-                updateAllMarkers();
-
-                // Update on render
-                mapInstance.on('render', updateAllMarkers);
-
-                // Update on moveend
-                mapInstance.on('moveend', updateAllMarkers);
-
-                // Add data type toggle buttons
-                const dataTypeToggleControl = document.createElement('div');
-                dataTypeToggleControl.className = 'bg-white p-4 rounded-lg shadow-lg absolute right-4 bottom-4';
-                dataTypeToggleControl.style.minWidth = '200px';
-                dataTypeToggleControl.style.zIndex = '1';
-
-                const dataTypeToggleContent = `
-                    <div class="text-sm font-medium mb-2">Data Type</div>
-                    <div class="space-y-2">
-                        <button id="toggle-stations" class="w-full  py-2 text-sm font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
-                            ${site_name} Types
-                        </button>
-                        <button id="toggle-payments" class="w-full  py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
-                            Payment Types
-                        </button>
-                    </div>
-                `;
-
-                dataTypeToggleControl.innerHTML = dataTypeToggleContent;
-                mapInstance.getContainer().appendChild(dataTypeToggleControl);
-
-                // Add toggle functionality for data types
-                ['stations', 'payments'].forEach(type => {
-                    const button = document.getElementById(`toggle-${type}`);
-                    if (button) {
-                        button.addEventListener('click', () => {
-
-                            // Update button styles
-                            ['stations', 'payments'].forEach(t => {
-                                const btn = document.getElementById(`toggle-${t}`);
-                                if (btn) {
-                                    if (t === type) {
-                                        btn.classList.remove('bg-gray-100', 'text-gray-700');
-                                        btn.classList.add('bg-blue-100', 'text-blue-700');
-                                    } else {
-                                        btn.classList.remove('bg-blue-100', 'text-blue-700');
-                                        btn.classList.add('bg-gray-100', 'text-gray-700');
-                                    }
-                                }
-                            });
-
-                            // Show/hide layers
-                            ['stations', 'payments'].forEach(t => {
-                                const visibility = t === type ? 'visible' : 'none';
-                                mapInstance.setLayoutProperty(`${t}-clusters`, 'visibility', visibility);
-                                mapInstance.setLayoutProperty(`${t}-counts`, 'visibility', visibility);
-                                mapInstance.setLayoutProperty(`${t}-points`, 'visibility', visibility);
-                            });
-
-                            // Update markers
-                            updateAllMarkers();
-                        });
-                    }
-                });
-
-                // Add hide button for controls
-                const hideControlsButton = document.createElement('button');
-                hideControlsButton.innerHTML = '🔽';
-                hideControlsButton.className = 'bg-white rounded-md p-1 absolute right-4 shadow-lg';
-                hideControlsButton.style.zIndex = '1';
-                hideControlsButton.style.marginTop = '5px';
-                hideControlsButton.onclick = () => {
-                    const isHidden = dataTypeToggleControl.style.display === 'none';
-                    dataTypeToggleControl.style.display = isHidden ? 'block' : 'none';
-                    hideControlsButton.innerHTML = isHidden ? '🔽' : '🔼';
-                };
-                mapInstance.getContainer().appendChild(hideControlsButton);
-
-                // Add legend control
-                const legendControl = document.createElement('div');
-                legendControl.className = 'bg-white p-4 rounded-lg shadow-lg absolute left-4 top-4';
-                legendControl.style.minWidth = '200px';
-                legendControl.style.zIndex = '1';
-
-                const createLegendContent = (type: string) => {
-                    let colors;
-                    let title;
-                    const station_colors: Record<string, string> = {};
-                    SITE_TYPES.map((type, index) => {
-                        station_colors[type.value] = CHART_COLORS[index];
-                    });
-                    switch (type) {
-                        case 'stations':
-                            colors = station_colors;
-                            title = `${site_name} Types`;
-                            break;
-                        case 'payments':
-                            colors = PAYMENT_COLORS;
-                            title = 'Payment Types';
-                            break;
-                        default:
-                            return '';
-                    }
-
-                    return `
-                        <div class="legend-section" id="legend-${type}" style="display: ${type === 'stations' ? 'block' : 'none'}">
-                            <div class="text-sm font-medium mb-2">${title}</div>
-                            <div class="space-y-2">
-                                ${Object.entries(colors).map(([key, color]) => `
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
-                                        <span class="text-sm">${type === 'payments' ? camelCaseToTitleCase(key) : key}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                };
-
-                const legendContent = `
-                    <div class="space-y-4">
-                        ${createLegendContent('stations')}
-                        ${createLegendContent('payments')}
-                    </div>
-                `;
-
-                legendControl.innerHTML = legendContent;
-                mapInstance.getContainer().appendChild(legendControl);
-
-                // Add hide button for legend
-                const hideLegendButton = document.createElement('button');
-                hideLegendButton.innerHTML = '🔽';
-                hideLegendButton.className = 'bg-white rounded-md p-1 absolute left-4 shadow-lg';
-                hideLegendButton.style.zIndex = '1';
-                hideLegendButton.style.marginTop = '5px';
-                hideLegendButton.style.top = '0px';
-                hideLegendButton.onclick = () => {
-                    const isHidden = legendControl.style.display === 'none';
-                    legendControl.style.display = isHidden ? 'block' : 'none';
-                    hideLegendButton.innerHTML = isHidden ? '🔽' : '🔼';
-                };
-                mapInstance.getContainer().appendChild(hideLegendButton);
-
-                // Update legend visibility when data type changes
-                ['stations', 'payments'].forEach(type => {
-                    const button = document.getElementById(`toggle-${type}`);
-                    if (button) {
-                        button.addEventListener('click', () => {
-                            // Update legend sections visibility
-                            ['stations', 'payments'].forEach(t => {
-                                const legendSection = document.getElementById(`legend-${t}`);
-                                if (legendSection) {
-                                    legendSection.style.display = t === type ? 'block' : 'none';
-                                }
-                            });
-                        });
-                    }
-                });
-
                 // Add navigation controls
                 mapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
@@ -492,170 +225,377 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                     closeButton: false,
                     closeOnClick: false
                 });
-
-                // Set initial visibility for all layers
-                ['stations', 'payments'].forEach(type => {
-                    const visibility = type === 'stations' ? 'visible' : 'none';
-                    mapInstance.setLayoutProperty(`${type}-clusters`, 'visibility', visibility);
-                    mapInstance.setLayoutProperty(`${type}-counts`, 'visibility', visibility);
-                    mapInstance.setLayoutProperty(`${type}-points`, 'visibility', visibility);
-                });
-
-                // Force a map update to ensure clusters and markers are rendered
-                mapInstance.once('idle', () => {
-                    updateAllMarkers();
-                });
-
-                // Add click event for clusters
-                mapInstance.on('click', ['stations-clusters', 'payments-clusters'], (e) => {
-                    const features = e.features as mapboxgl.MapboxGeoJSONFeature[];
-                    if (!features?.[0]?.geometry) return;
-
-                    const renderedFeatures = mapInstance.queryRenderedFeatures(e.point, {
-                        layers: ['stations-clusters', 'payments-clusters']
-                    });
-
-                    const clusterId = renderedFeatures[0]?.properties?.cluster_id;
-                    const sourceId = renderedFeatures[0]?.source;
-
-                    if (clusterId !== undefined && sourceId) {
-                        const source = mapInstance.getSource(sourceId) as mapboxgl.GeoJSONSource;
-                        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-                            if (err || !zoom) return;
-
-                            mapInstance.easeTo({
-                                center: (features[0].geometry as Point).coordinates as [number, number],
-                                zoom
-                            });
-                        });
-                    }
-                });
-
-                // Add hover effect for points
-                mapInstance.on('mouseenter', ['stations-points', 'payments-points'], (e) => {
-                    const feature = e.features?.[0];
-                    if (!feature?.geometry || !feature.properties || !popupRef.current) return;
-
-                    const coordinates = (feature.geometry as Point).coordinates.slice();
-                    const properties = feature.properties;
-
-                    const getPopupContent = () => {
-                        const type = properties.type as MapType;
-                        switch (type) {
-                            case 'stations':
-                                return `
-                                    <div class="p-2">
-                                        <div class="flex justify-between items-start">
-                                            <div>
-                                                <p class="font-medium">${properties.station_type || 'Unknown'} ${site_name}</p>
-                                                <p class="font-medium">${site_name} ID: ${properties.id || 'Unknown'}</p>
-                                                <a href="#" id="link-${properties.id}" style="color: #2563eb; text-decoration: underline; font-weight: 500; margin-top: 8px; display: block;">
-                                                    More info
-                                                </a>
-                                            </div>
-                                            <button class="text-gray-500 hover:text-gray-700" onclick="document.querySelector('.mapboxgl-popup').remove();">
-                                                ✕
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
-                            case 'payments':
-                                return `
-                                    <div class="p-2">
-                                        <div class="flex justify-between items-start">
-                                            <div>
-                                                <p class="font-medium">${camelCaseToTitleCase(PAY_TYPE[properties.paytype]) || 'Unknown'} Connection</p>
-                                                <p class="font-medium">Station ID: ${properties.site_id || 'Unknown'}</p>
-                                                <p class="font-medium">Account Number: ${properties.account_number || 'Unknown'}</p>
-                                                <a href="#" id="link-${properties.account_number}" style="color: #2563eb; text-decoration: underline; font-weight: 500; margin-top: 8px; display: block;">
-                                                    More info
-                                                </a>
-                                            </div>
-                                            <button class="text-gray-500 hover:text-gray-700" onclick="document.querySelector('.mapboxgl-popup').remove();">
-                                                ✕
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
-                        }
-                    };
-
-                    popupRef.current
-                        .setLngLat(coordinates as [number, number])
-                        .setHTML(getPopupContent())
-                        .addTo(mapInstance);
-
-                    const linkElement = document.getElementById(
-                        `link-${properties.type === 'stations' ? properties.id : properties.account_number}`
-                    );
-                    if (linkElement) {
-                        linkElement.addEventListener('click', () => {
-                            if (properties.type === 'stations') {
-                                router.push(`/portal/site/sites?site_id=${properties.id}`);
-                            } else {
-                                router.push(`/portal/site/${PAY_TYPE[properties.paytype]}?account_number=${properties.account_number}`);
-                            }
-                        });
-                    }
-                });
             });
         } catch (error) {
             // Handle map initialization error silently
         }
-    }, [convertToGeoJSON, getMapConfig, paymentsData, router, site_name, SITE_TYPES, stationsData]);
+    }, []);
 
-    // Update data when props change
+    // Initialize sources and layers when map is loaded and data is available
     useEffect(() => {
-        if (!map.current || !mapLoaded) return;
+        if (!map.current || !mapLoaded || !stationsData || !paymentsData) return;
 
-        // Ensure data is available before updating
-        if (!stationsData || !paymentsData) {
+        const mapInstance = map.current;
+        const currentSiteTypesKey = SITE_TYPES.map(t => t.value).join(',');
+
+        // Skip if site types haven't changed
+        if (prevSiteTypesRef.current === currentSiteTypesKey && sourcesInitialized) {
             return;
         }
 
+        prevSiteTypesRef.current = currentSiteTypesKey;
+
+        // Remove existing sources and layers if they exist
+        const cleanupExisting = () => {
+            ['stations', 'payments'].forEach(type => {
+                try {
+                    if (mapInstance.getLayer(`${type}-clusters`)) mapInstance.removeLayer(`${type}-clusters`);
+                    if (mapInstance.getLayer(`${type}-counts`)) mapInstance.removeLayer(`${type}-counts`);
+                    if (mapInstance.getLayer(`${type}-points`)) mapInstance.removeLayer(`${type}-points`);
+                    if (mapInstance.getSource(`${type}-source`)) mapInstance.removeSource(`${type}-source`);
+                } catch (e) {
+                    // Ignore errors during cleanup
+                }
+            });
+
+            // Clear markers
+            Object.values(markers.current.stations).forEach(marker => marker.remove());
+            Object.values(markers.current.payments).forEach(marker => marker.remove());
+            markers.current = { stations: {}, payments: {} };
+            Object.values(markersOnScreen.current.stations).forEach(marker => marker.remove());
+            Object.values(markersOnScreen.current.payments).forEach(marker => marker.remove());
+            markersOnScreen.current = { stations: {}, payments: {} };
+        };
+
+        cleanupExisting();
+
         try {
+            // Add sources for each data type
             const sources = {
-                stations: map.current.getSource('stations-source'),
-                payments: map.current.getSource('payments-source')
+                stations: convertToGeoJSON(stationsData, 'stations'),
+                payments: convertToGeoJSON(paymentsData, 'payments')
             };
 
-            if (sources.stations) {
-                (sources.stations as mapboxgl.GeoJSONSource).setData(convertToGeoJSON(stationsData, 'stations'));
-            }
-            if (sources.payments) {
-                (sources.payments as mapboxgl.GeoJSONSource).setData(convertToGeoJSON(paymentsData, 'payments'));
-            }
+            // Add each source to the map
+            Object.entries(sources).forEach(([type, data]) => {
+                const sourceId = `${type}-source`;
+                const config = getMapConfig(type as MapType);
+
+                mapInstance.addSource(sourceId, {
+                    type: 'geojson',
+                    data,
+                    cluster: true,
+                    clusterMaxZoom: 14,
+                    clusterRadius: 50,
+                    clusterProperties: config.clusterProperties
+                });
+
+                // Add cluster layer
+                mapInstance.addLayer({
+                    id: `${type}-clusters`,
+                    type: 'circle',
+                    source: sourceId,
+                    filter: ['has', 'point_count'],
+                    paint: {
+                        'circle-color': '#ffffff',
+                        'circle-radius': ['step', ['get', 'point_count'], 20, 10, 30, 30, 40],
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#000000'
+                    }
+                });
+
+                // Add cluster count layer
+                mapInstance.addLayer({
+                    id: `${type}-counts`,
+                    type: 'symbol',
+                    source: sourceId,
+                    filter: ['has', 'point_count'],
+                    layout: {
+                        'text-field': ['number-format', ['+', ...Object.keys(config.clusterProperties).map(key => ['coalesce', ['get', key], 0])], {}],
+                        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+                        'text-size': 12
+                    },
+                    paint: { 'text-color': '#000000' }
+                });
+
+                // Hide default cluster layers (we use custom donut markers)
+                mapInstance.setLayoutProperty(`${type}-clusters`, 'visibility', 'none');
+                mapInstance.setLayoutProperty(`${type}-counts`, 'visibility', 'none');
+
+                // Add unclustered point layer
+                mapInstance.addLayer({
+                    id: `${type}-points`,
+                    type: 'circle',
+                    source: sourceId,
+                    filter: ['!', ['has', 'point_count']],
+                    paint: {
+                        'circle-color': ['get', 'color'],
+                        'circle-radius': 8,
+                        'circle-stroke-width': 2,
+                        'circle-stroke-color': '#ffffff'
+                    }
+                });
+
+                // Initially hide all layers except stations
+                if (type !== 'stations') {
+                    mapInstance.setLayoutProperty(`${type}-points`, 'visibility', 'none');
+                }
+            });
+
+            // Update markers function
+            const updateAllMarkers = () => {
+                ['stations', 'payments'].forEach(type => {
+                    const sourceId = `${type}-source`;
+                    if (!mapInstance.getSource(sourceId) || !mapInstance.isSourceLoaded(sourceId)) return;
+
+                    const config = getMapConfig(type as MapType);
+                    updateMarkers(
+                        mapInstance,
+                        markers.current[type as MapType],
+                        markersOnScreen.current[type as MapType],
+                        config.chartCreator,
+                        sourceId,
+                        type as MapType
+                    );
+                });
+            };
+
+            // Update markers on render and moveend
+            mapInstance.on('render', updateAllMarkers);
+            mapInstance.on('moveend', updateAllMarkers);
+
+            // Add click event for clusters
+            mapInstance.on('click', ['stations-clusters', 'payments-clusters'], (e) => {
+                const features = e.features as mapboxgl.MapboxGeoJSONFeature[];
+                if (!features?.[0]?.geometry) return;
+
+                const clusterId = features[0]?.properties?.cluster_id;
+                const sourceId = features[0]?.source;
+
+                if (clusterId !== undefined && sourceId) {
+                    const source = mapInstance.getSource(sourceId) as mapboxgl.GeoJSONSource;
+                    source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+                        if (err || !zoom) return;
+                        mapInstance.easeTo({
+                            center: (features[0].geometry as Point).coordinates as [number, number],
+                            zoom
+                        });
+                    });
+                }
+            });
+
+            // Add hover effect for points
+            mapInstance.on('mouseenter', ['stations-points', 'payments-points'], (e) => {
+                const feature = e.features?.[0];
+                if (!feature?.geometry || !feature.properties || !popupRef.current) return;
+
+                const coordinates = (feature.geometry as Point).coordinates.slice();
+                const properties = feature.properties;
+
+                const getPopupContent = () => {
+                    const type = properties.type as MapType;
+                    switch (type) {
+                        case 'stations':
+                            return `
+                                <div class="p-2">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="font-medium">${properties.station_type || 'Unknown'} ${site_name}</p>
+                                            <p class="font-medium">${site_name} ID: ${properties.id || 'Unknown'}</p>
+                                            <p class="font-medium">Zone: ${properties.zone_id || 'N/A'}</p>
+                                            <a href="#" id="link-${properties.id}" style="color: #2563eb; text-decoration: underline; font-weight: 500; margin-top: 8px; display: block;">
+                                                More info
+                                            </a>
+                                        </div>
+                                        <button class="text-gray-500 hover:text-gray-700" onclick="document.querySelector('.mapboxgl-popup').remove();">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        case 'payments':
+                            return `
+                                <div class="p-2">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="font-medium">${camelCaseToTitleCase(PAY_TYPE[properties.paytype]) || 'Unknown'} Connection</p>
+                                            <p class="font-medium">Station ID: ${properties.site_id || 'Unknown'}</p>
+                                            <p class="font-medium">Account Number: ${properties.account_number || 'Unknown'}</p>
+                                            <a href="#" id="link-${properties.account_number}" style="color: #2563eb; text-decoration: underline; font-weight: 500; margin-top: 8px; display: block;">
+                                                More info
+                                            </a>
+                                        </div>
+                                        <button class="text-gray-500 hover:text-gray-700" onclick="document.querySelector('.mapboxgl-popup').remove();">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                    }
+                };
+
+                popupRef.current
+                    .setLngLat(coordinates as [number, number])
+                    .setHTML(getPopupContent())
+                    .addTo(mapInstance);
+
+                const linkElement = document.getElementById(
+                    `link-${properties.type === 'stations' ? properties.id : properties.account_number}`
+                );
+                if (linkElement) {
+                    linkElement.addEventListener('click', () => {
+                        if (properties.type === 'stations') {
+                            router.push(`/portal/site/sites?site_id=${properties.id}`);
+                        } else {
+                            router.push(`/portal/site/${PAY_TYPE[properties.paytype]}?account_number=${properties.account_number}`);
+                        }
+                    });
+                }
+            });
+
+            setSourcesInitialized(true);
+
+            // Initial marker update
+            mapInstance.once('idle', updateAllMarkers);
+
         } catch (error) {
-            // Handle map data update error silently
+            // Handle source initialization error silently
         }
-    }, [stationsData, paymentsData, mapLoaded, convertToGeoJSON]);
+    }, [mapLoaded, stationsData, paymentsData, SITE_TYPES, getMapConfig, convertToGeoJSON, router, site_name, sourcesInitialized]);
 
-    // Update legend when SITE_TYPES change (fetched from org_master)
+    // Setup UI controls (legend and toggle buttons)
     useEffect(() => {
-        if (!map.current || !mapLoaded) return;
+        if (!map.current || !mapLoaded || !sourcesInitialized) return;
 
-        const legendSection = document.getElementById('legend-stations');
-        if (!legendSection) return;
+        const mapInstance = map.current;
+
+        // Check if controls already exist
+        if (document.getElementById('toggle-stations')) return;
+
+        // Add data type toggle buttons
+        const dataTypeToggleControl = document.createElement('div');
+        dataTypeToggleControl.className = 'bg-white p-4 rounded-lg shadow-lg absolute right-4 bottom-4';
+        dataTypeToggleControl.style.minWidth = '200px';
+        dataTypeToggleControl.style.zIndex = '1';
+
+        dataTypeToggleControl.innerHTML = `
+            <div class="text-sm font-medium mb-2">Data Type</div>
+            <div class="space-y-2">
+                <button id="toggle-stations" class="w-full py-2 text-sm font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
+                    ${site_name} Types
+                </button>
+                <button id="toggle-payments" class="w-full py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                    Payment Types
+                </button>
+            </div>
+        `;
+        mapInstance.getContainer().appendChild(dataTypeToggleControl);
+
+        // Add legend control
+        const legendControl = document.createElement('div');
+        legendControl.className = 'bg-white p-4 rounded-lg shadow-lg absolute left-4 top-4';
+        legendControl.style.minWidth = '200px';
+        legendControl.style.zIndex = '1';
+        legendControl.id = 'map-legend';
 
         const station_colors: Record<string, string> = {};
         SITE_TYPES.forEach((type, index) => {
             station_colors[type.value] = CHART_COLORS[index];
         });
 
-        const legendContent = `
-            <div class="text-sm font-medium mb-2">${site_name} Types</div>
-            <div class="space-y-2">
-                ${Object.entries(station_colors).map(([key, color]) => `
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
-                        <span class="text-sm">${key}</span>
+        legendControl.innerHTML = `
+            <div class="space-y-4">
+                <div class="legend-section" id="legend-stations" style="display: block">
+                    <div class="text-sm font-medium mb-2">${site_name} Types</div>
+                    <div class="space-y-2">
+                        ${Object.entries(station_colors).map(([key, color]) => `
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
+                                <span class="text-sm">${key}</span>
+                            </div>
+                        `).join('')}
                     </div>
-                `).join('')}
+                </div>
+                <div class="legend-section" id="legend-payments" style="display: none">
+                    <div class="text-sm font-medium mb-2">Payment Types</div>
+                    <div class="space-y-2">
+                        ${Object.entries(PAYMENT_COLORS).map(([key, color]) => `
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
+                                <span class="text-sm">${camelCaseToTitleCase(key)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
             </div>
         `;
+        mapInstance.getContainer().appendChild(legendControl);
 
-        legendSection.innerHTML = legendContent;
-    }, [SITE_TYPES, mapLoaded, site_name]);
+        // Add hide button for legend
+        const hideLegendButton = document.createElement('button');
+        hideLegendButton.innerHTML = '🔽';
+        hideLegendButton.className = 'bg-white rounded-md p-1 absolute left-4 shadow-lg';
+        hideLegendButton.style.zIndex = '1';
+        hideLegendButton.style.marginTop = '5px';
+        hideLegendButton.style.top = '0px';
+        hideLegendButton.onclick = () => {
+            const isHidden = legendControl.style.display === 'none';
+            legendControl.style.display = isHidden ? 'block' : 'none';
+            hideLegendButton.innerHTML = isHidden ? '🔽' : '🔼';
+        };
+        mapInstance.getContainer().appendChild(hideLegendButton);
+
+        // Add hide button for controls
+        const hideControlsButton = document.createElement('button');
+        hideControlsButton.innerHTML = '🔽';
+        hideControlsButton.className = 'bg-white rounded-md p-1 absolute right-4 shadow-lg';
+        hideControlsButton.style.zIndex = '1';
+        hideControlsButton.style.marginTop = '5px';
+        hideControlsButton.onclick = () => {
+            const isHidden = dataTypeToggleControl.style.display === 'none';
+            dataTypeToggleControl.style.display = isHidden ? 'block' : 'none';
+            hideControlsButton.innerHTML = isHidden ? '🔽' : '🔼';
+        };
+        mapInstance.getContainer().appendChild(hideControlsButton);
+
+        // Add toggle functionality
+        ['stations', 'payments'].forEach(type => {
+            const button = document.getElementById(`toggle-${type}`);
+            if (button) {
+                button.addEventListener('click', () => {
+                    // Update button styles
+                    ['stations', 'payments'].forEach(t => {
+                        const btn = document.getElementById(`toggle-${t}`);
+                        if (btn) {
+                            if (t === type) {
+                                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                                btn.classList.add('bg-blue-100', 'text-blue-700');
+                            } else {
+                                btn.classList.remove('bg-blue-100', 'text-blue-700');
+                                btn.classList.add('bg-gray-100', 'text-gray-700');
+                            }
+                        }
+                    });
+
+                    // Show/hide layers
+                    ['stations', 'payments'].forEach(t => {
+                        const visibility = t === type ? 'visible' : 'none';
+                        if (mapInstance.getLayer(`${t}-points`)) {
+                            mapInstance.setLayoutProperty(`${t}-points`, 'visibility', visibility);
+                        }
+                    });
+
+                    // Update legend
+                    ['stations', 'payments'].forEach(t => {
+                        const legendSection = document.getElementById(`legend-${t}`);
+                        if (legendSection) {
+                            legendSection.style.display = t === type ? 'block' : 'none';
+                        }
+                    });
+                });
+            }
+        });
+    }, [mapLoaded, sourcesInitialized, site_name, SITE_TYPES]);
 
     return (
         <div

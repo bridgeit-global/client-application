@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useBillerBoardStore } from '@/lib/store/biller-board-store';
 import { snakeToTitle } from '@/lib/utils/string-format';
 import { useSiteName } from '@/lib/utils/site';
+import { useSiteType } from '@/hooks/use-site-type';
 
 interface FilterChipsProps {
   filterBody: Record<string, any>;
@@ -27,6 +28,43 @@ export default function FilterChips({
   const router = useRouter();
   const pathname = usePathname();
   const site_name = useSiteName();
+  const siteTypes = useSiteType();
+  
+  // Get valid site type values
+  const validSiteTypes = siteTypes.map(t => t.value.toLowerCase());
+  
+  // Auto-remove invalid 'type' filter values on mount and when filterBody changes
+  useEffect(() => {
+    if (filterBody.type && validSiteTypes.length > 0) {
+      const typeValues = Array.isArray(filterBody.type) 
+        ? filterBody.type 
+        : filterBody.type.split(',').map((v: string) => v.trim());
+      
+      const validTypes = typeValues.filter((t: string) => 
+        validSiteTypes.includes(t.toLowerCase())
+      );
+      
+      // If no valid types remain or some were filtered out, update the filter
+      if (validTypes.length === 0) {
+        setFilterBody((prev) => {
+          const newFilterBody = { ...prev, type: null };
+          if (createQueryString) {
+            router.push(`${pathname}?${createQueryString(newFilterBody)}`, { scroll: false });
+          }
+          return newFilterBody;
+        });
+      } else if (validTypes.length !== typeValues.length) {
+        // Some invalid types were removed
+        setFilterBody((prev) => {
+          const newFilterBody = { ...prev, type: validTypes.join(',') };
+          if (createQueryString) {
+            router.push(`${pathname}?${createQueryString(newFilterBody)}`, { scroll: false });
+          }
+          return newFilterBody;
+        });
+      }
+    }
+  }, [filterBody.type, validSiteTypes.length]);
 
   const STATUS_MAPPINGS = {
     is_active: {
@@ -119,10 +157,22 @@ export default function FilterChips({
     return snakeToTitle(key);
   };
 
+  // Check if a type value is valid
+  const isValidTypeValue = (value: any): boolean => {
+    if (!value || validSiteTypes.length === 0) return true; // Allow if still loading
+    const typeValues = Array.isArray(value) 
+      ? value 
+      : String(value).split(',').map((v: string) => v.trim());
+    return typeValues.some((t: string) => validSiteTypes.includes(t.toLowerCase()));
+  };
+
   return (
     <div className="flex flex-wrap gap-2">
       {Object.entries(filterBody).map(([key, value]) => {
         if (!value || key === 'limit' || key === 'page' || key === 'sort' || key === 'order') return null;
+        
+        // Skip displaying invalid type filters
+        if (key === 'type' && !isValidTypeValue(value)) return null;
 
         return (
           <Button

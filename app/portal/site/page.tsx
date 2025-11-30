@@ -25,6 +25,7 @@ interface SummaryType {
 interface StationMapItem {
   id: string;
   type: string;
+  zone_id: string;
   latitude: number;
   longitude: number;
 }
@@ -67,7 +68,7 @@ async function SiteOverview() {
     ] = await Promise.all([
       supabase.rpc('get_site_type_summary'),
       supabase.rpc('get_connection_paytype_summary'),
-      supabase.from('sites').select('id,type,latitude,longitude').eq('is_active', true),
+      supabase.from('sites').select('id,type,zone_id,latitude,longitude').eq('is_active', true),
       supabase
         .from('connections')
         .select(`
@@ -106,6 +107,7 @@ async function SiteOverview() {
     const station_type_map = (raw_station_type_map as StationMapItem[]).map((item) => ({
       id: item.id,
       station_type: item.type,
+      zone_id: item.zone_id,
       latitude: item.latitude,
       longitude: item.longitude
     }));

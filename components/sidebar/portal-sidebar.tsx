@@ -14,6 +14,7 @@ import { useSiteName } from '@/lib/utils/site';
 export function PortalSidebar() {
     const site_name = useSiteName();
     const navItems: NavItem[] = getNavItems(site_name);
+    console.log('site_name', site_name)
 
     return (
         <Sidebar collapsible='offcanvas' variant='sidebar'>

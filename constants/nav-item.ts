@@ -1,4 +1,3 @@
-import { useSiteName } from '@/lib/utils/site';
 import { NavItem } from '@/types';
 
 //Info: The following data is used for the sidebar navigation and Cmd K bar.

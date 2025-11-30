@@ -116,6 +116,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
     const map = useRef<mapboxgl.Map | null>(null);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [sourcesInitialized, setSourcesInitialized] = useState(false);
+    const [activeMapType, setActiveMapType] = useState<MapType>('stations');
     const prevSiteTypesRef = useRef<string>('');
     const popupRef = useRef<mapboxgl.Popup | null>(null);
     // Separate markers for each type
@@ -286,7 +287,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                     data,
                     cluster: true,
                     clusterMaxZoom: 14,
-                    clusterRadius: 50,
+                    clusterRadius: 100,
                     clusterProperties: config.clusterProperties
                 });
 
@@ -342,21 +343,29 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                 }
             });
 
-            // Update markers function
+            // Update markers function - only for the active type
             const updateAllMarkers = () => {
                 ['stations', 'payments'].forEach(type => {
                     const sourceId = `${type}-source`;
                     if (!mapInstance.getSource(sourceId) || !mapInstance.isSourceLoaded(sourceId)) return;
 
                     const config = getMapConfig(type as MapType);
-                    updateMarkers(
-                        mapInstance,
-                        markers.current[type as MapType],
-                        markersOnScreen.current[type as MapType],
-                        config.chartCreator,
-                        sourceId,
-                        type as MapType
-                    );
+                    
+                    // Only update markers for the active type, hide others
+                    if (type === activeMapType) {
+                        updateMarkers(
+                            mapInstance,
+                            markers.current[type as MapType],
+                            markersOnScreen.current[type as MapType],
+                            config.chartCreator,
+                            sourceId,
+                            type as MapType
+                        );
+                    } else {
+                        // Hide markers for inactive type
+                        Object.values(markersOnScreen.current[type as MapType]).forEach(marker => marker.remove());
+                        markersOnScreen.current[type as MapType] = {};
+                    }
                 });
             };
 
@@ -461,7 +470,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
         } catch (error) {
             // Handle source initialization error silently
         }
-    }, [mapLoaded, stationsData, paymentsData, SITE_TYPES, getMapConfig, convertToGeoJSON, router, site_name, sourcesInitialized]);
+    }, [mapLoaded, stationsData, paymentsData, SITE_TYPES, getMapConfig, convertToGeoJSON, router, site_name, sourcesInitialized, activeMapType]);
 
     // Setup UI controls (legend and toggle buttons)
     useEffect(() => {
@@ -592,10 +601,43 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                             legendSection.style.display = t === type ? 'block' : 'none';
                         }
                     });
+
+                    // Update active map type to trigger marker visibility change
+                    setActiveMapType(type as MapType);
                 });
             }
         });
     }, [mapLoaded, sourcesInitialized, site_name, SITE_TYPES]);
+
+    // Handle marker visibility when activeMapType changes
+    useEffect(() => {
+        if (!map.current || !sourcesInitialized) return;
+
+        const mapInstance = map.current;
+
+        // Show/hide markers based on active type
+        ['stations', 'payments'].forEach(type => {
+            if (type === activeMapType) {
+                // For the active type, we need to update markers
+                const sourceId = `${type}-source`;
+                if (mapInstance.getSource(sourceId) && mapInstance.isSourceLoaded(sourceId)) {
+                    const config = getMapConfig(type as MapType);
+                    updateMarkers(
+                        mapInstance,
+                        markers.current[type as MapType],
+                        markersOnScreen.current[type as MapType],
+                        config.chartCreator,
+                        sourceId,
+                        type as MapType
+                    );
+                }
+            } else {
+                // Hide markers for inactive type
+                Object.values(markersOnScreen.current[type as MapType]).forEach(marker => marker.remove());
+                markersOnScreen.current[type as MapType] = {};
+            }
+        });
+    }, [activeMapType, sourcesInitialized, getMapConfig]);
 
     return (
         <div

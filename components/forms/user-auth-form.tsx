@@ -160,6 +160,24 @@ export default function PhoneOtpForm({ users }: { users: any }) {
     }
     setOtp('');
 
+    // Revoke all previous sessions for this user (single active session enforcement)
+    // This is done asynchronously and won't block the login flow
+    if (data.user?.id) {
+      try {
+        await fetch('/api/auth/revoke-sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: data.user.id }),
+        });
+        // Silently handle errors - don't block login if session revocation fails
+      } catch (error) {
+        console.error('Failed to revoke previous sessions:', error);
+      }
+    }
+
+
     // Check if user has org_id in metadata
     const userOrgId = data.user?.user_metadata?.org_id;
     const isOperator = data.user?.user_metadata?.role === 'operator';

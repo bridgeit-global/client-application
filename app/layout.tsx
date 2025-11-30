@@ -6,6 +6,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeGate } from '@/components/theme-gate';
 import { PublicBackground } from '@/components/public-background';
+import { AuthProvider } from '@/components/providers/auth-provider';
 
 export const metadata: Metadata = {
   title: 'BridgeIT - Specialized ERP for Energy Management',
@@ -27,9 +28,11 @@ export default function RootLayout({
       <body style={{ height: '100%', overflowY: 'auto' }}>
         <NextTopLoader showSpinner={false} color="#facc14" />
         <Toaster />
-        <ThemeGate />
-        <PublicBackground />
-        {children}
+        <AuthProvider>
+          <ThemeGate />
+          <PublicBackground />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

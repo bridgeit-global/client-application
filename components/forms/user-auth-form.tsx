@@ -160,6 +160,24 @@ export default function PhoneOtpForm({ users }: { users: any }) {
     }
     setOtp('');
 
+    // Revoke all previous sessions for this user (single active session enforcement)
+    // This is done asynchronously and won't block the login flow
+    if (data.user?.id) {
+      try {
+        await fetch('/api/auth/revoke-sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: data.user.id }),
+        });
+        // Silently handle errors - don't block login if session revocation fails
+      } catch (error) {
+        console.error('Failed to revoke previous sessions:', error);
+      }
+    }
+
+
     // Check if user has org_id in metadata
     const userOrgId = data.user?.user_metadata?.org_id;
     const isOperator = data.user?.user_metadata?.role === 'operator';
@@ -389,6 +407,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                   id="phone"
                   type="tel"
                   maxLength={10}
+                  autoComplete="off"
                   placeholder="Enter your phone number"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
@@ -590,6 +609,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                 Email Address {role === 'operator' && <span className="text-gray-500 text-sm">(Optional)</span>}
               </Label>
               <Input
+                autoComplete="off"
                 disabled={email.length > 0 || isLoader}
                 id="email"
                 type="email"

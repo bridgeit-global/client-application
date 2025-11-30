@@ -3,14 +3,26 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 export const runtime = 'nodejs';
 
+
 export async function middleware(request: NextRequest) {
-  // Block OPTIONS method to prevent information disclosure
-  // OPTIONS is used for CORS preflight, but we can handle CORS in API routes if needed
+  const allowedOrigins = ['https://www.bridgeit.in', 'http://localhost:3000','https://bridgeit.in'];
+  // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
-    const response = new NextResponse(null, { status: 405 });
-    response.headers.set('Allow', 'GET, POST, PUT, PATCH, DELETE, HEAD');
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
+    const response = new NextResponse(null, { status: 200 });
+    
+    const origin = request.headers.get('origin');
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+    } else {
+      // Default to the production domain if origin is not in the list or missing
+      // This ensures strict security while allowing the main domain
+      response.headers.set('Access-Control-Allow-Origin', 'https://www.bridgeit.in');
+    }
+
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info, apikey, X-CSRF-Token');
+    response.headers.set('Access-Control-Max-Age', '86400');
     return response;
   }
 
@@ -25,7 +37,21 @@ export async function middleware(request: NextRequest) {
   }
 
   // update user's auth session (security headers are already added in updateSession)
-  return await updateSession(request);
+  const response = await updateSession(request);
+
+  // Add CORS headers to all responses
+  const origin = request.headers.get('origin');
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+  } else {
+    response.headers.set('Access-Control-Allow-Origin', 'https://www.bridgeit.in');
+  }
+  
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info, apikey, X-CSRF-Token');
+
+  return response;
 }
 
 export const config = {

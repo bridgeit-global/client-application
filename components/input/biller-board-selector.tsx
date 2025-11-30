@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import MultipleSelector, { Option } from '@/components/ui/multiple-selector';
 import { useBillerBoardStore } from '@/lib/store/biller-board-store';
@@ -17,6 +17,14 @@ export function BillerBoardSelector({
   defaultValue
 }: BillerBoardSelectorProps) {
   const billerBoards = useBillerBoardStore((state) => state.billers);
+  const fetchBillers = useBillerBoardStore((state) => state.fetchBillers);
+
+  // Fetch billers if not available
+  useEffect(() => {
+    if (!billerBoards || billerBoards.length === 0) {
+      fetchBillers();
+    }
+  }, [billerBoards, fetchBillers]);
 
   const handleSelectChange = (selectedOptions: any) => {
     onChange(selectedOptions.map((option: any) => getBillerId(option?.value)));

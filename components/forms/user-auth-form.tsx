@@ -389,6 +389,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                   id="phone"
                   type="tel"
                   maxLength={10}
+                  autoComplete="off"
                   placeholder="Enter your phone number"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
@@ -590,6 +591,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                 Email Address {role === 'operator' && <span className="text-gray-500 text-sm">(Optional)</span>}
               </Label>
               <Input
+                autoComplete="off"
                 disabled={email.length > 0 || isLoader}
                 id="email"
                 type="email"

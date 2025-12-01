@@ -13,9 +13,7 @@ import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 export function PDFViewer({ pdfUrl }: { pdfUrl: string }) {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
   return (
-    <Worker
-      workerUrl={'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'}
-    >
+    <Worker workerUrl="/pdf.worker.min.js">
       <div className="mt-10 md:mt-4" style={{ height: 'calc(100vh - 100px)' }}>
         <Viewer fileUrl={pdfUrl} plugins={[defaultLayoutPluginInstance]} />
       </div>

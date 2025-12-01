@@ -14,7 +14,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useUserStore } from '@/lib/store/user-store';
 import { useBillerBoardStore } from '@/lib/store/biller-board-store';
 import { LoadingButton } from '../buttons/loading-button';
-// import { Button } from '../ui/button';
+import { Turnstile } from '@marsidev/react-turnstile'
+
+
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
 const supabase = createClient();
@@ -41,6 +43,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
   const [otpResendTimer, setOtpResendTimer] = useState(30);
   const [canResendOtp, setCanResendOtp] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>(undefined)
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +76,8 @@ export default function PhoneOtpForm({ users }: { users: any }) {
 
     if (phoneNumber.length === 10) {
       const { error } = await supabase.auth.signInWithOtp({
-        phone: '+91' + phoneNumber
+        phone: '+91' + phoneNumber,
+        options: { captchaToken },
       });
 
       if (error) {
@@ -415,6 +419,12 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                   disabled={isLoader}
                 />
               </div>
+              <Turnstile
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
+                onSuccess={(token) => {
+                  setCaptchaToken(token)
+                }}
+              />
               <LoadingButton
                 loading={isLoader}
                 type="submit"

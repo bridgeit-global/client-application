@@ -15,12 +15,12 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   // Note: 'unsafe-inline' and 'unsafe-eval' are required for Next.js hydration
   const cspPolicy = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://*.vercel-scripts.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://*.vercel-scripts.com https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https://utfs.io https://*.supabase.co https://*.supabase.in https://api.mapbox.com https://*.tiles.mapbox.com",
     "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://uploadthing.com https://vercel.live https://*.vercel-scripts.com",
-    "frame-src 'self' https://uploadthing.com",
+    "frame-src 'self' https://uploadthing.com https://challenges.cloudflare.com",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

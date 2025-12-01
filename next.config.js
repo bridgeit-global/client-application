@@ -28,7 +28,7 @@ const nextConfig = {
     const cspPolicy = [
       "default-src 'self'",
       // Scripts: Allow self, inline (Next.js requires), eval (some Next.js features), and Vercel Analytics
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://*.vercel-scripts.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://*.vercel-scripts.com https://challenges.cloudflare.com",
       // Styles: Allow self, inline (Next.js requires), and Google Fonts
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Fonts: Allow self, Google Fonts, and data URIs
@@ -38,7 +38,7 @@ const nextConfig = {
       // Connections: Allow self, Supabase (HTTPS and WebSocket), Mapbox, UploadThing, and Vercel
       "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://uploadthing.com https://vercel.live https://*.vercel-scripts.com",
       // Frames: Allow self and UploadThing for file uploads
-      "frame-src 'self' https://uploadthing.com",
+      "frame-src 'self' https://uploadthing.com https://challenges.cloudflare.com",
       // Workers: Allow self and blob URIs for service workers
       "worker-src 'self' blob:",
       // Disable plugins/objects

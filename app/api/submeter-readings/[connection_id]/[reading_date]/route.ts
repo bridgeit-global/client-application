@@ -5,10 +5,11 @@ import { updateSubmeterReading, deleteSubmeterReading, getSubmeterReading } from
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { connection_id: string; reading_date: string } }
+    { params }: { params: Promise<{ connection_id: string; reading_date: string }> }
 ) {
     try {
-        const result = await getSubmeterReading(params.connection_id, params.reading_date);
+        const { connection_id, reading_date } = await params;
+        const result = await getSubmeterReading(connection_id, reading_date);
 
         if (result.error) {
             const handledError = logAndHandleDatabaseError(result.error, 'fetch');
@@ -28,9 +29,10 @@ export async function GET(
 
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { connection_id: string; reading_date: string } }
+    { params }: { params: Promise<{ connection_id: string; reading_date: string }> }
 ) {
     try {
+        const { connection_id, reading_date } = await params;
         const body = await req.json();
 
         if (body.start_reading === undefined || body.end_reading === undefined) {
@@ -44,7 +46,7 @@ export async function PUT(
             ...body
         };
 
-        const result = await updateSubmeterReading(params.connection_id, params.reading_date, updateData);
+        const result = await updateSubmeterReading(connection_id, reading_date, updateData);
 
         if (result.error) {
             const handledError = logAndHandleDatabaseError(result.error, 'update');
@@ -64,10 +66,11 @@ export async function PUT(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { connection_id: string; reading_date: string } }
+    { params }: { params: Promise<{ connection_id: string; reading_date: string }> }
 ) {
     try {
-        const result = await deleteSubmeterReading(params.connection_id, params.reading_date);
+        const { connection_id, reading_date } = await params;
+        const result = await deleteSubmeterReading(connection_id, reading_date);
 
         if (result.error) {
             const handledError = logAndHandleDatabaseError(result.error, 'delete');
@@ -79,4 +82,4 @@ export async function DELETE(
         console.error('Error deleting submeter reading:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-} 
+}

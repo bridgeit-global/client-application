@@ -9,7 +9,6 @@ import { getPrepaidBalance } from "@/lib/utils"
 import { formatRupees } from '@/lib/utils/number-format';
 import { SearchParamsProps } from "@/types"
 import 'mapbox-gl/dist/mapbox-gl.css'
-import dynamic from 'next/dynamic'
 import StatusBadge from "@/components/badges/status-badge"
 import IsActiveBadge from "@/components/badges/is-active-badge"
 import { getLatestBill, getLatestRecharge } from "@/lib/utils/bill"
@@ -17,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { fetchOrganization } from "@/services/organization"
 import { SiteAccountBoardCell } from "@/components/table-cells/site-account-board-cell"
 import { useSiteName } from "@/lib/utils/site"
-const MapComponent = dynamic(() => import('@/components/Map'), { ssr: false })
+import { SiteProfileMap } from "@/components/maps/site-profile-map"
 
 export default async function Page({
     searchParams
@@ -283,7 +282,7 @@ export default async function Page({
                                 </CardHeader>
                                 <CardContent>
                                     <div className="h-[300px] w-full">
-                                        <MapComponent
+                                        <SiteProfileMap
                                             latitude={site?.latitude ?? 0}
                                             longitude={site?.longitude ?? 0}
                                         />

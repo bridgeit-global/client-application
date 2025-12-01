@@ -171,12 +171,12 @@ async function fetchMeterReadingsForBills(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { table: string } }
+  { params }: { params: Promise<{ table: string }> }
 ) {
+  const { table } = await params;
   const referer = request?.headers.get('referer') || '';
   const param = referer.split('/').slice(-1)[0].split("?")[0]
   const searchParams = getParams(referer);
-  const { table } = params;
   console.log(table)
   try {
     let fetchData: any = [];

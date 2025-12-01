@@ -12,13 +12,16 @@ export default async function Page({
     searchParams,
     params,
 }: {
-    searchParams: SearchParamsProps,
-    params: { id: string }
+    searchParams: Promise<SearchParamsProps>,
+    params: Promise<{ id: string }>
 }) {
-    const filterBody = searchParams?.postpaid ? JSON?.parse(searchParams?.postpaid) : {}
-    const prepaidFilterBody = searchParams?.prepaid ? JSON?.parse(searchParams?.prepaid) : {}
-    const { pageCount, data, totalCount, allData } = await fetchBillsInBatches({ ...filterBody, batch_id: params?.id || '' })
-    const { pageCount: prepaidPageCount, data: prepaidData, totalCount: prepaidTotalCount, allData: prepaidAllData } = await fetchRechargesInBatches({ ...prepaidFilterBody, batch_id: params?.id || '' })
+    const [resolvedSearchParams, resolvedParams] = await Promise.all([searchParams, params]);
+    const { id } = resolvedParams;
+    
+    const filterBody = resolvedSearchParams?.postpaid ? JSON?.parse(resolvedSearchParams?.postpaid) : {}
+    const prepaidFilterBody = resolvedSearchParams?.prepaid ? JSON?.parse(resolvedSearchParams?.prepaid) : {}
+    const { pageCount, data, totalCount, allData } = await fetchBillsInBatches({ ...filterBody, batch_id: id || '' })
+    const { pageCount: prepaidPageCount, data: prepaidData, totalCount: prepaidTotalCount, allData: prepaidAllData } = await fetchRechargesInBatches({ ...prepaidFilterBody, batch_id: id || '' })
     const prepaidTotalAmount = prepaidAllData?.reduce((acc, curr) => acc + (curr.recharge_amount || 0), 0) || 0;
     const postpaidTotalAmount = allData?.reduce((acc, curr) => acc + (curr.approved_amount || 0), 0) || 0;
     const totalAmount = prepaidTotalAmount + postpaidTotalAmount;
@@ -72,11 +75,11 @@ export default async function Page({
     return (
         <div id="bill-batches" className="space-y-6">
             <BatchFundsOverviewCard />
-            {params?.id &&
+            {id &&
                 <BatchAction
                     batchCreatedAt={batch?.created_at || ''}
                     batchValidTill={batch?.validate_at || ''}
-                    batchId={params?.id || ''}
+                    batchId={id || ''}
                     batchStatus={batch?.batch_status || ''}
                     totalAmount={totalAmount}
                     totalBills={totalCount}
@@ -114,4 +117,3 @@ export default async function Page({
     )
 
 }
-

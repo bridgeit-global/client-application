@@ -1,10 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-export const runtime = 'nodejs';
-
-
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const allowedOrigins = ['https://www.bridgeit.in', 'http://localhost:3000','https://bridgeit.in'];
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {

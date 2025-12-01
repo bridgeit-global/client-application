@@ -5,15 +5,16 @@ import { NextResponse } from 'next/server';
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const supabase = createPublicClient();
 
         const { data, error } = await supabase
             .from('blog_posts')
             .select('*')
-            .eq('id', params.id)
+            .eq('id', id)
             .single();
 
         if (error) {
@@ -33,9 +34,10 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const body = await request.json();
         const { title, excerpt, content, published } = body;
 
@@ -47,7 +49,7 @@ export async function PATCH(
             const { data, error } = await supabase
                 .from('blog_posts')
                 .update({ published })
-                .eq('id', params.id)
+                .eq('id', id)
                 .select()
                 .single();
 
@@ -68,7 +70,7 @@ export async function PATCH(
             .from('blog_posts')
             .select('id')
             .eq('slug', toKebabCase(title))
-            .neq('id', params.id)
+            .neq('id', id)
             .single();
 
         if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
@@ -89,7 +91,7 @@ export async function PATCH(
                 content,
                 published: published || false,
             })
-            .eq('id', params.id)
+            .eq('id', id)
             .select()
             .single();
 
@@ -106,15 +108,16 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const supabase = createPublicClient();
 
         const { error } = await supabase
             .from('blog_posts')
             .delete()
-            .eq('id', params.id);
+            .eq('id', id);
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
@@ -125,4 +128,4 @@ export async function DELETE(
         console.error('Error deleting blog post:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-} 
+}

@@ -1,25 +1,41 @@
 /** @type {import('next').NextConfig} */
 const { version } = require('./package.json');
-const webpack = require('webpack');
 
 const nextConfig = {
+  // Turbopack configuration for development
+  turbopack: {
+    root: __dirname,
+  },
+  // Webpack configuration for production builds
   webpack: (config, { isServer }) => {
+    // Disable canvas native module (used by pdfjs-dist)
     config.resolve.alias.canvas = false;
     
-    // Define version at build time
-    config.plugins.push(
-      new webpack.DefinePlugin({
-        'process.env.APP_VERSION': JSON.stringify(version),
-      })
-    );
+    // Handle keyv dynamic requires (used by mapbox-gl-geocoder)
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
     
     return config;
   },
-  images: {
-    domains: ['utfs.io']
+  // Externalize native Node.js packages for server-side
+  serverExternalPackages: ['canvas', '@mapbox/mapbox-sdk'],
+  // Environment variables
+  env: {
+    APP_VERSION: version,
   },
-  eslint: {
-    ignoreDuringBuilds: true
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
+      },
+    ],
   },
   async headers() {
     // Content Security Policy configuration

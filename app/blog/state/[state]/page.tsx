@@ -7,15 +7,17 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ddmmyy } from "@/lib/utils/date-format";
 
-export async function generateMetadata({ params }: { params: { state: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ state: string }> }) {
+    const { state } = await params;
     return {
-        title: `${params.state} Electricity Billing Resources - BridgeIT`,
-        description: `Learn about electricity billing processes and DISCOM information for ${params.state}`,
+        title: `${state} Electricity Billing Resources - BridgeIT`,
+        description: `Learn about electricity billing processes and DISCOM information for ${state}`,
     };
 }
 
-export default async function StateBlogPage({ params }: { params: { state: string } }) {
-    const posts = await getBlogPostsByState(params.state);
+export default async function StateBlogPage({ params }: { params: Promise<{ state: string }> }) {
+    const { state } = await params;
+    const posts = await getBlogPostsByState(state);
 
     if (!posts.length) {
         notFound();
@@ -32,10 +34,10 @@ export default async function StateBlogPage({ params }: { params: { state: strin
                 </Button>
 
                 <h1 className="text-3xl font-bold mb-4">
-                    {params.state} Electricity Billing Resources
+                    {state} Electricity Billing Resources
                 </h1>
                 <p className="text-xl text-muted-foreground">
-                    Information about electricity providers and billing processes in {params.state}
+                    Information about electricity providers and billing processes in {state}
                 </p>
             </div>
 
@@ -65,4 +67,4 @@ export default async function StateBlogPage({ params }: { params: { state: strin
             </div>
         </div>
     );
-} 
+}

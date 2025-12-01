@@ -6,9 +6,10 @@ import { notFound } from 'next/navigation';
 export default async function Page({
     params
 }: {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }) {
-    const { data, error } = await fetchSingleBill(params);
+    const { id } = await params;
+    const { data, error } = await fetchSingleBill({ id });
     
     // Handle error cases
     if (error) {

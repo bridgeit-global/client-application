@@ -7,8 +7,9 @@ import { ArrowLeft } from "lucide-react";
 import { BlogSearch } from "@/components/blog/search";
 import { ddmmyy } from "@/lib/utils/date-format";
 
-export async function generateMetadata({ searchParams }: { searchParams: { q: string } }) {
-    const query = searchParams.q || "";
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q: string }> }) {
+    const { q } = await searchParams;
+    const query = q || "";
 
     return {
         title: `Search Results: ${query} - BridgeIT Blog`,
@@ -16,8 +17,9 @@ export async function generateMetadata({ searchParams }: { searchParams: { q: st
     };
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: { q: string } }) {
-    const query = searchParams.q || "";
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q: string }> }) {
+    const { q } = await searchParams;
+    const query = q || "";
     const posts = query ? await searchBlogPosts(query) : [];
 
     return (
@@ -76,4 +78,4 @@ export default async function SearchPage({ searchParams }: { searchParams: { q: 
             )}
         </div>
     );
-} 
+}

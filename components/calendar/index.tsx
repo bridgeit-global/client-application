@@ -124,13 +124,13 @@ const getPathByStatusAndType = (status: string, type: string): string | undefine
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  new: '#fbbc04',
-  approved: '#fbbc04',
-  batch: '#fbbc04',
-  payment: '#666',
-  paid: '#34a853',
-  rejected: '#d32f2f',
-  default: '#666'
+  new: '#f59e0b',
+  approved: '#8b5cf6',
+  batch: '#06b6d4',
+  payment: '#64748b',
+  paid: '#10b981',
+  rejected: '#ef4444',
+  default: '#64748b'
 };
 
 const getStatusColor = (status: string): string => {

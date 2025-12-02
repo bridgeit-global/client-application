@@ -22,7 +22,7 @@ type ConnectionResult = {
 export const fetchConnectionDetails = cache(
     async (searchParams: SearchParamsProps): Promise<ConnectionResult> => {
         const { id } = searchParams;
-        const supabase = createClient(); // Assuming Supabase client is properly set up
+        const supabase = await createClient(); // Assuming Supabase client is properly set up
         let query = supabase
             .from('connections')
             .select(`id,site_id, paytype, biller_id, parameters`)

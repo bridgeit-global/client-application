@@ -3,10 +3,11 @@ import { SearchParamsProps } from '@/types';
 import { fetchPaymentGatewayTransactions } from '@/services/payments';
 import { TransactionTable } from '@/components/tables/payment/transaction-table';
 type paramsProps = {
-  searchParams: SearchParamsProps;
+  searchParams: Promise<SearchParamsProps>;
 };
 
-export default async function page({ searchParams }: paramsProps) {
+export default async function page(props: paramsProps) {
+  const searchParams = await props.searchParams;
   const status = 'others';
   const filterBody = searchParams[status] ? JSON?.parse(searchParams[status]) : {};
   const { pageCount, data, totalCount } = await fetchPaymentGatewayTransactions(filterBody, { status });

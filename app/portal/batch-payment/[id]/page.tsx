@@ -3,13 +3,14 @@ import { fetchBillPayments } from "@/services/payments"
 import type { SearchParamsProps } from "@/types"
 import { filterIncreaseAmountRecords } from "@/lib/utils"
 
-export default async function Page({
-    searchParams,
-    params,
-}: {
-    searchParams: SearchParamsProps
-    params: SearchParamsProps
-}) {
+export default async function Page(
+    props: {
+        searchParams: Promise<SearchParamsProps>
+        params: Promise<SearchParamsProps>
+    }
+) {
+    const params = await props.params;
+    const searchParams = await props.searchParams;
     const { id } = params
     if (id) {
         const { pageCount, data, totalCount, allBills } = await fetchBillPayments(searchParams, { batch_id: id });

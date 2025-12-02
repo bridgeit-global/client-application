@@ -3,11 +3,12 @@ import { BatchTable } from '@/components/tables/batch/batch-table';
 import { fetchAllBatches } from '@/services/batches';
 import { SearchParamsProps } from '@/types';
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { data: allBatches, pageCount, totalCount } = await fetchAllBatches(searchParams);
   return (
     <div className="space-y-8">

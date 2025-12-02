@@ -61,7 +61,7 @@ export const fetchSingleBill = async (
   searchParams: SearchParamsProps
 ): Promise<SingleResult<SingleBillProps>> => {
   // Initialize the Supabase client
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // Validate the ID parameter
   if (!searchParams.id) {
@@ -137,7 +137,7 @@ export const fetchSingleBill = async (
 };
 
 export const fetchBillRecords = cache(async (): Promise<CardResult> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from('bills')
@@ -227,7 +227,7 @@ export const fetchNewBills = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<AllBillTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       bill_date_end,
       bill_date_start,
@@ -421,7 +421,7 @@ export const fetchApprovedPostpaidBills = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<AllBillTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       bill_date_end,
       bill_date_start,
@@ -617,7 +617,7 @@ export const fetchPostpaidAllBills = cache(async (searchParams: SearchParamsProp
     type
   } = searchParams;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   let query = supabase
     .from('bills')
     .select(
@@ -692,7 +692,7 @@ export const fetchAllBills = cache(
     const offset = (Number(page) - 1) * pageLimit;
 
     // Initialize the Supabase client
-    const supabase = createClient(); // Assuming Supabase client is properly set up
+    const supabase = await createClient(); // Assuming Supabase client is properly set up
 
     let query = supabase
       .from('bills')
@@ -797,7 +797,7 @@ export const fetchAllBills = cache(
 );
 
 export const fetchPrepaidAllBills = cache(async (searchParams: SearchParamsProps): Promise<Result<any>> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     type
   } = searchParams;
@@ -904,7 +904,7 @@ export const fetchLowBalanceConnections = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<LowBalanceConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       biller_id,
       site_id,
@@ -1018,7 +1018,7 @@ export const fetchApprovedPrepaidRecharges = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<PrepaidRechargeTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       recharge_date_end,
       recharge_date_start,
@@ -1153,7 +1153,7 @@ export const fetchBillRecommendations = cache(async (): Promise<{
   currentDueBillsData: AllBillTableProps[] | null;
   nextSevenDaysBillsData: AllBillTableProps[] | null;
 }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const today = new Date().toISOString().split('T')[0];
 
   // Get total bills count
@@ -1226,7 +1226,7 @@ export const fetchRechargeRecommendations = cache(async (): Promise<{
   currentDueRechargesData: PrepaidRechargeTableProps[] | null;
   nextSevenDaysRechargesData: PrepaidRechargeTableProps[] | null;
 }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const today = new Date().toISOString().split('T')[0];
 
   // Get total bills count

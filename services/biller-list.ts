@@ -4,7 +4,7 @@ import { BillerListProps } from '@/types/biller-list-type';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
 
 export const fetchBillers = cache(async () => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: biller_list, error } = await supabase
     .from('biller_list')
     .select('*');

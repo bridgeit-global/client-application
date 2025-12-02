@@ -17,7 +17,7 @@ export const fetchAllUsers = cache(
     async (
         options?: { is_export?: boolean; pay_type?: number; org_id?: string }
     ): Promise<Result<UserTableProps>> => {
-        const supabase = createClient();
+        const supabase = await createClient();
         let query = supabase
             .from('users')
             .select(`*`, { count: 'estimated' })

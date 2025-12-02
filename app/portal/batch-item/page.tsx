@@ -3,11 +3,12 @@ import { fetchBillsInBatches, fetchRechargesInBatches } from "@/services/batches
 import type { SearchParamsProps } from "@/types"
 import { BatchItemTable } from "@/components/tables/batch/batch-item-table"
 
-export default async function Page({
-    searchParams,
-}: {
-    searchParams: SearchParamsProps
-}) {
+export default async function Page(
+    props: {
+        searchParams: Promise<SearchParamsProps>
+    }
+) {
+    const searchParams = await props.searchParams;
     const filterBody = searchParams?.postpaid ? JSON?.parse(searchParams?.postpaid) : {}
     const prepaidFilterBody = searchParams?.prepaid ? JSON?.parse(searchParams?.prepaid) : {}
     const { pageCount, data, totalCount } = await fetchBillsInBatches(filterBody)
@@ -38,6 +39,5 @@ export default async function Page({
             }
         </div>
     )
-
 }
 

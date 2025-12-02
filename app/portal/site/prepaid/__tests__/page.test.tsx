@@ -92,9 +92,7 @@ describe('Prepaid Page', () => {
                 pageCount: mockConnectionsData.pageCount,
                 totalCount: mockConnectionsData.totalCount,
                 active_count: mockActiveCount.count,
-            },
-                expect.any(Object)
-            );
+            }, undefined);
     });
 
     it('handles API errors gracefully', async () => {

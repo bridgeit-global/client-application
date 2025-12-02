@@ -3,11 +3,12 @@ import EditConnectionForm from '@/components/forms/client-form/edit-connection-f
 import { fetchConnectionDetails } from '@/services/connections';
 import { SearchParamsProps } from '@/types';
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
 
   if (!searchParams.id) {
     return <ConnectionForm paytype={searchParams.paytype} site_id={searchParams.site_id} />

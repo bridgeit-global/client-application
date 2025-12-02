@@ -3,13 +3,14 @@ import { getSubmeterReading } from "@/services/submeter-readings"
 import { notFound } from "next/navigation"
 
 interface PageProps {
-    params: {
+    params: Promise<{
         connection_id: string
         reading_date: string
-    }
+    }>
 }
 
-export default async function EditMeterReadingPage({ params }: PageProps) {
+export default async function EditMeterReadingPage(props: PageProps) {
+    const params = await props.params;
     const { data: reading, error } = await getSubmeterReading(
         params.connection_id,
         params.reading_date

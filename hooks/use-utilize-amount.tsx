@@ -15,7 +15,7 @@ export function useUtilizeAndThresholdAmount() {
     useEffect(() => {
         if (user?.user_metadata?.org_id) {
             execute(async () => {
-                const supabase = createClient();
+                const supabase = await createClient();
                 const { data, error } = await supabase.rpc('is_approved_amount_within_threshold').select().single();
 
                 if (error) throw error;

@@ -56,7 +56,7 @@ async function fetchMeterReadingsForBills(
   table: string,
   param?: string
 ): Promise<any[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // First, query bills with the same filters to get bill IDs

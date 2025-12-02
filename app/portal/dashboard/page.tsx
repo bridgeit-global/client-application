@@ -14,7 +14,7 @@ import { SearchParamsProps } from '@/types';
 
 async function fetchDashboardData(searchParams: SearchParamsProps) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     const [dashboardData, billerBoardWiseData, connectionCostsResponse] = await Promise.all([
       supabase
@@ -51,11 +51,12 @@ async function fetchDashboardData(searchParams: SearchParamsProps) {
   }
 }
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   try {
     const {
       dashboardData,

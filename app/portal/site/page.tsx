@@ -55,7 +55,7 @@ function ErrorDisplay({ error }: { error: Error }) {
 }
 
 async function SiteOverview() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { site_name } = await fetchOrganization();
 
   try {

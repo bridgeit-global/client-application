@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   if (body?.data) {
     try {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getUser();
       console.log('user', user);
       const { data, batchName, validate_at } = body;

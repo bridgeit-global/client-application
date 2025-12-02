@@ -41,7 +41,7 @@ export async function updateSession(request: NextRequest) {
   const isLoginRoute = path === '/login';
   // Home page is not a protected route, so both logged-in and non-logged-in users can access it
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

@@ -136,10 +136,11 @@ function convertToEvents(data: any, submeter_readings: any[] = []): TimelineItem
   return events.filter(event => event.date);
 }
 type paramsProps = {
-  searchParams: SearchParamsProps;
+  searchParams: Promise<SearchParamsProps>;
 };
 
-export default async function Page({ searchParams }: paramsProps) {
+export default async function Page(props: paramsProps) {
+  const searchParams = await props.searchParams;
   const { site_name } = await fetchOrganization();
   const { data, error } = await fetchSiteProfile(searchParams);
   const { id } = searchParams;
@@ -168,7 +169,7 @@ export default async function Page({ searchParams }: paramsProps) {
     );
   }
 
-  
+
   if (data && typeof data === 'object') {
     const {
       account_number,

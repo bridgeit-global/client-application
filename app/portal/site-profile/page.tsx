@@ -18,11 +18,12 @@ import { SiteAccountBoardCell } from "@/components/table-cells/site-account-boar
 import { useSiteName } from "@/lib/utils/site"
 import { SiteProfileMap } from "@/components/maps/site-profile-map"
 
-export default async function Page({
-    searchParams
-}: {
-    searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+    props: {
+        searchParams: Promise<SearchParamsProps>;
+    }
+) {
+    const searchParams = await props.searchParams;
     const { site_name } = await fetchOrganization();
     if (!searchParams.id) {
         notFound()

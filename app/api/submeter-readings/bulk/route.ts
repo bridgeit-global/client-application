@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Fetch current user id for created_by/updated_by
     const user_id = await supabase.auth.getUser().then((res) => res.data.user?.id)

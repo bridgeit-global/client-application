@@ -14,7 +14,7 @@ export type BlogPost = {
 };
 
 export async function getRecentBlogPosts(limit = 6): Promise<BlogPost[]> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     const { data, error } = await supabase
         .from('blog_posts')
@@ -32,7 +32,7 @@ export async function getRecentBlogPosts(limit = 6): Promise<BlogPost[]> {
 }
 
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     const { data, error } = await supabase
         .from('blog_posts')
@@ -49,7 +49,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
 }
 
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     const { data, error } = await supabase
         .from('blog_posts')
@@ -67,7 +67,7 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
 }
 
 export async function getUniqueStates(): Promise<string[]> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     const { data, error } = await supabase
         .from('blog_posts')
@@ -86,7 +86,7 @@ export async function getUniqueStates(): Promise<string[]> {
 }
 
 export async function getBlogPostsByState(state: string): Promise<BlogPost[]> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     const { data, error } = await supabase
         .from('blog_posts')
@@ -104,7 +104,7 @@ export async function getBlogPostsByState(state: string): Promise<BlogPost[]> {
 }
 
 export async function searchBlogPosts(query: string): Promise<BlogPost[]> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     // Search in title, excerpt, and content
     const { data, error } = await supabase
@@ -128,7 +128,7 @@ export async function getRelatedPosts(
     discom: string | null,
     limit = 3
 ): Promise<BlogPost[]> {
-    const supabase = createPublicClient();
+    const supabase = await createPublicClient();
 
     // First try to find posts with the same DISCOM
     if (discom) {

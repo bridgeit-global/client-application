@@ -109,7 +109,7 @@ describe('Sites Page', () => {
             pageCount: mockSitesData.pageCount,
             totalCount: mockSitesData.totalCount,
             active_count: mockActiveCount.count,
-        }, expect.any(Object));
+        }, undefined);
 
         // Verify the rendered content shows correct values
         expect(screen.getByTestId('site-table-data-count')).toHaveTextContent('2');
@@ -159,7 +159,7 @@ describe('Sites Page', () => {
             pageCount: 0,
             totalCount: 0,
             active_count: 0,
-        }, expect.any(Object));
+        }, undefined);
 
         // Verify the rendered content shows zero values
         expect(screen.getByTestId('site-table-data-count')).toHaveTextContent('0');

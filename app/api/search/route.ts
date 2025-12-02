@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   // Prepare the search query by adding :* to enable prefix matching
   // and replacing spaces with & for AND operations
   let searchQuery = query

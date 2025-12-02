@@ -4,10 +4,11 @@ import { SearchParamsProps } from '@/types';
 import { AllBillTable } from '@/components/tables/bill/all-bill-table';
 
 type paramsProps = {
-  searchParams: SearchParamsProps;
+  searchParams: Promise<SearchParamsProps>;
 };
 
-export default async function Page({ searchParams }: paramsProps) {
+export default async function Page(props: paramsProps) {
+  const searchParams = await props.searchParams;
   const { pageCount, data, totalCount } = await fetchAllBills(searchParams);
   return (
     <AllBillTable

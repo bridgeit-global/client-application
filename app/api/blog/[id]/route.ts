@@ -9,7 +9,7 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
-        const supabase = createPublicClient();
+        const supabase = await createPublicClient();
 
         const { data, error } = await supabase
             .from('blog_posts')
@@ -41,7 +41,7 @@ export async function PATCH(
         const body = await request.json();
         const { title, excerpt, content, published } = body;
 
-        const supabase = createPublicClient();
+        const supabase = await createPublicClient();
 
         // Check if we're only updating the published status
         if (Object.keys(body).length === 1 && published !== undefined) {
@@ -112,7 +112,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
-        const supabase = createPublicClient();
+        const supabase = await createPublicClient();
 
         const { error } = await supabase
             .from('blog_posts')

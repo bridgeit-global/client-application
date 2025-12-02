@@ -6,7 +6,7 @@ export const useSiteType = () => {
     const [siteType, setSiteType] = useState<any[]>(SITE_TYPES);
     useEffect(() => {
         const getSiteType = async () => {
-            const supabase = createClient();
+            const supabase = await createClient();
             const { data: { user } } = await supabase.auth.getUser();
             const { data, error } = await supabase
                 .from('org_master')

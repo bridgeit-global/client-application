@@ -5,10 +5,11 @@ import { fetchSubmeterReadings } from "@/services/submeter-readings"
 import { SearchParamsProps } from "@/types"
 
 interface PageProps {
-    searchParams: SearchParamsProps
+    searchParams: Promise<SearchParamsProps>
 }
 
-export default async function MeterReadingPage({ searchParams }: PageProps) {
+export default async function MeterReadingPage(props: PageProps) {
+    const searchParams = await props.searchParams;
     const { data, totalCount, error, pageCount } = await fetchSubmeterReadings(searchParams)
 
     if (error) {

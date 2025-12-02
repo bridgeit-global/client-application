@@ -26,7 +26,7 @@ export const fetchRegistrations = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -108,7 +108,7 @@ export const fetchSingleConnection = async (
   searchParams: SearchParamsProps
 ): Promise<SingleResult> => {
   // Initialize the Supabase client
-  const supabase = createClient(); // Assuming Supabase client is properly set up
+  const supabase = await createClient(); // Assuming Supabase client is properly set up
   const { data, error } = await supabase
     .from('sites')
     .select('*,connections(*)')

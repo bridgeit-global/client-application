@@ -55,7 +55,7 @@ type SiteFormValues = {
 export const fetchSiteDetails = cache(
   async (searchParams: SearchParamsProps): Promise<{ data: SiteFormValues, error: any }> => {
     const { id } = searchParams;
-    const supabase = createClient(); // Assuming Supabase client is properly set up
+    const supabase = await createClient(); // Assuming Supabase client is properly set up
     let query = supabase
       .from('sites')
       .select(`id, name, latitude, longitude, zone_id, type`)
@@ -87,7 +87,7 @@ export const fetchSiteDetails = cache(
 export const fetchSiteProfile = cache(
   async (searchParams: SearchParamsProps): Promise<ProfileResult> => {
     const { id } = searchParams;
-    const supabase = createClient(); // Assuming Supabase client is properly set up
+    const supabase = await createClient(); // Assuming Supabase client is properly set up
     let query = supabase
       .from('connections')
       .select(
@@ -128,7 +128,7 @@ export const fetchAllConnections = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean; pay_type?: number }
   ): Promise<Result<ConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -256,7 +256,7 @@ export const fetchPrepaidConnections = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean; pay_type?: number }
   ): Promise<Result<ConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -384,7 +384,7 @@ export const fetchAllSites = cache(
     searchParams: SearchParamsProps,
     is_export?: { is_export?: boolean }
   ): Promise<Result<SiteConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -496,7 +496,7 @@ export const fetchLagSites = cache(
     searchParams: SearchParamsProps,
     is_export?: { is_export?: boolean }
   ): Promise<Result<ConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -654,7 +654,7 @@ export const fetchNotFetchBills = cache(
     searchParams: SearchParamsProps,
     is_export?: { is_export?: boolean }
   ): Promise<Result<ConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -757,7 +757,7 @@ export const fetchPrepaidBalanceLag = cache(
     searchParams: SearchParamsProps,
     is_export?: { is_export?: boolean }
   ): Promise<Result<ConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -863,7 +863,7 @@ export const fetchLogSites = cache(
     const { status = 'all', page = 1, limit = 10 } = searchParams;
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
-    const supabase = createClient();
+    const supabase = await createClient();
     let query = supabase
       .from('registrations')
       .select(
@@ -921,7 +921,7 @@ export const fetchActiveCount = cache(
   async (
     pay_type: string
   ): Promise<{ active_count: number }> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     let query = supabase
       .from('dashboard_data')
       .select(`value`)
@@ -944,7 +944,7 @@ export const fetchActiveCount = cache(
 export const getConnections = cache(async (siteId: string): Promise<Connection[] | null> => {
   if (!siteId) return null;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const { data, error } = await supabase
       .from('connections')
@@ -995,7 +995,7 @@ export const getConnections = cache(async (siteId: string): Promise<Connection[]
 export const getSiteProfile = cache(async (id: string): Promise<SiteProfile | null> => {
   if (!id) return null;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const { data, error } = await supabase
       .from('sites')

@@ -8,16 +8,17 @@ import BatchAction from "@/components/tables/batch/batch-item-table/batch-action
 import BatchHistoryTimeline from "@/components/batch/batch-history-timeline"
 import { BatchFundsOverviewCard } from "@/components/cards/batch-fund-overview-card";
 
-export default async function Page({
-    searchParams,
-    params,
-}: {
-    searchParams: Promise<SearchParamsProps>,
-    params: Promise<{ id: string }>
-}) {
+export default async function Page(
+    props: {
+        searchParams: Promise<SearchParamsProps>,
+        params: Promise<{ id: string }>
+    }
+) {
+    const params = await props.params;
+    const searchParams = await props.searchParams;
     const [resolvedSearchParams, resolvedParams] = await Promise.all([searchParams, params]);
     const { id } = resolvedParams;
-    
+
     const filterBody = resolvedSearchParams?.postpaid ? JSON?.parse(resolvedSearchParams?.postpaid) : {}
     const prepaidFilterBody = resolvedSearchParams?.prepaid ? JSON?.parse(resolvedSearchParams?.prepaid) : {}
     const { pageCount, data, totalCount, allData } = await fetchBillsInBatches({ ...filterBody, batch_id: id || '' })
@@ -115,5 +116,4 @@ export default async function Page({
             <BatchHistoryTimeline items={historyItems} title="Batch Activity" />
         </div>
     )
-
 }

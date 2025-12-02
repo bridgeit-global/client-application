@@ -2,11 +2,12 @@ import { EditSiteForm } from '@/components/forms/client-form/edit-site-form';
 import { SiteForm } from '@/components/forms/client-form/site-form';
 import { fetchSiteDetails } from '@/services/sites';
 import { SearchParamsProps } from '@/types';
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   if (!searchParams.id) {
     return <SiteForm />
   }

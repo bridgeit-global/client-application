@@ -9,7 +9,7 @@ import {
 
 // Example usage in API routes or server actions
 export async function createUser(userData: any) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     try {
         const { data, error } = await supabase
@@ -33,7 +33,7 @@ export async function createUser(userData: any) {
 
 // Example usage in forms
 export async function handleFormSubmission(formData: any) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     try {
         const { data, error } = await supabase
@@ -56,7 +56,7 @@ export async function handleFormSubmission(formData: any) {
 
 // Example usage with logging
 export async function updateUserProfile(userId: string, profileData: any) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     try {
         const { data, error } = await supabase
@@ -80,7 +80,7 @@ export async function updateUserProfile(userId: string, profileData: any) {
 
 // Example usage with constraint checking
 export async function deleteRecord(recordId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     try {
         const { error } = await supabase

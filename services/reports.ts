@@ -44,7 +44,7 @@ export const fetchRegistrationReport = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<ConnectionTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -169,7 +169,7 @@ export const fetchBillHistoryReport = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<AllBillTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -405,7 +405,7 @@ export const fetchPaymentHistoryReport = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<PaymentTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -517,7 +517,7 @@ export const fetchRechargeReport = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<PrepaidRechargeTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -641,7 +641,7 @@ export const fetchFailureReport = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<DlqMessagesTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -898,7 +898,7 @@ export const fetchFailureReport = cache(
 
 export const fetchArrearsReport = cache(
   async (): Promise<any> => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     let query = supabase
       .from('arrear_amount')
@@ -920,7 +920,7 @@ export const fetchArrearsReport = cache(
 
 export const fetchPenaltiesReport = cache(
   async (): Promise<any> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     let query = supabase
       .from('penalties')
       .select(`*,biller_list!inner(*)`)

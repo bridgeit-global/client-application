@@ -3,13 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchClientWallet } from '@/services/payments';
 import { SearchParamsProps } from '@/types';
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { data, totalCount, pageCount, summary } = await fetchClientWallet(searchParams);
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: amountData } = await supabase.rpc('is_approved_amount_within_threshold').select().single();
 
   return (

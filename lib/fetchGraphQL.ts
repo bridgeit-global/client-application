@@ -5,7 +5,7 @@ export async function fetchGraphQL<T>(
   query: string,
   variables: Record<string, any> = {}
 ): Promise<T> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/graphql/v1`,
     {

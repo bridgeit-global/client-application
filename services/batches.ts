@@ -26,7 +26,7 @@ export const fetchBillsInBatches = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<AllBillTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -164,7 +164,7 @@ export const fetchRechargesInBatches = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<PrepaidRechargeTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -280,7 +280,7 @@ export const fetchAllBatches = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<BatchTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -373,7 +373,7 @@ export const fetchBatchItems = cache(
   async (
     id: string,
   ): Promise<Result<any>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     let query = supabase
       .from('batches')

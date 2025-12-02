@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             }, { status: 400 });
         }
 
-        const supabase = createClient();
+        const supabase = await createClient();
 
         // Check if reading already exists
         const { data: existing } = await supabase

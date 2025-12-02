@@ -5,11 +5,12 @@ import { fetchPostpaidAllBills } from '@/services/bills';
 import { fetchArrearsReport, fetchPenaltiesReport } from '@/services/reports';
 import { SearchParamsProps } from '@/types';
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { data } = await fetchPostpaidAllBills(searchParams);
   const { data: arrearsData } = await fetchArrearsReport();
   const { data: penalties } = await fetchPenaltiesReport();
@@ -32,5 +33,4 @@ export default async function Page({
       </div>
     </div>
   );
-
 }

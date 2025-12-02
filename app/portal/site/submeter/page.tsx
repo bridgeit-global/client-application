@@ -3,11 +3,12 @@ import { Separator } from '@/components/ui/separator';
 import { getActiveConnectionsByPaytype } from '@/services/dashboard';
 import { fetchAllConnections } from '@/services/sites';
 import { SearchParamsProps } from '@/types';
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const payType = 'submeter';
   const { count: active_count } = await getActiveConnectionsByPaytype({ paytype: -1 });
   const { pageCount, data, totalCount } = await fetchAllConnections(

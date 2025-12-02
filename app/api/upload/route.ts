@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     : `${filename}${fileType}`
 
   // Initialize Supabase client with service role key for admin access
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Upload to Supabase Storage
   // You'll need to create a bucket named 'uploads' in your Supabase dashboard first

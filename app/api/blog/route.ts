@@ -12,7 +12,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const supabase = createPublicClient();
+        const supabase = await createPublicClient();
 
         // Check if slug is unique
         const { data: existingPost, error: checkError } = await supabase
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
     try {
-        const supabase = createPublicClient();
+        const supabase = await createPublicClient();
         const url = new URL(request.url);
         const publishedOnly = url.searchParams.get('published') === 'true';
 

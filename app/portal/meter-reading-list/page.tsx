@@ -7,12 +7,13 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
 interface PageProps {
-    searchParams: SearchParamsProps
+    searchParams: Promise<SearchParamsProps>
 }
 
-export default async function MeterReadingPage({ searchParams }: PageProps) {
+export default async function MeterReadingPage(props: PageProps) {
+    const searchParams = await props.searchParams;
     // Check user access - only allow operator users
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.role !== 'operator') {

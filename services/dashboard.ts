@@ -14,7 +14,7 @@ type Result = {
 
 
 export const getActiveSites = async (): Promise<{ count: number, error: any }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { count, error } = await supabase
     .from('sites')
     .select('*', { count: 'exact', head: true }).match({ 'is_active': true })
@@ -22,7 +22,7 @@ export const getActiveSites = async (): Promise<{ count: number, error: any }> =
 }
 
 export const getActiveConnectionsByPaytype = async ({ paytype }: { paytype: number }): Promise<{ count: number, error: any }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const { count, error } = await supabase
       .from('connections')
@@ -43,7 +43,7 @@ export const getActiveConnectionsByPaytype = async ({ paytype }: { paytype: numb
 };
 
 export const getActiveConnections = cache(async () => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const [prepaid, postpaid, submeter] = await Promise.all([
@@ -95,7 +95,7 @@ export const getActiveConnections = cache(async () => {
 
 
 export const fetchDashboardData = cache(async (): Promise<Result> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   try {
     const [
@@ -141,7 +141,7 @@ type DashboardResult = {
 
 export const fetchDashboardSupportData = cache(
   async (): Promise<DashboardResult> => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('dashboard_support_data')
@@ -187,7 +187,7 @@ const getCostGeoJson = async ({ sites, cost_type }: { sites: any, cost_type: str
 };
 
 export const fetchConnectionCosts = cache(async (): Promise<ConnectionCostsResult> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('connection_metrics')
     .select('*,connections!inner(site_id,paytype,sites!inner(*))')

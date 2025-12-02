@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
             }, { status: 500 })
         }
 
-        const supabase = createClient()
+        const supabase = await createClient()
 
         // Create a unique filename with image type
         const fileExtension = file.name.split('.').pop()

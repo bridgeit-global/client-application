@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
             }, { status: 400 })
         }
 
-        const supabase = createClient()
+        const supabase = await createClient()
 
         // Check for duplicate image using multiple methods
         const duplicateResult = await checkForDuplicateImage(file, connectionId, supabase)

@@ -3,11 +3,12 @@ import ApprovedBillTable from '@/components/tables/bill/approved-bill-table';
 import { fetchApprovedPostpaidBills, fetchBillRecommendations } from '@/services/bills';
 import { SearchParamsProps } from '@/types';
 
-export default async function Page({
-  searchParams
-}: {
-  searchParams: SearchParamsProps;
-}) {
+export default async function Page(
+  props: {
+    searchParams: Promise<SearchParamsProps>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { pageCount, data, totalCount } = await fetchApprovedPostpaidBills(searchParams);
   const recommendationData = await fetchBillRecommendations();
   return (

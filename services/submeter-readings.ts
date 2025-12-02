@@ -19,7 +19,7 @@ export const fetchSubmeterReadings = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean, side?: string }
   ): Promise<Result<SubmeterReadingWithConnection>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -155,7 +155,7 @@ export const fetchSubmeterReadings = cache(
 export const createSubmeterReading = async (
   reading: SubmeterReadingInsert
 ): Promise<{ data: SubmeterReadingProps | null; error: any }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const user_id = await supabase.auth.getUser().then((res) => res.data.user?.id);
 
   const { data, error } = await supabase
@@ -172,7 +172,7 @@ export const updateSubmeterReading = async (
   reading_date: string,
   updates: SubmeterReadingUpdate
 ): Promise<{ data: SubmeterReadingProps | null; error: any }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const user_id = await supabase.auth.getUser().then((res) => res.data.user?.id);
   const { data, error } = await supabase
     .from('submeter_readings')
@@ -189,7 +189,7 @@ export const deleteSubmeterReading = async (
   connection_id: string,
   reading_date: string
 ): Promise<{ error: any }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from('submeter_readings')
@@ -204,7 +204,7 @@ export const getSubmeterReading = async (
   connection_id: string,
   reading_date: string
 ): Promise<{ data: SubmeterReadingWithConnection | null; error: any }> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('submeter_readings')
@@ -228,7 +228,7 @@ export const getSubmeterReading = async (
 
 export const fetchSubmeterReadingsByConnection = cache(
   async (connection_id: string): Promise<{ data: SubmeterReadingWithConnection[]; error: any }> => {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('submeter_readings')

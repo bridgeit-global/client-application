@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
 
 export async function POST(req: NextRequest) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     try {
         const body = await req.json();

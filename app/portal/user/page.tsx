@@ -6,14 +6,15 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { fetchAllUsers } from '@/services/user';
 
-export default async function Page({
-    searchParams
-}: {
-    searchParams: SearchParamsProps;
-}) {
-    const supabase = createClient();
+export default async function Page(
+    props: {
+        searchParams: Promise<SearchParamsProps>;
+    }
+) {
+    const searchParams = await props.searchParams;
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (user?.user_metadata?.role === 'admin') {
         try {
             const orgId = user?.user_metadata?.org_id;

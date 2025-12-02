@@ -9,7 +9,7 @@ const Header = dynamic(() => import('@/components/layout/landing/header'), {
 });
 
 export default async function Page() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   return (

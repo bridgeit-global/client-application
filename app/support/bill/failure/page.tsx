@@ -4,10 +4,11 @@ import { FailureReportTable } from '@/components/tables/report/failure-report';
 import { fetchFailureReport } from '@/services/reports';
 
 type paramsProps = {
-  searchParams: SearchParamsProps;
+  searchParams: Promise<SearchParamsProps>;
 };
 
-export default async function page({ searchParams }: paramsProps) {
+export default async function page(props: paramsProps) {
+  const searchParams = await props.searchParams;
 
   const filterBody = searchParams?.filter
     ? JSON?.parse(searchParams?.filter)

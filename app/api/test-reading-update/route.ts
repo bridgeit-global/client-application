@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
     try {
         const { connection_id, reading_date, image_type, extracted_reading } = await req.json()
 
-        const supabase = createClient()
+        const supabase = await createClient()
 
         // Get existing reading
         const { data: existingReading, error: fetchError } = await supabase

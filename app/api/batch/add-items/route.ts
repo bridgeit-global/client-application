@@ -37,7 +37,7 @@ async function updateInChunks<T>(
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     const body = await req.json();

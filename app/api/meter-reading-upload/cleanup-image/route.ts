@@ -13,7 +13,7 @@ export async function DELETE(req: NextRequest) {
             }, { status: 400 })
         }
 
-        const supabase = createClient()
+        const supabase = await createClient()
 
         let query = supabase
             .from('image_hashes')

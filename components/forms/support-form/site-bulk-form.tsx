@@ -148,7 +148,7 @@ export const SiteBulkForm: React.FC<SiteBulkFormProps> = ({ initialData }) => {
                 <FormControl>
                   <FileUpload
                     onChange={field.onChange}
-                    value={field.value}
+                    value={field.value || []}
                     onRemove={field.onChange}
                   />
                 </FormControl>

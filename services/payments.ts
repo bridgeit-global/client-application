@@ -28,7 +28,7 @@ export const fetchPrepaidPaid = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<PrepaidRechargeTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -142,7 +142,7 @@ export const fetchPostpaidPaid = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<AllBillTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -306,7 +306,7 @@ export const fetchPaymentEdit = async (
   const offset = (Number(page) - 1) * pageLimit;
 
   // Initialize the Supabase client
-  const supabase = createClient(); // Assuming Supabase client is properly set up
+  const supabase = await createClient(); // Assuming Supabase client is properly set up
 
   let query = supabase
     .from('bills')
@@ -413,7 +413,7 @@ export const fetchRechargePaymentEdit = async (
   const pageLimit = Number(limit);
   const offset = (Number(page) - 1) * pageLimit;
   // Initialize the Supabase client
-  const supabase = createClient(); // Assuming Supabase client is properly set up
+  const supabase = await createClient(); // Assuming Supabase client is properly set up
   let query = supabase
     .from('prepaid_recharge')
     .select('*,connections!inner(*,biller_list!inner(*),sites!inner(*))', {
@@ -515,7 +515,7 @@ export const fetchBillPayments = async (
   const offset = (Number(page) - 1) * pageLimit;
 
   // Initialize the Supabase client
-  const supabase = createClient(); // Assuming Supabase client is properly set up
+  const supabase = await createClient(); // Assuming Supabase client is properly set up
 
   let query = supabase
     .from('client_payments')
@@ -652,7 +652,7 @@ export const fetchClientWallet = async (
   const offset = (Number(page) - 1) * pageLimit;
 
   // Initialize the Supabase client
-  const supabase = createClient(); // Assuming Supabase client is properly set up
+  const supabase = await createClient(); // Assuming Supabase client is properly set up
 
 
   // Fetch wallet summary using the custom Postgres function
@@ -802,7 +802,7 @@ export const fetchPaymentGatewayTransactions = async (
   const offset = (Number(page) - 1) * pageLimit;
 
   // Initialize the Supabase client
-  const supabase = createClient(); // Assuming Supabase client is properly set up
+  const supabase = await createClient(); // Assuming Supabase client is properly set up
 
   let query = supabase
     .from('payment_gateway_transactions')
@@ -900,7 +900,7 @@ export const fetchBatchPayment = cache(
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<BatchTableProps>> => {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       page = 1,
       limit = 10,
@@ -1015,7 +1015,7 @@ export const fetchRefundPaymentTransactions = async (
   const offset = (Number(page) - 1) * pageLimit;
 
   // Initialize the Supabase client
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from('refund_payment_transactions')

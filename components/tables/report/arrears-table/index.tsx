@@ -40,21 +40,13 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
     const totals = sortedData.reduce(
         (acc, item) => {
             return {
-                // bill_count: acc.bill_count + (item.bill_count || 0),
                 positive_arrears: acc.positive_arrears + (item.positive_arrears || 0),
                 negative_arrears: acc.negative_arrears + (item.negative_arrears || 0),
-                // bill_amount: acc.bill_amount + (item.bill_amount || 0),
-                // positive_arrear_bill_count: acc.positive_arrear_bill_count + (item.positive_arrear_bill_count || 0),
-                // negative_arrear_bill_count: acc.negative_arrear_bill_count + (item.negative_arrear_bill_count || 0),
             };
         },
         {
-            // bill_count: 0,
             positive_arrears: 0,
             negative_arrears: 0,
-            // bill_amount: 0,
-            // positive_arrear_bill_count: 0,
-            // negative_arrear_bill_count: 0,
         }
     );
 
@@ -64,21 +56,13 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
         stateTotals[state] = items.reduce(
             (acc, item) => {
                 return {
-                    // bill_count: acc.bill_count + (item.bill_count || 0),
                     positive_arrears: acc.positive_arrears + (item.positive_arrears || 0),
                     negative_arrears: acc.negative_arrears + (item.negative_arrears || 0),
-                    // bill_amount: acc.bill_amount + (item.bill_amount || 0),
-                    // positive_arrear_bill_count: acc.positive_arrear_bill_count + (item.positive_arrear_bill_count || 0),
-                    // negative_arrear_bill_count: acc.negative_arrear_bill_count + (item.negative_arrear_bill_count || 0),
                 };
             },
             {
-                // bill_count: 0,
                 positive_arrears: 0,
                 negative_arrears: 0,
-                // bill_amount: 0,
-                // positive_arrear_bill_count: 0,
-                // negative_arrear_bill_count: 0,
             }
         );
     });
@@ -96,12 +80,12 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
                             <TableHead className="text-right bg-muted">Net Arrears</TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody className="overflow-y-auto max-h-[500px]">
+                    <TableBody>
                         {Object.entries(groupedByState).map(([state, stateItems]) => (
                             <Fragment key={state}>
                                 {/* State Header Row */}
                                 <TableRow className="bg-muted/30">
-                                    <TableCell colSpan={8} className="font-bold">
+                                    <TableCell colSpan={4} className="font-bold">
                                         {state}
                                     </TableCell>
                                 </TableRow>
@@ -110,7 +94,6 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
                                 {stateItems.map((item) => (
                                     <TableRow key={item.biller_id}>
                                         <TableCell className="font-medium pl-6">{item.biller_list.board_name}</TableCell>
-                                        {/* <TableCell className="text-right">{item.bill_count ? item.bill_count : ""}</TableCell> */}
                                         <TableCell className="text-right">{item.positive_arrears ? formatRupees(item.positive_arrears) : ""}</TableCell>
                                         <TableCell className="text-right">{item.negative_arrears ? formatRupees(item.negative_arrears) : ""}</TableCell>
                                         <TableCell className="text-right">{item.positive_arrears && item.negative_arrears ? formatRupees((item.positive_arrears || 0) + (item.negative_arrears || 0)) : ""}</TableCell>
@@ -120,12 +103,8 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
                                 {/* State total row */}
                                 <TableRow className="bg-muted/20 font-medium">
                                     <TableCell className="pl-4">State Total</TableCell>
-                                    {/* <TableCell className="text-right">{stateTotals[state].bill_count ? stateTotals[state].bill_count : ""}</TableCell> */}
                                     <TableCell className="text-right">{stateTotals[state].positive_arrears ? formatRupees(stateTotals[state].positive_arrears) : ""}</TableCell>
-                                    {/* <TableCell className="text-right">{stateTotals[state].positive_arrear_bill_count ? stateTotals[state].positive_arrear_bill_count : ""}</TableCell> */}
                                     <TableCell className="text-right">{stateTotals[state].negative_arrears ? formatRupees(stateTotals[state].negative_arrears) : ""}</TableCell>
-                                    {/* <TableCell className="text-right">{stateTotals[state].negative_arrear_bill_count ? stateTotals[state].negative_arrear_bill_count : ""}</TableCell> */}
-                                    {/* <TableCell className="text-right">{stateTotals[state].bill_amount ? formatRupees(stateTotals[state].bill_amount) : ""}</TableCell> */}
                                     <TableCell className="text-right">{stateTotals[state].positive_arrears && stateTotals[state].negative_arrears ? formatRupees(stateTotals[state].positive_arrears + stateTotals[state].negative_arrears) : ""}</TableCell>
                                 </TableRow>
                             </Fragment>
@@ -134,12 +113,8 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
                         {/* Grand total row */}
                         <TableRow className="bg-muted/50 font-bold">
                             <TableCell>Grand Total</TableCell>
-                            {/* <TableCell className="text-right">{totals.bill_count ? totals.bill_count : ""}</TableCell> */}
                             <TableCell className="text-right">{totals.positive_arrears ? formatRupees(totals.positive_arrears) : ""}</TableCell>
-                            {/* <TableCell className="text-right">{totals.positive_arrear_bill_count ? totals.positive_arrear_bill_count : ""}</TableCell> */}
                             <TableCell className="text-right">{totals.negative_arrears ? formatRupees(totals.negative_arrears) : ""}</TableCell>
-                            {/* <TableCell className="text-right">{totals.negative_arrear_bill_count ? totals.negative_arrear_bill_count : ""}</TableCell> */}
-                            {/* <TableCell className="text-right">{totals.bill_amount ? formatRupees(totals.bill_amount) : ""}</TableCell> */}
                             <TableCell className="text-right">{totals.positive_arrears && totals.negative_arrears ? formatRupees(totals.positive_arrears + totals.negative_arrears) : ""}</TableCell>
                         </TableRow>
                     </TableBody>

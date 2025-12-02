@@ -11,9 +11,9 @@ export const DueDateCell = ({ discount_date_str = null, due_date_str }: { discou
     const today = new Date();
     date.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    // Calculate days difference
+    // Calculate days difference (use Math.floor to match getDueDateSignalColor behavior)
     const diffTime = date.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     // Determine status and styling
     const isOverdue = diffDays < 0;

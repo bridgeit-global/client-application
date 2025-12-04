@@ -6,7 +6,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import { AllBillTableProps } from '@/types/bills-type';
 import BillTypeCell from '@/components/table-cells/bill-type-cell';
 import PaidBadge from '@/components/badges/paid-badge';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { UnitCost } from '@/components/table-cells/unit-cost';
 import PayTypeBadge from '@/components/badges/pay-type-badge';
@@ -127,9 +127,9 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
   // },
   {
     header: 'Bill Copy',
-    cell: ({ row }) => row.original.content ? <DocumentViewerModal
+    cell: ({ row }) => row.original.content ? <DocumentViewerModalWithPresigned
       contentType={row.original.content_type}
-      documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
+      fileKey={row.original.content}
     /> : null
   },
   {

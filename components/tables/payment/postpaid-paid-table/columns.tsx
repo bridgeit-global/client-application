@@ -11,7 +11,7 @@ import {
   HoverCardTrigger
 } from '@/components/ui/hover-card';
 import { Button } from '@/components/ui/button';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import PayTypeBadge from '@/components/badges/pay-type-badge';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { ArrowUp } from 'lucide-react';
@@ -136,10 +136,10 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
       );
       if (content) {
         return (
-          <DocumentViewerModal
+          <DocumentViewerModalWithPresigned
             icon={<ReceiptIndianRupee />}
             contentType={content_type}
-            documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${content}`}
+            fileKey={content}
           />
         );
       }

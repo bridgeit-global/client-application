@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Banknote, FileText, Calendar } from 'lucide-react';
+import { Banknote, FileText, Calendar, Loader2 } from 'lucide-react';
 import { useTimelineStore } from '@/lib/store/timeline-store';
 import { motion } from 'framer-motion'; // Import framer-motion
 import { ImageViewer } from '@/components/modal/document-viewer-modal';
@@ -14,6 +14,8 @@ import { HTMLViewer } from '@/components/modal/document-viewer-modal';
 import { DialogContent } from '@/components/ui/dialog';
 import { Dialog } from '@/components/ui/dialog';
 import { ABNORMAL_BILL_STATUS_COLOR } from '@/constants/colors';
+import { getPresignedUrl } from '@/lib/utils/presigned-url-client';
+import { Skeleton } from '@/components/ui/skeleton';
 export type TimelineItemProps = {
   id: string;
   date: string;
@@ -41,6 +43,8 @@ export const TimelineItem: React.FC<TimelineItemComponentProps> = ({
   const [open, setOpen] = useState(false);
   const [link, setLink] = useState<string | undefined>(undefined);
   const [content_type, setContentType] = useState<string | undefined>(undefined);
+  const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const { timelineId, setTimelineId } = useTimelineStore();
   const parsedDate = new Date(date);
   const formattedDate = format(parsedDate, 'MMM dd, yyyy');
@@ -55,6 +59,28 @@ export const TimelineItem: React.FC<TimelineItemComponentProps> = ({
   const payment = billEvents.find((event) => event.title === 'Payment');
   const dueDate = billEvents.find((event) => event.title === 'DueDate');
 
+  // Fetch presigned URL when link changes
+  useEffect(() => {
+    const fetchPresignedUrl = async () => {
+      if (link) {
+        setIsLoadingUrl(true);
+        setPresignedUrl(null);
+        try {
+          const url = await getPresignedUrl(link);
+          setPresignedUrl(url);
+        } catch (error) {
+          console.error('Failed to get presigned URL:', error);
+        } finally {
+          setIsLoadingUrl(false);
+        }
+      } else {
+        setPresignedUrl(null);
+        setIsLoadingUrl(false);
+      }
+    };
+
+    fetchPresignedUrl();
+  }, [link]);
 
   const handleMouseEnter = (id: any) => setTimelineId(id);
   const handleMouseLeave = () => setTimelineId('');
@@ -230,13 +256,20 @@ export const TimelineItem: React.FC<TimelineItemComponentProps> = ({
       <div className="relative flex-1">{renderBillEvent()}</div>
       <Dialog open={open} onOpenChange={setOpen} >
         <DialogContent className="h-full max-h-[95vh] w-full max-w-[95vw] p-2 sm:p-6">
-          {link ? (
+          {isLoadingUrl ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading document...</p>
+              </div>
+            </div>
+          ) : presignedUrl ? (
             content_type === "pdf" ? (
-              <PDFViewer pdfUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${link}`} />
+              <PDFViewer pdfUrl={presignedUrl} />
             ) : content_type === "html" ? (
-              <HTMLViewer htmlUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${link}`} />
+              <HTMLViewer htmlUrl={presignedUrl} />
             ) : content_type === "image" ? (
-              <ImageViewer imageUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${link}`} />
+              <ImageViewer imageUrl={presignedUrl} />
             ) : (
               <div className="p-4">Unsupported content type</div>
             )

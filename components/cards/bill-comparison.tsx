@@ -23,7 +23,7 @@ import { createClient } from '@/lib/supabase/client';
 import { AlertModal } from '../modal/alert-modal';
 import { useRouter } from 'next/navigation';
 import { AllBillTableProps } from '@/types/bills-type';
-import DocumentViewerModal from '../modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '../modal/document-viewer-modal-with-presigned';
 
 interface BillComparisonProps {
   oldBill?: AllBillTableProps;
@@ -207,11 +207,13 @@ function BillCard({
           }
         />
         <div className="flex items-center justify-center">
-          <DocumentViewerModal
-            label="View Document"
-            contentType={bill.content_type}
-            documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${bill.content}`}
-          />
+          {bill.content && (
+            <DocumentViewerModalWithPresigned
+              label="View Document"
+              contentType={bill.content_type}
+              fileKey={bill.content}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,5 @@
 'use client';
 import { formatRupees } from '@/lib/utils/number-format';
-const NEXT_PUBLIC_BUCKET_URL = process.env.NEXT_PUBLIC_BUCKET_URL;
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { ddmmyy } from '@/lib/utils/date-format';
@@ -13,7 +12,7 @@ import { useIncreaseAmountModalStore } from '@/lib/store/increase-amount-modal-s
 import { useSiteName } from '@/lib/utils/site';
 import { RemoveBillFromBatchButton } from '@/components/buttons/remove-bill-from-batch-button';
 import { RemoveRechargeFromBatchButton } from '@/components/buttons/remove-recharge-from-batch-button';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import ReceiptIndianRupee from '@/components/icons/receipt-indian-rupee';
 import { useTransition } from 'react';
 import { useToast } from '@/components/ui/use-toast';
@@ -408,31 +407,20 @@ export const columns: ColumnDef<ClientPaymentsProps>[] = [
         <div className="flex gap-1">
           {transactions.map((transaction, index) => {
             if (!transaction.receipt_url) return null;
-            const receiptUrl = `${NEXT_PUBLIC_BUCKET_URL}/${transaction.receipt_url}`;
+            const receiptUrl = transaction.receipt_url;
             const isPDF = receiptUrl.endsWith('.pdf');
             const isHTML = receiptUrl.endsWith('.html');
-            if (isPDF) {
+            if (isPDF || isHTML) {
               return (
-                <DocumentViewerModal
+                <DocumentViewerModalWithPresigned
                   key={index}
                   icon={<ReceiptIndianRupee />}
-                  contentType="pdf"
-                  documentUrl={receiptUrl}
+                  contentType={isPDF ? "pdf" : "html"}
+                  fileKey={receiptUrl}
                 />
               );
             }
-
-            if (isHTML) {
-              return (
-                <DocumentViewerModal
-                  key={index}
-                  icon={<ReceiptIndianRupee />}
-                  contentType="html"
-                  documentUrl={receiptUrl}
-                />
-              );
-            }
-
+            return null;
           })}
         </div>
       );

@@ -24,7 +24,7 @@ const nextConfig = {
     return config;
   },
   // Externalize native Node.js packages for server-side
-  serverExternalPackages: ['canvas', '@mapbox/mapbox-sdk'],
+  serverExternalPackages: ['@mapbox/mapbox-sdk'],
   // Environment variables
   env: {
     APP_VERSION: version,

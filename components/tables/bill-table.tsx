@@ -42,7 +42,7 @@ import {
 import { AllBillTableProps } from "@/types/bills-type";
 import { formatRupees } from '@/lib/utils/number-format';
 import { ddmmyy } from "@/lib/utils/date-format";
-import DocumentViewerModal from "@/components/modal/document-viewer-modal";
+import DocumentViewerModalWithPresigned from "@/components/modal/document-viewer-modal-with-presigned";
 import { UnitCost } from "../table-cells/unit-cost";
 import { UploadReceiptModal } from "../modal/upload-receipt-modal";
 import { Badge } from "../ui/badge";
@@ -236,9 +236,9 @@ const columns: ColumnDef<AllBillTableProps>[] = [
     {
         id: 'bill_copy',
         header: () => <span className="text-gray-900 font-medium">Bill Copy</span>,
-        cell: ({ row }) => row.original.content ? <DocumentViewerModal
+        cell: ({ row }) => row.original.content ? <DocumentViewerModalWithPresigned
             contentType={row.original.content_type}
-            documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
+            fileKey={row.original.content}
         /> : null
     },
     {

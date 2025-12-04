@@ -4,7 +4,7 @@ import { ddmmyy } from '@/lib/utils/date-format';
 import { formatRupees } from '@/lib/utils/number-format';
 import { PaymentTableProps } from '@/types/payments-type';
 import ReceiptIndianRupee from '@/components/icons/receipt-indian-rupee';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import PayTypeBadge from '@/components/badges/pay-type-badge';
 import { useSiteName } from '@/lib/utils/site';
 import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
@@ -49,10 +49,10 @@ export const columns: ColumnDef<PaymentTableProps>[] = [
       const content_type = row.original.content_type;
       if (content) {
         return (
-          <DocumentViewerModal
+          <DocumentViewerModalWithPresigned
             icon={<ReceiptIndianRupee />}
             contentType={content_type}
-            documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
+            fileKey={content}
           />
         );
       }

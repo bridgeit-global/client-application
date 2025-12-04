@@ -6,7 +6,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import { AllBillTableProps } from '@/types/bills-type';
 import ReceiptIndianRupee from '@/components/icons/receipt-indian-rupee';
 import { Button } from '@/components/ui/button';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { ArrowUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -86,10 +86,10 @@ export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [
       );
       if (content) {
         return (
-          <DocumentViewerModal
+          <DocumentViewerModalWithPresigned
             icon={<ReceiptIndianRupee />}
             contentType={content_type}
-            documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${content}`}
+            fileKey={content}
           />
         );
       }

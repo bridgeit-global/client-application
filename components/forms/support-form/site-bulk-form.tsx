@@ -105,10 +105,19 @@ export const SiteBulkForm: React.FC<SiteBulkFormProps> = ({ initialData }) => {
     }
   };
 
-  const downloadTemplate = () => {
-    window.open(
-      `${process.env.NEXT_PUBLIC_BUCKET_URL}/template/Bulk-Template-Excel.xlsx`
-    );
+  const downloadTemplate = async () => {
+    try {
+      const { getPresignedUrl } = await import('@/lib/utils/presigned-url-client');
+      const url = await getPresignedUrl('template/Bulk-Template-Excel.xlsx');
+      window.open(url);
+    } catch (error) {
+      console.error('Failed to get presigned URL for template:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to download template. Please try again.'
+      });
+    }
   };
 
   const navigateToTrackingPage = () => {

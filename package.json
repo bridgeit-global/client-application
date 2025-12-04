@@ -1,6 +1,6 @@
 {
   "name": "bridge-it",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "private": true,
   "engines": {
     "node": ">=20.9.0"
@@ -78,6 +78,7 @@
     "@vercel/analytics": "^1.5.0",
     "autoprefixer": "10.4.15",
     "axios": "^1.7.7",
+    "canvas": "^3.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",

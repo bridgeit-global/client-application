@@ -9,7 +9,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import { ddmmyy } from '@/lib/utils/date-format';
 import axios from 'axios';
 import { useToast } from '@/components/ui/use-toast';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { AllBillTableProps } from '@/types/bills-type';
 import { CellAction } from './cell-action';
@@ -86,9 +86,9 @@ export const billColumns: ColumnDef<AllBillTableProps>[] = [
       const content_type = row.original.content_type;
       if (content) {
         return (
-          <DocumentViewerModal
+          <DocumentViewerModalWithPresigned
             contentType={content_type}
-            documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
+            fileKey={content}
           />
         );
       }

@@ -12,10 +12,42 @@ import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
 export function PDFViewer({ pdfUrl }: { pdfUrl: string }) {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
+
+  const renderError = (error: any) => {
+    console.error('PDF Viewer error:', error);
+    
+    let message = 'Failed to load PDF document';
+    if (error.name === 'UnexpectedResponseException') {
+      message = 'Failed to fetch PDF. This may be due to CORS configuration or network issues.';
+    } else if (error.name === 'MissingPDFException') {
+      message = 'PDF document not found.';
+    } else if (error.name === 'InvalidPDFException') {
+      message = 'The PDF document is invalid or corrupted.';
+    } else if (error.message) {
+      message = error.message;
+    }
+
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center p-4 max-w-md">
+          <p className="text-red-500 mb-2 font-semibold">Failed to fetch</p>
+          <p className="text-sm text-muted-foreground mb-4">{message}</p>
+          <p className="text-xs text-muted-foreground break-all">
+            Error: {error.name || 'Unknown error'}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Worker workerUrl="/pdf.worker.min.js">
       <div className="mt-10 md:mt-4" style={{ height: 'calc(100vh - 100px)' }}>
-        <Viewer fileUrl={pdfUrl} plugins={[defaultLayoutPluginInstance]} />
+        <Viewer 
+          fileUrl={pdfUrl} 
+          plugins={[defaultLayoutPluginInstance]}
+          renderError={renderError}
+        />
       </div>
     </Worker>
   );

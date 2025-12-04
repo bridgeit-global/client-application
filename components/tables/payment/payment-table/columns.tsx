@@ -2,7 +2,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { formatRupees } from '@/lib/utils/number-format';
 import { AllBillTableProps } from '@/types/bills-type';
-import DocumentViewerModal from '@/components/modal/document-viewer-modal';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import { Badge } from '@/components/ui/badge';
 import { ArrowUp, ArrowDown, ArrowUpDown, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -69,9 +69,9 @@ export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [
   },
   {
     header: 'Bill Copy',
-    cell: ({ row }) => row.original.content ? <DocumentViewerModal
+    cell: ({ row }) => row.original.content ? <DocumentViewerModalWithPresigned
       contentType={row.original.content_type}
-      documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
+      fileKey={row.original.content}
     /> : null
   },
 ];

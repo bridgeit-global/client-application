@@ -1,5 +1,5 @@
 import { BillDetails } from '@/components/bill/BillDetails';
-import { HTMLViewer, PDFViewer } from '@/components/modal/pdf-viewer-modal';
+import { PDFViewerWithPresigned } from '@/components/modal/pdf-viewer-with-presigned';
 import { fetchSingleBill } from '@/services/bills';
 import { notFound } from 'next/navigation';
 
@@ -32,15 +32,10 @@ export default async function Page({
             </div>
             {data?.content && typeof data.content === 'string' && data.content.trim() !== '' && (
                 <div className="bg-white rounded-lg shadow-sm border">
-                    {data?.content_type == 'pdf' ? (
-                        <PDFViewer
-                            pdfUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
-                        />
-                    ) : (
-                        <HTMLViewer
-                            htmlUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${data.content}`}
-                        />
-                    )}
+                    <PDFViewerWithPresigned
+                        fileKey={data.content}
+                        contentType={data?.content_type === 'pdf' ? 'pdf' : 'html'}
+                    />
                 </div>
             )}
         </div>

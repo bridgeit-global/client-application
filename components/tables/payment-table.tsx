@@ -42,7 +42,7 @@ import { PaymentsProps } from "@/types/payments-type";
 import { formatRupees } from '@/lib/utils/number-format';
 
 import { ddmmyy } from "@/lib/utils/date-format";
-import DocumentViewerModal from "@/components/modal/document-viewer-modal";
+import DocumentViewerModalWithPresigned from "@/components/modal/document-viewer-modal-with-presigned";
 
 const columns: ColumnDef<PaymentsProps>[] = [
     {
@@ -116,10 +116,10 @@ const columns: ColumnDef<PaymentsProps>[] = [
         cell: ({ row }) => {
             if (row.original.content) {
                 return (
-                    <DocumentViewerModal
+                    <DocumentViewerModalWithPresigned
                         icon={<ReceiptIndianRupee />}
                         contentType={row.original.content_type}
-                        documentUrl={`${process.env.NEXT_PUBLIC_BUCKET_URL}/${row.original.content}`}
+                        fileKey={row.original.content}
                     />
                 );
             }

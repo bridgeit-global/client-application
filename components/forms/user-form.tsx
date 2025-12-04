@@ -67,7 +67,7 @@ export const UserForm = ({ handleClose }: { handleClose?: () => void }) => {
             setLoading(true);
             const user = await supabase.auth.getUser();
             const org_id = user.data.user?.user_metadata?.org_id;
-            const response = await fetch(`${process.env.NEXT_PUBLIC_UPLOAD_PDF_URL}/organization/user`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_UPLOAD_PDF_URL}organization/user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

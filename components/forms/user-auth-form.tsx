@@ -10,7 +10,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, createPublicClient } from '@/lib/supabase/client';
 import { useUserStore } from '@/lib/store/user-store';
 import { useBillerBoardStore } from '@/lib/store/biller-board-store';
 import { LoadingButton } from '../buttons/loading-button';
@@ -19,7 +19,9 @@ import { Turnstile } from '@marsidev/react-turnstile'
 
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
+
 const supabase = createClient();
+const supabasePublicClient = createPublicClient();
 
 // Utility function to check if email is valid and not empty/null
 const isValidEmail = (email: string): boolean => {
@@ -123,11 +125,11 @@ export default function PhoneOtpForm({ users }: { users: any }) {
 
     if (!user?.email && user?.user_metadata?.role !== 'operator') {
       setStep('account');
-      toast({
-        title: 'Alert!',
-        description: `Please enter your email first name and last name`,
-        variant: 'destructive'
-      });
+      // toast({
+      //   title: 'Alert!',
+      //   description: `Please enter your email first name and last name`,
+      //   variant: 'destructive'
+      // });
     }
   }, [router, setStep]);
 
@@ -183,7 +185,34 @@ export default function PhoneOtpForm({ users }: { users: any }) {
 
 
     // Check if user has org_id in metadata
-    const userOrgId = data.user?.user_metadata?.org_id;
+    let userOrgId = data.user?.user_metadata?.org_id;
+    if(!userOrgId) {
+      
+      const { data, error } = await supabasePublicClient.from('user_requests').select('*').eq('phone', phone).single();
+      if(error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive'
+        });
+        setIsLoader(false);
+        return;
+      }
+      console.log(data)
+      await supabase.auth.updateUser({
+        data: {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          role: data.role,
+          org_id: data.org_id
+        }
+      })
+      userOrgId = data.org_id;
+      setFirstName(data.first_name)
+      setLastName(data.last_name)
+      setEmail(data.email)
+      setRole(data.role)
+    }
     const isOperator = data.user?.user_metadata?.role === 'operator';
 
     // If no org_id, redirect to signup for account creation
@@ -193,7 +222,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
         description: 'Please complete your account setup',
         variant: 'default'
       });
-      router.push(`/existing?phone=${phoneNumber}`);
+      // router.push(`/existing?phone=${phoneNumber}`);
       setIsLoader(false);
       return;
     }
@@ -261,7 +290,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    console.log(firstName, lastName, email, role)
     // For operators, email is optional
     const isOperator = role === 'operator';
 
@@ -415,7 +444,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                   placeholder="Enter your phone number"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full py-2.5 md:py-3 transition-colors text-sm md:text-base border-2 border-gray-300 text-gray-900 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"
+                  className="w-full py-2.5 md:py-3 transition-colors text-sm md:text-base border-2 border-gray-300 text-gray-900 hover:border-primary hover:bg-primary/5 font-medium"
                   disabled={isLoader}
                 />
               </div>
@@ -573,7 +602,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
             <div className="flex items-center">
               <LoadingButton
                 type="button"
-                variant="ghost"
+                variant="outline"
                 onClick={async () => {
                   await supabase.auth.signOut();
                   router.push('/login');
@@ -583,7 +612,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                   setEmail('');
                   setRole('');
                 }}
-                className="text-sm mr-2"
+                className="text-gray-500 text-sm mr-2 border-2 border-gray-300 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"
                 disabled={isLoader}
               >
                 ←
@@ -591,7 +620,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
               <Label>Account Details</Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
+              <Label className="text-gray-500 text-sm font-medium" htmlFor="firstName">First Name</Label>
               <Input
                 id="firstName"
                 placeholder="Enter your first name"
@@ -599,11 +628,11 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                 onChange={(e) => setFirstName(e.target.value)}
                 required
                 disabled={isLoader}
-                className="transition-colors"
+                className="transition-colors text-gray-500 border-2 border-gray-300"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label className="text-gray-500 text-sm font-medium" htmlFor="lastName">Last Name</Label>
               <Input
                 id="lastName"
                 placeholder="Enter your last name"
@@ -611,11 +640,11 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                 onChange={(e) => setLastName(e.target.value)}
                 required
                 disabled={isLoader}
-                className="transition-colors"
+                className="transition-colors text-gray-500 border-2 border-gray-300"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">
+              <Label className="text-gray-500 text-sm font-medium" htmlFor="email">
                 Email Address {role === 'operator' && <span className="text-gray-500 text-sm">(Optional)</span>}
               </Label>
               <Input
@@ -627,7 +656,7 @@ export default function PhoneOtpForm({ users }: { users: any }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required={role !== 'operator'}
-                className="transition-colors"
+                className="transition-colors text-gray-500 border-2 border-gray-300"
               />
             </div>
           </CardContent>

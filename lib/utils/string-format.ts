@@ -44,3 +44,20 @@ export const convertKeysToTitleCase = (array: Record<string, any>[]): Record<str
         return newObj;
     });
 };
+
+/**
+ * Sanitizes input by removing special characters
+ * Allows alphanumeric characters, spaces, hyphens, and underscores
+ * @param value - The input string to sanitize
+ * @param allowSpaces - Whether to allow spaces (default: true)
+ * @returns Sanitized string with special characters removed
+ */
+export const sanitizeInput = (value: string, allowSpaces: boolean = true): string => {
+    if (allowSpaces) {
+        // Allow alphanumeric, spaces, hyphens, and underscores
+        return value.replace(/[^a-zA-Z0-9\s\-_]/g, '');
+    } else {
+        // Allow only alphanumeric, hyphens, and underscores (no spaces)
+        return value.replace(/[^a-zA-Z0-9\-_]/g, '');
+    }
+};

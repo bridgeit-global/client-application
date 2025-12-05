@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSiteName } from '@/lib/utils/site';
 import { useSiteType } from '@/hooks/use-site-type';
+import { sanitizeInput } from '@/lib/utils/string-format';
 type SearchResult = {
     place_name: string;
     center: [number, number];
@@ -236,6 +237,10 @@ export const EditSiteForm: React.FC<EditSiteFormProps> = ({ initialData, handleC
                                                     disabled={loading}
                                                     placeholder={`Enter ${site_name} Name`}
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const sanitized = sanitizeInput(e.target.value, true);
+                                                        field.onChange(sanitized);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -287,6 +292,10 @@ export const EditSiteForm: React.FC<EditSiteFormProps> = ({ initialData, handleC
                                                     disabled={loading}
                                                     placeholder="Enter Zone ID"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const sanitized = sanitizeInput(e.target.value, false);
+                                                        field.onChange(sanitized);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -368,8 +377,9 @@ export const EditSiteForm: React.FC<EditSiteFormProps> = ({ initialData, handleC
                                             placeholder="Search for a location..."
                                             value={searchQuery}
                                             onChange={(e) => {
-                                                setSearchQuery(e.target.value);
-                                                handleSearch(e.target.value);
+                                                const sanitized = sanitizeInput(e.target.value, true);
+                                                setSearchQuery(sanitized);
+                                                handleSearch(sanitized);
                                             }}
                                             className="pl-10"
                                         />

@@ -22,6 +22,7 @@ import { useSiteName } from "@/lib/utils/site"
 import { BankSelector } from "@/components/input/bank-selector"
 import { useUserStore } from "@/lib/store/user-store"
 import { useRouter } from "next/navigation"
+import { sanitizeInput } from "@/lib/utils/string-format"
 
 
 type EditConnectionFormProps = {
@@ -390,7 +391,10 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                                                     className="w-full px-2 py-1 text-sm border rounded-md focus:outline-none"
                                                     placeholder={`Search ${site_name} ID...`}
                                                     value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    onChange={(e) => {
+                                                        const sanitized = sanitizeInput(e.target.value, false);
+                                                        setSearchQuery(sanitized);
+                                                    }}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             </div>
@@ -495,10 +499,11 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                                                         placeholder={`Enter ${field.key}`}
                                                         required
                                                         onChange={(e) => {
-                                                            inputField.onChange(e);
+                                                            const sanitized = sanitizeInput(e.target.value, false);
+                                                            inputField.onChange(sanitized);
                                                             // Real-time validation
                                                             if (field.validation) {
-                                                                validateParameterValue(e.target.value, field.validation, field.key, index);
+                                                                validateParameterValue(sanitized, field.validation, field.key, index);
                                                             }
                                                         }}
                                                     />
@@ -543,7 +548,14 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                                                 <FormItem>
                                                     <FormLabel>Bank Branch Name</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} placeholder="Enter bank branch name" />
+                                                        <Input 
+                                                            {...field} 
+                                                            placeholder="Enter bank branch name"
+                                                            onChange={(e) => {
+                                                                const sanitized = sanitizeInput(e.target.value, true);
+                                                                field.onChange(sanitized);
+                                                            }}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -571,7 +583,14 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                                                 <FormItem>
                                                     <FormLabel>Bank Account Holder Name</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} placeholder="Enter account holder name" />
+                                                        <Input 
+                                                            {...field} 
+                                                            placeholder="Enter account holder name"
+                                                            onChange={(e) => {
+                                                                const sanitized = sanitizeInput(e.target.value, true);
+                                                                field.onChange(sanitized);
+                                                            }}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -627,7 +646,14 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                                                 <FormItem>
                                                     <FormLabel>Operator Name</FormLabel>
                                                     <FormControl>
-                                                        <Input {...field} placeholder="Enter operator name" />
+                                                        <Input 
+                                                            {...field} 
+                                                            placeholder="Enter operator name"
+                                                            onChange={(e) => {
+                                                                const sanitized = sanitizeInput(e.target.value, true);
+                                                                field.onChange(sanitized);
+                                                            }}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -642,7 +668,14 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                                             <FormItem>
                                                 <FormLabel>Operational Hours</FormLabel>
                                                 <FormControl>
-                                                    <Textarea {...field} placeholder="Enter operational hours (e.g., 9:00 AM - 6:00 PM)" />
+                                                    <Textarea 
+                                                        {...field} 
+                                                        placeholder="Enter operational hours (e.g., 9:00 AM - 6:00 PM)"
+                                                        onChange={(e) => {
+                                                            const sanitized = sanitizeInput(e.target.value, true);
+                                                            field.onChange(sanitized);
+                                                        }}
+                                                    />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

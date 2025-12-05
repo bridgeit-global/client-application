@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import {
   Card,
   CardContent,
@@ -78,6 +79,8 @@ function SignUpContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>(undefined);
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const router = useRouter();
   const supabasePublic = createPublicClient();
 
@@ -151,6 +154,12 @@ function SignUpContent() {
   const nextStep = async () => {
     const isLastStep = currentStep === steps.length - 1;
 
+    // Validate captcha on first step
+    if (currentStep === 0 && !captchaToken) {
+      alert('Please complete the captcha verification before continuing.');
+      return;
+    }
+
     // Validate only the current step's fields
     let isValid = false;
     switch (currentStep) {
@@ -172,7 +181,14 @@ function SignUpContent() {
       // Save current step data
       const savedSuccessfully = await saveCurrentStep(currentValues);
 
-      if (!savedSuccessfully) return;
+      if (!savedSuccessfully) {
+        // Reset captcha on error for first step
+        if (currentStep === 0) {
+          setCaptchaToken(undefined);
+          turnstileRef.current?.reset();
+        }
+        return;
+      }
 
       if (isLastStep) {
         // Send email notification only on final step
@@ -264,6 +280,23 @@ function SignUpContent() {
                     <FormMessage className="text-red-200" />
                   </FormItem>
                 )}
+              />
+            </div>
+
+            {/* Turnstile captcha on first step */}
+            <div className="flex justify-center pt-2">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
+                onSuccess={(token) => {
+                  setCaptchaToken(token);
+                }}
+                onError={() => {
+                  setCaptchaToken(undefined);
+                }}
+                onExpire={() => {
+                  setCaptchaToken(undefined);
+                }}
               />
             </div>
           </div>

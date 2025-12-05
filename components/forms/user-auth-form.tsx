@@ -228,61 +228,61 @@ export default function PhoneOtpForm({ users }: { users: any }) {
     }
 
     // User has org_id, proceed with portal access
-    if (data.user?.email || isOperator) {
-      try {
-        const { data: organization, error: org_error } = await supabase.from('organizations').select('*').eq('id', userOrgId).single();
-        if (org_error) {
-          // For operators, we can continue without organization data if needed
-          if (!isOperator) {
-            throw org_error;
-          }
-        }
-        if (organization) {
-          setOrganization(organization);
-        }
-      } catch (error) {
-        if (!isOperator) {
-          toast({
-            title: 'Error loading organization',
-            description: 'Please try again',
-            variant: 'destructive'
-          });
-          setIsLoader(false);
-          return;
-        }
-      }
+    // if (data.user?.email || isOperator) {
+    //   try {
+    //     const { data: organization, error: org_error } = await supabase.from('organizations').select('*').eq('id', userOrgId).single();
+    //     if (org_error) {
+    //       // For operators, we can continue without organization data if needed
+    //       if (!isOperator) {
+    //         throw org_error;
+    //       }
+    //     }
+    //     if (organization) {
+    //       setOrganization(organization);
+    //     }
+    //   } catch (error) {
+    //     if (!isOperator) {
+    //       toast({
+    //         title: 'Error loading organization',
+    //         description: 'Please try again',
+    //         variant: 'destructive'
+    //       });
+    //       setIsLoader(false);
+    //       return;
+    //     }
+    //   }
 
-      setUser(data?.user);
+    //   setUser(data?.user);
 
-      try {
-        await fetchBillers();
-      } catch (error) {
-        // Continue even if billers fail for operators
-      }
-      if (data.user?.role === 'service_role') {
-        setIsSupport(true);
-      } else if (isOperator) {
-        // Check if phone is authenticated for operators
-        if (!data.user?.phone_confirmed_at) {
-          toast({
-            title: 'Phone Authentication Required',
-            description: 'Please verify your phone number to access the portal',
-            variant: 'destructive'
-          });
-          setIsLoader(false);
-          return;
-        }
-        router.push('/portal/meter-reading');
-      } else {
-        router.push('/portal/dashboard');
-      }
-      toast({
-        title: 'Success',
-        description: 'OTP verified successfully'
-      });
-    } else {
-      setStep('account');
-    }
+    //   try {
+    //     await fetchBillers();
+    //   } catch (error) {
+    //     // Continue even if billers fail for operators
+    //   }
+    //   if (data.user?.role === 'service_role') {
+    //     setIsSupport(true);
+    //   } else if (isOperator) {
+    //     // Check if phone is authenticated for operators
+    //     if (!data.user?.phone_confirmed_at) {
+    //       toast({
+    //         title: 'Phone Authentication Required',
+    //         description: 'Please verify your phone number to access the portal',
+    //         variant: 'destructive'
+    //       });
+    //       setIsLoader(false);
+    //       return;
+    //     }
+    //     router.push('/portal/meter-reading');
+    //   } else {
+    //     router.push('/portal/dashboard');
+    //   }
+    //   toast({
+    //     title: 'Success',
+    //     description: 'OTP verified successfully'
+    //   });
+    // } else {
+    //   setStep('account');
+    // }
     setIsLoader(false);
   };
 

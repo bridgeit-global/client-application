@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useUserStore } from '@/lib/store/user-store';
 import { useToast } from '@/components/ui/use-toast';
 import { useSupabaseError } from '@/hooks/use-supabase-error';
+import { updateUserMetadata } from '@/lib/utils/update-user-metadata';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,6 @@ export default function UserProfilePage() {
         email: '',
         phone: '',
         station_type: '',
-        batch_threshold_amount: 0
     });
     const [open, setOpen] = useState(false);
     const supabase = createClient();
@@ -60,6 +60,7 @@ export default function UserProfilePage() {
                 clearError(); // Clear any previous errors
 
                 const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
+                console.log('supabaseUser',supabaseUser)
 
                 if (error) {
                     // Handle AuthError separately
@@ -72,16 +73,6 @@ export default function UserProfilePage() {
                 }
 
                 if (supabaseUser) {
-                    const { data, error: orgError } = await supabase.from('organizations').select('*').eq('id', supabaseUser.user_metadata?.org_id).single();
-                    if (orgError) {
-                        const errorMessage = handleDatabaseError(orgError);
-                        toast({
-                            title: 'Error',
-                            description: errorMessage,
-                            variant: 'destructive'
-                        });
-                        return;
-                    }
                     setUser(supabaseUser);
                     setFormData({
                         first_name: supabaseUser.user_metadata?.first_name || '',
@@ -89,7 +80,6 @@ export default function UserProfilePage() {
                         email: supabaseUser.email || '',
                         phone: supabaseUser.phone || '',
                         station_type: supabaseUser.user_metadata?.station_type || '',
-                        batch_threshold_amount: data.batch_threshold_amount || 0
                     });
                 }
             } catch (error) {
@@ -174,57 +164,30 @@ export default function UserProfilePage() {
             clearError(); // Clear any previous errors
 
             if (section === 'station') {
-                // Update user metadata (station_type) and organization (batch_threshold_amount)
-                const updates = [];
-                updates.push(supabase.auth.updateUser({
-                    data: {
-                        station_type: formData.station_type,
-                    }
-                }));
-                const results = await Promise.all(updates);
-                const userUpdate = results[0];
-                if (userUpdate.error) {
-                    // Handle AuthError separately
-                    toast({
-                        title: 'Error',
-                        description: userUpdate.error.message,
-                        variant: 'destructive'
-                    });
-                    return;
-                }
-                if (userUpdate.data && userUpdate.data.user) {
-                    setUser(userUpdate.data.user);
-                }
+                // Update user metadata (station_type) using Edge Function
+                const updatedUser = await updateUserMetadata({
+                    station_type: formData.station_type,
+                });
+                setUser(updatedUser);
             } else {
                 // Personal or contact info (only user metadata)
-                const { data, error } = await supabase.auth.updateUser({
-                    data: {
-                        first_name: formData.first_name,
-                        last_name: formData.last_name,
-                        station_type: formData.station_type
-                    }
+                const updatedUser = await updateUserMetadata({
+                    first_name: formData.first_name,
+                    last_name: formData.last_name,
+                    station_type: formData.station_type
                 });
-                if (error) {
-                    // Handle AuthError separately
-                    toast({
-                        title: 'Error',
-                        description: error.message,
-                        variant: 'destructive'
-                    });
-                    return;
-                }
-                setUser(data.user);
+                setUser(updatedUser);
             }
             setIsEditing(prev => ({ ...prev, [section]: false }));
             toast({
                 title: 'Success',
                 description: 'Profile updated successfully'
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating profile:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to update profile',
+                description: error?.message || 'Failed to update profile',
                 variant: 'destructive'
             });
         }
@@ -451,13 +414,6 @@ export default function UserProfilePage() {
                                             </PopoverContent>
                                         </Popover>
                                     )}
-                                </div>
-                            </div>
-                            {/* Batch Threshold Amount UI */}
-                            <div className="space-y-2 mt-4">
-                                <Label>Batch Threshold Amount</Label>
-                                <div className="bg-muted/50 rounded px-3 py-2 text-base">
-                                    {formatRupees(formData.batch_threshold_amount)}
                                 </div>
                             </div>
                         </div>

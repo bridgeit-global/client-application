@@ -2,6 +2,7 @@ import PageContainer from '@/components/layout/page-container';
 import { Footer } from '@/components/layout/footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SupportSidebar } from '@/components/sidebar/support-sidebar';
+import Header from '@/components/layout/header';
 export default function RootLayout({
   children
 }: {
@@ -12,7 +13,8 @@ export default function RootLayout({
       <SidebarProvider>
         <SupportSidebar />
         <main className="w-full flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden">
+          <Header />
+          <div className="flex-1 overflow-hidden min-h-0">
             <PageContainer scrollable>
               {children}
             </PageContainer>

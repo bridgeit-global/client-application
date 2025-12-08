@@ -10,7 +10,7 @@ import FooterSidebar from './footer-sidebar';
 import { supportNavItems } from '@/constants/nav-item';
 export function SupportSidebar() {
     return (
-        <Sidebar collapsible='icon' variant='sidebar'>
+        <Sidebar collapsible='offcanvas' variant='sidebar'>
             <HeaderSidebar />
             <ContentSidebar items={supportNavItems} />
             <FooterSidebar />

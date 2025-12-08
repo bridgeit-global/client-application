@@ -3,7 +3,6 @@ import { Footer } from '@/components/layout/footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { PortalSidebar } from '@/components/sidebar/portal-sidebar';
 import Header from '@/components/layout/header';
-import { createClient } from '@/lib/supabase/server';
 
 export default async function RootLayout({
   children

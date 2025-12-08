@@ -9,8 +9,9 @@ export function ThemeGate() {
   useEffect(() => {
     const root = document.documentElement;
     const isPortal = pathname?.startsWith('/portal');
-    // Apply dark theme to all non-portal routes
-    root.classList.toggle('dark', !isPortal);
+    const isSupport = pathname?.startsWith('/support');
+    // Apply dark theme only to routes that are neither portal nor support (public routes)
+    root.classList.toggle('dark', !isPortal && !isSupport);
   }, [pathname]);
 
   return null;

@@ -1,18 +1,29 @@
 /** @type {import('next').NextConfig} */
 const { version } = require('./package.json');
+const path = require('path');
 
 const nextConfig = {
   // Turbopack configuration for development
+  // Note: resolveAlias may not be fully supported in Next.js 16 Turbopack
+  // If issues persist, consider using webpack for development (remove --turbo flag)
   turbopack: {
     root: __dirname,
   },
-  // Webpack configuration for production builds
+  // Webpack configuration for both development and production builds
   webpack: (config, { isServer }) => {
-    // Disable canvas native module (used by pdfjs-dist)
-    config.resolve.alias.canvas = false;
-    
-    // Handle keyv dynamic requires (used by mapbox-gl-geocoder)
+    // Handle canvas native module (used by pdfjs-dist)
+    // Disable for client-side, allow for server-side
     if (!isServer) {
+      config.resolve.alias.canvas = false;
+    }
+    
+    // Handle keyv dynamic requires (used by mapbox-gl-geocoder and flat-cache)
+    // Use mock for client-side builds to avoid dynamic require issues
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        keyv: path.resolve(__dirname, 'lib/mocks/keyv/index.js'),
+      };
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
@@ -24,7 +35,9 @@ const nextConfig = {
     return config;
   },
   // Externalize native Node.js packages for server-side
-  serverExternalPackages: ['@mapbox/mapbox-sdk'],
+  // Removed @mapbox/mapbox-sdk as it's only used client-side via @mapbox/mapbox-gl-geocoder
+  // Note: canvas is handled via webpack alias (disabled for client-side)
+  // The version mismatch warning can be ignored as canvas@3.2.0 works with pdfjs-dist via pnpm override
   // Environment variables
   env: {
     APP_VERSION: version,

@@ -80,13 +80,16 @@ export default function BatchPaymentTable({
       queryParams.order = sorting[0].desc ? 'desc' : 'asc';
     }
 
+    // Use searchParams inside the effect but don't include it in dependencies
+    // to avoid infinite loops. searchParams is only used to merge with new params.
     router.push(
       `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
       {
         scroll: false
       }
     );
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname]);
 
   useEffect(() => {
     // Set loading to false when data arrives, regardless of whether it's empty or not

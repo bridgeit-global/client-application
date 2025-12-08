@@ -66,7 +66,7 @@ describe('Sites Page', () => {
     });
 
     it('renders the sites page with site table', async () => {
-        const page = await Page({ searchParams: mockSearchParams });
+        const page = await Page({ searchParams: Promise.resolve(mockSearchParams) });
         render(page);
 
         // Check if the SiteTable component is rendered
@@ -75,13 +75,13 @@ describe('Sites Page', () => {
     });
 
     it('fetches active sites count', async () => {
-        await Page({ searchParams: mockSearchParams });
+        await Page({ searchParams: Promise.resolve(mockSearchParams) });
 
         expect(getActiveSites).toHaveBeenCalledTimes(1);
     });
 
     it('fetches all sites with correct parameters', async () => {
-        await Page({ searchParams: mockSearchParams });
+        await Page({ searchParams: Promise.resolve(mockSearchParams) });
 
         expect(fetchAllSites).toHaveBeenCalledTimes(1);
         expect(fetchAllSites).toHaveBeenCalledWith({
@@ -91,7 +91,7 @@ describe('Sites Page', () => {
     });
 
     it('handles empty search params', async () => {
-        await Page({ searchParams: {} });
+        await Page({ searchParams: Promise.resolve({}) });
 
         expect(fetchAllSites).toHaveBeenCalledWith({
             status: '1'
@@ -99,7 +99,7 @@ describe('Sites Page', () => {
     });
 
     it('passes correct props to SiteTable', async () => {
-        const page = await Page({ searchParams: mockSearchParams });
+        const page = await Page({ searchParams: Promise.resolve(mockSearchParams) });
         render(page);
 
         // Verify that SiteTable was called with correct props
@@ -123,7 +123,7 @@ describe('Sites Page', () => {
 
         (getActiveSites as jest.Mock).mockRejectedValue(new Error('Active sites API Error'));
 
-        await expect(Page({ searchParams: mockSearchParams })).rejects.toThrow('Active sites API Error');
+        await expect(Page({ searchParams: Promise.resolve(mockSearchParams) })).rejects.toThrow('Active sites API Error');
 
         consoleErrorSpy.mockRestore();
     });
@@ -133,7 +133,7 @@ describe('Sites Page', () => {
 
         (fetchAllSites as jest.Mock).mockRejectedValue(new Error('Fetch sites API Error'));
 
-        await expect(Page({ searchParams: mockSearchParams })).rejects.toThrow('Fetch sites API Error');
+        await expect(Page({ searchParams: Promise.resolve(mockSearchParams) })).rejects.toThrow('Fetch sites API Error');
 
         consoleErrorSpy.mockRestore();
     });
@@ -149,7 +149,7 @@ describe('Sites Page', () => {
         (getActiveSites as jest.Mock).mockResolvedValue(emptyActiveCount);
         (fetchAllSites as jest.Mock).mockResolvedValue(emptySitesData);
 
-        const page = await Page({ searchParams: mockSearchParams });
+        const page = await Page({ searchParams: Promise.resolve(mockSearchParams) });
         render(page);
 
         // Verify that SiteTable was called with empty data
@@ -180,7 +180,7 @@ describe('Sites Page', () => {
             created_at_end: '2024-12-31',
         };
 
-        await Page({ searchParams: complexSearchParams });
+        await Page({ searchParams: Promise.resolve(complexSearchParams) });
 
         expect(fetchAllSites).toHaveBeenCalledWith(complexSearchParams);
     });

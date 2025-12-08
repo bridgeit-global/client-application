@@ -45,7 +45,7 @@ describe('Prepaid Page', () => {
     });
 
     it('renders the prepaid page with connection table', async () => {
-        const page = await Page({ searchParams: mockSearchParams });
+        const page = await Page({ searchParams: Promise.resolve(mockSearchParams) });
         render(page);
 
         // Check if the page container has the correct ID
@@ -54,13 +54,13 @@ describe('Prepaid Page', () => {
     });
 
     it('fetches active connections count with correct paytype', async () => {
-        await Page({ searchParams: mockSearchParams });
+        await Page({ searchParams: Promise.resolve(mockSearchParams) });
 
         expect(getActiveConnectionsByPaytype).toHaveBeenCalledWith({ paytype: 0 });
     });
 
     it('fetches all connections with correct parameters', async () => {
-        await Page({ searchParams: mockSearchParams });
+        await Page({ searchParams: Promise.resolve(mockSearchParams) });
 
         expect(fetchPrepaidConnections).toHaveBeenCalledWith(
             mockSearchParams,
@@ -69,7 +69,7 @@ describe('Prepaid Page', () => {
     });
 
     it('handles empty search params', async () => {
-        await Page({ searchParams: {} });
+        await Page({ searchParams: Promise.resolve({}) });
 
         expect(fetchPrepaidConnections).toHaveBeenCalledWith(
             {},
@@ -78,7 +78,7 @@ describe('Prepaid Page', () => {
     });
 
     it('passes correct props to ConnectionTable', async () => {
-        const page = await Page({ searchParams: mockSearchParams });
+        const page = await Page({ searchParams: Promise.resolve(mockSearchParams) });
         render(page);
 
         const connectionTable = screen.getByTestId('mock-connection-table');
@@ -101,7 +101,7 @@ describe('Prepaid Page', () => {
         (getActiveConnectionsByPaytype as jest.Mock).mockRejectedValue(new Error('API Error'));
         (fetchPrepaidConnections as jest.Mock).mockRejectedValue(new Error('API Error'));
 
-        await expect(Page({ searchParams: mockSearchParams })).rejects.toThrow('API Error');
+        await expect(Page({ searchParams: Promise.resolve(mockSearchParams) })).rejects.toThrow('API Error');
 
         consoleErrorSpy.mockRestore();
     });

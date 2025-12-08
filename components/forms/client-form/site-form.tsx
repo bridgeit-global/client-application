@@ -44,7 +44,7 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
     const site_name = useSiteName();
     const supabase = createClient();
     const router = useRouter();
-    const { user } = useUserStore();
+    const { user, setUser } = useUserStore();
     const { toast } = useToast();
     const { handleDatabaseError, clearError } = useSupabaseError();
     const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
         mode: 'onChange'
     });
 
-    const { control, handleSubmit, reset, setValue } = form;
+    const { control, handleSubmit, reset, setValue, formState, getValues, trigger } = form;
 
     const handleSearch = async (query: string) => {
         if (!query) {
@@ -104,6 +104,27 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
         setSearchQuery(result.place_name);
         setShowResults(false);
     };
+
+    // Initialize user if not in store
+    useEffect(() => {
+        const initializeUser = async () => {
+            // If user is not in store or is empty object, fetch from Supabase
+            if (!user || !user.id || Object.keys(user).length === 0) {
+                console.log('🟢 [INIT] User not in store, fetching from Supabase...');
+                const { data: { user: supabaseUser }, error: userError } = await supabase.auth.getUser();
+                
+                if (!userError && supabaseUser) {
+                    console.log('🟢 [INIT] User fetched and set in store:', supabaseUser.id);
+                    setUser(supabaseUser);
+                } else if (userError) {
+                    console.log('🔴 [INIT] Error fetching user:', userError);
+                }
+            } else {
+                console.log('🟢 [INIT] User already in store:', user.id);
+            }
+        };
+        initializeUser();
+    }, [setUser]); // Only run once on mount
 
     // Initialize map
     useEffect(() => {
@@ -150,24 +171,78 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
     }, [setValue, form]);
 
     const onSubmit = async (siteData: SiteFormValues) => {
+        console.log('🔵 [SUBMIT] onSubmit called with data:', siteData);
+        console.log('🔵 [SUBMIT] Form state:', formState);
+        console.log('🔵 [SUBMIT] Loading:', loading, 'SiteIdExists:', siteIdExists);
         try {
+            console.log('🔵 [SUBMIT] Step 1: Setting loading to true');
             setLoading(true);
             clearError(); // Clear any previous errors
 
-            if (!user || !user.id) return;
+            console.log('🔵 [SUBMIT] Step 2: Checking user', { user: user?.id, hasUser: !!user, userObject: user });
+            
+            // If user is not in store, try to fetch it from Supabase
+            let currentUser = user;
+            if (!currentUser || !currentUser.id || Object.keys(currentUser).length === 0) {
+                console.log('🔵 [SUBMIT] User not in store, fetching from Supabase...');
+                const { data: { user: supabaseUser }, error: userError } = await supabase.auth.getUser();
+                
+                if (userError) {
+                    console.log('🔴 [SUBMIT] Error fetching user:', userError);
+                    toast({
+                        title: 'Error',
+                        variant: 'destructive',
+                        description: 'Failed to get user information. Please try again.'
+                    });
+                    setLoading(false);
+                    return;
+                }
+                
+                if (supabaseUser) {
+                    console.log('🔵 [SUBMIT] User fetched from Supabase:', supabaseUser.id);
+                    currentUser = supabaseUser;
+                    // Optionally update the store
+                    // setUser(supabaseUser);
+                } else {
+                    console.log('🔴 [SUBMIT] No user found in Supabase');
+                    toast({
+                        title: 'Error',
+                        variant: 'destructive',
+                        description: 'You must be logged in to create a site. Please log in and try again.'
+                    });
+                    setLoading(false);
+                    return;
+                }
+            }
+            
+            if (!currentUser || !currentUser.id) {
+                console.log('🔴 [SUBMIT] Early return: No user or user.id after fetch attempt');
+                toast({
+                    title: 'Error',
+                    variant: 'destructive',
+                    description: 'User information is missing. Please refresh the page and try again.'
+                });
+                setLoading(false);
+                return;
+            }
 
             // Validate that site ID is provided for new sites
+            console.log('🔵 [SUBMIT] Step 3: Validating site ID', { id: siteData.id, trimmed: siteData.id?.trim() });
             if (!siteData.id || siteData.id.trim() === '') {
+                console.log('🔴 [SUBMIT] Early return: Site ID is empty');
                 toast({
                     title: 'Error',
                     variant: 'destructive',
                     description: `${site_name} ID is required`
                 });
+                setLoading(false);
                 return;
             }
 
             // Validate that coordinates are not the default (0,0)
+            console.log('🔵 [SUBMIT] Step 4: Validating coordinates', { lat: siteData.latitude, lng: siteData.longitude });
             if (siteData.latitude === 0 && siteData.longitude === 0) {
+                console.log('🔴 [SUBMIT] Early return: Invalid coordinates (0,0)');
                 toast({
                     title: 'Error',
                     variant: 'destructive',
@@ -178,22 +253,37 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
             }
 
             // Prevent submission if site ID already exists
+            console.log('🔵 [SUBMIT] Step 5: Checking if site ID exists', { siteIdExists });
             if (siteIdExists) {
+                console.log('🔴 [SUBMIT] Early return: Site ID already exists');
                 toast({
                     title: 'Error',
                     variant: 'destructive',
                     description: `${site_name} ID already exists. Please choose a different ID.`
                 });
+                setLoading(false);
                 return;
             }
+            console.log('🔵 [SUBMIT] Step 6: Preparing insert data', {
+                id: siteData.id,
+                name: siteData.name,
+                org_id: currentUser.user_metadata?.org_id,
+                created_by: currentUser.id,
+                latitude: siteData.latitude,
+                longitude: siteData.longitude,
+                zone_id: siteData.zone_id,
+                type: siteData.type
+            });
+
+            console.log('🔵 [SUBMIT] Step 7: Calling supabase insert');
             const { data: insertData, error: siteError } = await supabase
                 .from('sites')
                 .insert([
                     {
                         id: siteData.id,
                         name: siteData.name,
-                        org_id: user.user_metadata.org_id,
-                        created_by: user.id,
+                        org_id: currentUser.user_metadata?.org_id,
+                        created_by: currentUser.id,
                         latitude: siteData.latitude,
                         longitude: siteData.longitude,
                         zone_id: siteData.zone_id,
@@ -202,27 +292,34 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
                 ])
                 .select();
 
+            console.log('🔵 [SUBMIT] Step 8: Insert response', { insertData, siteError });
+
             if (siteError) {
+                console.log('🔴 [SUBMIT] Database error:', siteError);
                 const errorMessage = handleDatabaseError(siteError);
                 toast({
                     title: 'Error',
                     variant: 'destructive',
                     description: errorMessage
                 });
+                setLoading(false);
                 return;
             }
 
             // Verify the insert was successful
+            console.log('🔵 [SUBMIT] Step 9: Verifying insert data', { insertData, length: insertData?.length });
             if (!insertData || insertData.length === 0) {
+                console.log('🔴 [SUBMIT] No data inserted');
                 toast({
                     title: 'Error',
                     variant: 'destructive',
                     description: `Failed to create ${site_name}. No data was inserted.`
                 });
+                setLoading(false);
                 return;
             }
 
-
+            console.log('🔵 [SUBMIT] Step 10: Success! Resetting form and navigating');
             reset();
             router.push(`/portal/site/sites?page=1&limit=10&site_id=${siteData.id}&status=0`);
             toast({
@@ -230,12 +327,15 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
                 description: `${site_name} created successfully`
             });
         } catch (error) {
+            console.log('🔴 [SUBMIT] Exception caught:', error);
+            console.error('🔴 [SUBMIT] Error details:', error);
             toast({
                 title: 'Error',
                 variant: 'destructive',
                 description: `Failed to create ${site_name}`
             });
         } finally {
+            console.log('🔵 [SUBMIT] Finally: Setting loading to false');
             setLoading(false);
         }
     };
@@ -271,6 +371,63 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
         }
     };
 
+    // Debug logging
+    useEffect(() => {
+        console.log('🟢 [STATE] Loading:', loading, 'SiteIdExists:', siteIdExists);
+        console.log('🟢 [STATE] Form values:', getValues());
+        console.log('🟢 [STATE] Form errors:', formState.errors);
+        console.log('🟢 [STATE] Form isValid:', formState.isValid);
+        console.log('🟢 [STATE] Button disabled:', loading || siteIdExists);
+        
+        // Check for elements that might be blocking the button
+        setTimeout(() => {
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                const rect = submitButton.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const elementAtPoint = document.elementFromPoint(centerX, centerY);
+                console.log('🟢 [STATE] Element at button center:', elementAtPoint);
+                console.log('🟢 [STATE] Button rect:', rect);
+                console.log('🟢 [STATE] Button computed style:', window.getComputedStyle(submitButton));
+                console.log('🟢 [STATE] Button pointer-events:', window.getComputedStyle(submitButton).pointerEvents);
+            }
+        }, 100);
+    }, [loading, siteIdExists, formState.errors, formState.isValid, getValues]);
+
+    const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        console.log('🟡 [BUTTON CLICK] Submit button clicked');
+        console.log('🟡 [BUTTON CLICK] Event:', e);
+        console.log('🟡 [BUTTON CLICK] Button disabled:', loading || siteIdExists);
+        console.log('🟡 [BUTTON CLICK] Current form values:', getValues());
+        console.log('🟡 [BUTTON CLICK] Form errors:', formState.errors);
+        
+        // Check if button is actually disabled
+        const button = e.currentTarget;
+        console.log('🟡 [BUTTON CLICK] Button element:', button);
+        console.log('🟡 [BUTTON CLICK] Button disabled attribute:', button.disabled);
+        console.log('🟡 [BUTTON CLICK] Button computed style:', window.getComputedStyle(button));
+        
+        // Try to trigger validation
+        trigger().then((isValid) => {
+            console.log('🟡 [BUTTON CLICK] Form validation result:', isValid);
+        });
+    };
+
+    const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        console.log('🟠 [FORM SUBMIT] Form submit event triggered');
+        console.log('🟠 [FORM SUBMIT] Event:', e);
+        console.log('🟠 [FORM SUBMIT] Form values:', getValues());
+        console.log('🟠 [FORM SUBMIT] Form errors:', formState.errors);
+        console.log('🟠 [FORM SUBMIT] Form isValid:', formState.isValid);
+        
+        // Let handleSubmit handle it, but log first
+        const isValid = formState.isValid;
+        if (!isValid) {
+            console.log('🔴 [FORM SUBMIT] Form is not valid, errors:', formState.errors);
+        }
+    };
+
     return (
         <div className="space-y-10">
             <Card>
@@ -280,7 +437,17 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
                 </CardHeader>
                 <Form {...form}>
                     <form
-                        onSubmit={handleSubmit(onSubmit)}
+                        onSubmit={(e) => {
+                            console.log('🟣 [FORM] onSubmit handler called');
+                            handleFormSubmit(e);
+                            handleSubmit(
+                                onSubmit,
+                                (errors) => {
+                                    console.log('🔴 [FORM VALIDATION] Validation failed with errors:', errors);
+                                    console.log('🔴 [FORM VALIDATION] Form values at validation failure:', getValues());
+                                }
+                            )(e);
+                        }}
                         className="w-full space-y-8"
                     >
                         <CardContent className="p-6">
@@ -524,7 +691,17 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <Button type="submit" disabled={loading || siteIdExists}>
+                                <Button 
+                                    type="submit" 
+                                    disabled={loading || siteIdExists}
+                                    onClick={handleButtonClick}
+                                    onMouseDown={(e) => {
+                                        console.log('🟤 [BUTTON] Mouse down event');
+                                    }}
+                                    onMouseUp={(e) => {
+                                        console.log('🟤 [BUTTON] Mouse up event');
+                                    }}
+                                >
                                     {loading ? "Saving..." : "Submit"}
                                 </Button>
                                 <Button

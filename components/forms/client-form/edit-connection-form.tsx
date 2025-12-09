@@ -103,7 +103,7 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
         },
     })
 
-    const { billers } = useBillerBoardStore()
+    const { billers, fetchBillers } = useBillerBoardStore()
     const [siteId, setSiteId] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
@@ -144,6 +144,13 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
         if (error) throw error
         return data.submeter_info
     }
+
+    // Fetch billers if not available
+    useEffect(() => {
+        if (!billers || billers.length === 0) {
+            fetchBillers();
+        }
+    }, [billers, fetchBillers]);
 
     // Load submeter info and populate form
     useEffect(() => {

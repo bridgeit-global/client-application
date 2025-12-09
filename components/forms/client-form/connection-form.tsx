@@ -96,7 +96,7 @@ function ConnectionForm(props: ConnectionFormProps) {
         },
     })
 
-    const { billers } = useBillerBoardStore()
+    const { billers, fetchBillers } = useBillerBoardStore()
     const [siteId, setSiteId] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
@@ -171,6 +171,13 @@ function ConnectionForm(props: ConnectionFormProps) {
             setIsLoading(false)
         }
     }
+
+    // Fetch billers if not available
+    useEffect(() => {
+        if (!billers || billers.length === 0) {
+            fetchBillers();
+        }
+    }, [billers, fetchBillers]);
 
     // Load initial data
     useEffect(() => {

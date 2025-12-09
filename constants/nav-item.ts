@@ -263,6 +263,14 @@ export const getNavItems = (site_name: string): NavItem[] => {
             isCollapsible: false,
             shortcut: ['m', 'l'],
             items: []
+        },
+        {
+            title: 'Report Issue',
+            url: '/portal/report-issue',
+            icon: 'warning',
+            isCollapsible: false,
+            shortcut: ['r', 'i'],
+            items: []
         }
 
     ];

@@ -3,7 +3,7 @@ import { handleDatabaseError } from '@/lib/utils/supabase-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Chunk size for processing updates to avoid timeouts
-const CHUNK_SIZE = 100;
+const CHUNK_SIZE = 5;
 
 /**
  * Process updates in chunks to avoid database timeouts

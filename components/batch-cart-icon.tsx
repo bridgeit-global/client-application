@@ -784,7 +784,7 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
                                         <span>{items.length} item{items.length !== 1 ? 's' : ''}</span>
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-row gap-2 sm:gap-3 items-end">
                                     <Button
                                         variant="outline"
                                         onClick={() => {
@@ -795,7 +795,7 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
                                         }}
                                         size="sm"
                                         disabled={isLoading}
-                                        className="flex-1 lg:flex-none"
+                                        className="flex-1 sm:flex-none"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Clear Cart
@@ -807,7 +807,7 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
                                             setBatchName('');
                                         }}
                                         size="sm"
-                                        className="flex-1 lg:flex-none bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+                                        className="flex-1 sm:flex-none bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
                                     >
                                         {isLoading ? (
                                             <>

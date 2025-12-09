@@ -1,6 +1,40 @@
 import { createClient } from '@/lib/supabase/server';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
 import { NextRequest, NextResponse } from 'next/server';
+
+// Chunk size for processing updates to avoid timeouts
+const CHUNK_SIZE = 5;
+
+/**
+ * Process updates in chunks to avoid database timeouts
+ */
+async function updateInChunks<T>(
+  supabase: any,
+  table: string,
+  ids: T[],
+  updateData: Record<string, any>,
+  idField: string = 'id'
+): Promise<{ error: any }> {
+  if (ids.length === 0) {
+    return { error: null };
+  }
+
+  // Process in chunks
+  for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+    const chunk = ids.slice(i, i + CHUNK_SIZE);
+    const { error } = await supabase
+      .from(table)
+      .update(updateData)
+      .in(idField, chunk);
+
+    if (error) {
+      return { error };
+    }
+  }
+
+  return { error: null };
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   if (body?.data) {
@@ -27,23 +61,36 @@ export async function POST(req: NextRequest) {
         throw handledError.message;
       }
       if (batch_data && batch_data?.batch_id) {
-        const { error: bill_error } = await supabase
-          .from('bills')
-          .update({ batch_id: batch_data?.batch_id, bill_status: 'batch' })
-          .in('id', bill_ids);
-        console.log('bill_error', bill_error);
-        const { error: recharge_error } = await supabase
-          .from('prepaid_recharge')
-          .update({ batch_id: batch_data?.batch_id, recharge_status: 'batch' })
-          .in('id', recharge_ids);
-        console.log('recharge_error', recharge_error);
-        if (bill_error) {
-          const handledError = handleDatabaseError(bill_error);
-          throw handledError.message;
+        // Update bills in chunks of 5
+        if (bill_ids.length > 0) {
+          const { error: bill_error } = await updateInChunks(
+            supabase,
+            'bills',
+            bill_ids,
+            { batch_id: batch_data?.batch_id, bill_status: 'batch' },
+            'id'
+          );
+          console.log('bill_error', bill_error);
+          if (bill_error) {
+            const handledError = handleDatabaseError(bill_error);
+            throw handledError.message;
+          }
         }
-        if (recharge_error) {
-          const handledError = handleDatabaseError(recharge_error);
-          throw handledError.message;
+
+        // Update recharges in chunks of 5
+        if (recharge_ids.length > 0) {
+          const { error: recharge_error } = await updateInChunks(
+            supabase,
+            'prepaid_recharge',
+            recharge_ids,
+            { batch_id: batch_data?.batch_id, recharge_status: 'batch' },
+            'id'
+          );
+          console.log('recharge_error', recharge_error);
+          if (recharge_error) {
+            const handledError = handleDatabaseError(recharge_error);
+            throw handledError.message;
+          }
         }
       }
 

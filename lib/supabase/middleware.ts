@@ -19,7 +19,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https://utfs.io https://*.supabase.co https://*.supabase.in https://api.mapbox.com https://*.tiles.mapbox.com",
-    "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://uploadthing.com https://vercel.live https://*.vercel-scripts.com https://*.amazonaws.com",
+    "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://*.uploadthing.com https://vercel.live https://*.vercel-scripts.com https://*.amazonaws.com",
     "frame-src 'self' https://uploadthing.com https://challenges.cloudflare.com",
     "worker-src 'self' blob:",
     "object-src 'none'",

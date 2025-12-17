@@ -546,6 +546,26 @@ export function BillForm({ initialValue }: { initialValue: SingleBillProps }) {
           />
         </div>
         <div>
+          <Label htmlFor="discount_date">Discount Date</Label>
+          <Input
+            id="discount_date"
+            name="discount_date"
+            type="date"
+            value={formData.discount_date || ''}
+            onChange={handleInputChange}
+          />
+        </div>
+        <div>
+          <Label htmlFor="disconnection_date">Disconnection Date</Label>
+          <Input
+            id="disconnection_date"
+            name="disconnection_date"
+            type="date"
+            value={formData.disconnection_date || ''}
+            onChange={handleInputChange}
+          />
+        </div>
+        <div>
           <Label htmlFor="due_date">Due Date</Label>
           <Input
             id="due_date"

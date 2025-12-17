@@ -128,7 +128,7 @@ function SelectedBillTable({
                             Due Date
                         </p>
                         <p className="text-sm font-semibold">
-                            <DueDateCell discount_date_str={item.discount_date} due_date_str={item.due_date} />
+                            <DueDateCell discount_date_str={item.discount_date} due_date_str={item.due_date} is_active={isBillType(item) ? item.is_active : true} />
                         </p>
                     </div>;
                 case 2:
@@ -162,7 +162,7 @@ function SelectedBillTable({
                             Recharge Date
                         </p>
                         <p className="text-sm font-semibold">
-                            <DueDateCell due_date_str={item.recharge_date} />
+                            <DueDateCell due_date_str={item.recharge_date} is_active={isPrepaidType(item) ? (item.is_active ?? true) : true} />
                         </p>
                     </div>;
                 case 2:

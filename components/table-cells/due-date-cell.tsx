@@ -2,7 +2,7 @@ import { ddmmyy, getDueDate } from '@/lib/utils/date-format';
 import { Calendar, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import React from 'react'
 
-export const DueDateCell = ({ discount_date_str = null, due_date_str }: { discount_date_str?: string | null, due_date_str: string }) => {
+export const DueDateCell = ({ discount_date_str = null, due_date_str, is_active = true }: { discount_date_str?: string | null, due_date_str: string, is_active?: boolean }) => {
     const date_str = getDueDate(discount_date_str, due_date_str);
     if (!date_str) {
         return null
@@ -20,6 +20,17 @@ export const DueDateCell = ({ discount_date_str = null, due_date_str }: { discou
     const isDueSoon = diffDays >= 0 && diffDays <= 3;
 
     const getStatusStyles = () => {
+        // If bill is not active, show neutral/default styling
+        if (!is_active) {
+            return {
+                bg: 'bg-muted/50',
+                border: 'border-border',
+                text: 'text-muted-foreground',
+                icon: <Calendar className="w-3.5 h-3.5" />,
+                label: ''
+            };
+        }
+
         if (isOverdue) {
             return {
                 bg: 'bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/30 dark:to-rose-950/20',
@@ -59,10 +70,12 @@ export const DueDateCell = ({ discount_date_str = null, due_date_str }: { discou
                     {date ? ddmmyy(date.toISOString()) : ''}
                 </span>
             </div>
-            <div className={`flex items-center gap-1.5 ${status.text}`}>
-                {status.icon}
-                <span className="text-xs font-medium">{status.label}</span>
-            </div>
+            {is_active && (
+                <div className={`flex items-center gap-1.5 ${status.text}`}>
+                    {status.icon}
+                    <span className="text-xs font-medium">{status.label}</span>
+                </div>
+            )}
         </div>
     )
 }

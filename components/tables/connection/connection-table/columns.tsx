@@ -116,9 +116,10 @@ export const postpaidColumns: ColumnDef<ConnectionTableProps>[] = [
     id: 'due_date',
     header: 'Due Date',
     cell: ({ row }) => {
-      const due_date_str = getBillLatestBill(row.original?.bills)?.due_date;
-      const discount_date_str = getBillLatestBill(row.original?.bills)?.discount_date;
-      return <DueDateCell discount_date_str={discount_date_str} due_date_str={due_date_str} />
+      const latestBill = getBillLatestBill(row.original?.bills);
+      const due_date_str = latestBill?.due_date;
+      const discount_date_str = latestBill?.discount_date;
+      return <DueDateCell discount_date_str={discount_date_str} due_date_str={due_date_str} is_active={latestBill?.is_active} />
     }
   },
   {

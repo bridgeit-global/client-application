@@ -78,7 +78,7 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
         </Button>
       )
     },
-    cell: ({ row }) => <DueDateCell discount_date_str={row.original.discount_date} due_date_str={row.original.due_date} />,
+    cell: ({ row }) => <DueDateCell discount_date_str={row.original.discount_date} due_date_str={row.original.due_date} is_active={row.original.is_active} />,
     accessorKey: 'due_date'
   },
   {

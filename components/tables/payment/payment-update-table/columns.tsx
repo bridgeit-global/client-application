@@ -71,7 +71,7 @@ export const billColumns: ColumnDef<AllBillTableProps>[] = [
   {
     accessorKey: 'due_date',
     header: 'Due Date',
-    cell: ({ row }: any) => <DueDateCell discount_date_str={row.original.discount_date} due_date_str={row.original.due_date} />
+    cell: ({ row }: any) => <DueDateCell discount_date_str={row.original.discount_date} due_date_str={row.original.due_date} is_active={row.original.is_active} />
   },
   {
     header: 'Bill Amount',

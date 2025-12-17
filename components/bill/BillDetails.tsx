@@ -648,7 +648,7 @@ export function BillDetails({ bill }: BillDetailsProps) {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Due Date</p>
-                            <DueDateCell discount_date_str={bill.discount_date} due_date_str={bill.due_date} />
+                            <DueDateCell discount_date_str={bill.discount_date} due_date_str={bill.due_date} is_active={bill.is_active} />
                         </div>
                         <div>
                             <p className="text-sm font-medium text-gray-500">Bill Type</p>

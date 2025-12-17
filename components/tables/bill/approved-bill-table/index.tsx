@@ -104,7 +104,6 @@ export default function ApprovedBillTable({
   });
 
   useEffect(() => {
-    setIsLoading(true);
     const currentHash = window.location.hash;
     const queryParams: Record<string, string> = {
       ...filterBody,
@@ -117,13 +116,20 @@ export default function ApprovedBillTable({
       queryParams.order = sorting[0].desc ? 'desc' : 'asc';
     }
 
-    router.push(
-      `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
-      {
-        scroll: false
-      }
-    );
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams]);
+    const newQueryString = createQueryString(searchParams, queryParams);
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      setIsLoading(true);
+      router.push(
+        `${pathname}?${newQueryString}${currentHash}`,
+        {
+          scroll: false
+        }
+      );
+    }
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname]);
 
   useEffect(() => {
     // Set loading to false when data arrives, regardless of whether it's empty or not

@@ -87,31 +87,37 @@ export function PaidTable({
       queryParams.order = sorting[0].desc ? 'desc' : 'asc';
     }
 
-    const handleNavigation = async () => {
-      try {
-        await router.push(
-          `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
-          {
-            scroll: false
-          }
-        );
-        // Small delay to ensure data fetching has started
-        setTimeout(() => {
+    const newQueryString = createQueryString(searchParams, queryParams);
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      const handleNavigation = async () => {
+        try {
+          await router.push(
+            `${pathname}?${newQueryString}${currentHash}`,
+            {
+              scroll: false
+            }
+          );
+          // Small delay to ensure data fetching has started
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 100);
+        } catch (error) {
           setIsLoading(false);
-        }, 100);
-      } catch (error) {
+          console.error('Navigation error:', error);
+        }
+      };
+
+      handleNavigation();
+
+      return () => {
+        // Cleanup loading state if component unmounts during navigation
         setIsLoading(false);
-        console.error('Navigation error:', error);
-      }
-    };
-
-    handleNavigation();
-
-    return () => {
-      // Cleanup loading state if component unmounts during navigation
-      setIsLoading(false);
-    };
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams]);
+      };
+    }
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname]);
 
   const table = useReactTable({
     data: data as any,

@@ -77,7 +77,6 @@ export function BatchItemTable({
 
   // Sync pagination and sorting state with URL parameters
   useEffect(() => {
-    setIsLoading(true);
     const currentHash = window.location.hash;
     // Build query params for sorting
     let filter: any = {
@@ -89,15 +88,22 @@ export function BatchItemTable({
       filter.sort = sorting[0].id;
       filter.order = sorting[0].desc ? 'desc' : 'asc';
     }
-    router.push(
-      `${pathname}?${createQueryString(searchParams, {
-        [payType]: filter
-      })}${currentHash}`,
-      {
-        scroll: false
-      }
-    );
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams, payType]);
+    const newQueryString = createQueryString(searchParams, {
+      [payType]: filter
+    });
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      setIsLoading(true);
+      router.push(
+        `${pathname}?${newQueryString}${currentHash}`,
+        {
+          scroll: false
+        }
+      );
+    }
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, payType]);
 
   useEffect(() => {
     setIsLoading(false);

@@ -85,19 +85,25 @@ export function BillReportTable({
         queryParams.order = sorting[0].desc ? 'desc' : 'asc';
       }
 
-      await router.push(
-        `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
-        {
-          scroll: false
-        }
-      );
+      const newQueryString = createQueryString(searchParams, queryParams);
+      const currentQueryString = searchParams.toString();
+      
+      // Only navigate if the query string actually changed
+      if (newQueryString !== currentQueryString) {
+        await router.push(
+          `${pathname}?${newQueryString}${currentHash}`,
+          {
+            scroll: false
+          }
+        );
+      }
 
       // Set loading to false after navigation is complete
       setIsLoading(false);
     };
 
     fetchData();
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams]);
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname]);
 
   const table = useReactTable({
     data,

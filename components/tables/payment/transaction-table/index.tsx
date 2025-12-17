@@ -187,7 +187,7 @@ export function TransactionTable({
     } finally {
       setIsLoading(false);
     }
-  }, [router, pathname, filterBody, sorting, searchParams]);
+  }, [router, pathname, filterBody, sorting]);
 
   const filterCount = useMemo(() => getFilterDataLength(filterBody), [filterBody]);
 

@@ -76,19 +76,26 @@ export function BillBatchPaymentTable({
 
   const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
-    setIsLoading(true);
     const currentHash = window.location.hash;
-    router.push(
-      `${pathname}?${createQueryString(searchParams, {
-        ...filterBody,
-        page: pageIndex + 1,
-        limit: pageSize
-      })}${currentHash}`,
-      {
-        scroll: false
-      }
-    );
-  }, [pageIndex, pageSize, filterBody, router, pathname, searchParams]);
+    const queryParams = {
+      ...filterBody,
+      page: pageIndex + 1,
+      limit: pageSize
+    };
+    const newQueryString = createQueryString(searchParams, queryParams);
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      setIsLoading(true);
+      router.push(
+        `${pathname}?${newQueryString}${currentHash}`,
+        {
+          scroll: false
+        }
+      );
+    }
+  }, [pageIndex, pageSize, filterBody, router, pathname]);
 
   useEffect(() => {
     setIsLoading(false);

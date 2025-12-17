@@ -90,13 +90,19 @@ export default function NewBillTable({
       queryParams.order = sorting[0].desc ? 'desc' : 'asc';
     }
 
-    router.push(
-      `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
-      {
-        scroll: false
-      }
-    );
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams]);
+    const newQueryString = createQueryString(searchParams, queryParams);
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      router.push(
+        `${pathname}?${newQueryString}${currentHash}`,
+        {
+          scroll: false
+        }
+      );
+    }
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname]);
 
   useEffect(() => {
     // Set loading to false when data arrives, regardless of whether it's empty or not

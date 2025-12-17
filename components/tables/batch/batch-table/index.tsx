@@ -178,7 +178,7 @@ export function BatchTable({
     } finally {
       setIsLoading(false);
     }
-  }, [router, pathname, filterBody, sorting, searchParams]);
+  }, [router, pathname, filterBody, sorting]);
 
   // Add useEffect to handle hash navigation
   React.useEffect(() => {

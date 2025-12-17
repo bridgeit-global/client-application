@@ -49,13 +49,19 @@ export default function PrepaidBillTable({
 
   useEffect(() => {
     const currentHash = window.location.hash;
-    router.push(
-      `${pathname}?${createQueryString(searchParams, filterBody)}${currentHash}`,
-      {
-        scroll: false
-      }
-    );
-  }, [filterBody, searchParams, pathname, router]);
+    const newQueryString = createQueryString(searchParams, filterBody);
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      router.push(
+        `${pathname}?${newQueryString}${currentHash}`,
+        {
+          scroll: false
+        }
+      );
+    }
+  }, [filterBody, pathname, router]);
 
   return (
     <div className="w-full">

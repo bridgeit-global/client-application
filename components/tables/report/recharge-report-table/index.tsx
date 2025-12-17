@@ -81,22 +81,28 @@ export function RechargeReportTable({
       queryParams.order = sorting[0].desc ? 'desc' : 'asc';
     }
 
-    setIsLoading(true);
-    const currentHash = window.location.hash;
-    router.push(
-      `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
-      {
-        scroll: false
-      }
-    );
+    const newQueryString = createQueryString(searchParams, queryParams);
+    const currentQueryString = searchParams.toString();
+    
+    // Only navigate if the query string actually changed
+    if (newQueryString !== currentQueryString) {
+      setIsLoading(true);
+      const currentHash = window.location.hash;
+      router.push(
+        `${pathname}?${newQueryString}${currentHash}`,
+        {
+          scroll: false
+        }
+      );
 
-    // Use a small delay to ensure the loading state is visible
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+      // Use a small delay to ensure the loading state is visible
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
 
-    return () => clearTimeout(timer);
-  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, searchParams]);
+      return () => clearTimeout(timer);
+    }
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname]);
 
   const table = useReactTable({
     data,

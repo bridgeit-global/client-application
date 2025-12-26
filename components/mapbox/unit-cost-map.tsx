@@ -6,6 +6,9 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { updateMarkers, colors, createDonutChart } from '@/lib/map/utils';
 import { useRouter } from 'next/navigation';
 import { useSiteName } from '@/lib/utils/site';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Search, X } from 'lucide-react';
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 const mag0 = ['!', ['has', 'unit_cost']];
@@ -36,10 +39,13 @@ export default function UnitCostMap({
   const site_name = useSiteName();
   const router = useRouter();
   const [mapKey, setMapKey] = useState('geojsonData'); // Add state for map key
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchError, setSearchError] = useState('');
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const markersOnScreen = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const popupRef = useRef<Popup | null>(null);
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -185,6 +191,7 @@ export default function UnitCostMap({
         });
 
         const popup = new Popup();
+        popupRef.current = popup;
         // Add hover event listeners for the symbol layer
         mapInstance.on('click', 'data-circle', (e) => {
           const features = mapInstance.queryRenderedFeatures(e.point, {
@@ -242,9 +249,134 @@ export default function UnitCostMap({
     };
   }, [mapKey]);
 
+  const handleSearch = () => {
+    if (!map.current || !searchQuery.trim()) {
+      setSearchError('Please enter a site ID');
+      return;
+    }
+
+    if (!map.current.loaded()) {
+      setSearchError('Map is still loading. Please wait...');
+      return;
+    }
+
+    setSearchError('');
+    const query = searchQuery.trim().toLowerCase();
+    const geojsonData = data[mapKey];
+
+    if (!geojsonData || !geojsonData.features) {
+      setSearchError('Map data not available');
+      return;
+    }
+
+    // Search for matching site ID
+    const matchingFeature = geojsonData.features.find((feature: any) => {
+      const siteId = feature.properties?.site?.toLowerCase() || '';
+      return siteId === query || siteId.includes(query);
+    });
+
+    if (!matchingFeature) {
+      setSearchError(`No site found with ${site_name} ID: ${searchQuery}`);
+      return;
+    }
+
+    // Get coordinates from the feature
+    const coordinates = matchingFeature.geometry.coordinates as [number, number];
+    
+    // Fly to the location
+    map.current.flyTo({
+      center: coordinates,
+      zoom: 15,
+      essential: true
+    });
+
+    // Create popup if it doesn't exist
+    if (!popupRef.current) {
+      popupRef.current = new Popup();
+    }
+
+    // Open popup with site information
+    if (matchingFeature.properties) {
+      const props = matchingFeature.properties;
+      popupRef.current
+        .setLngLat(coordinates)
+        .setHTML(
+          `
+          <p>Account Number: ${props.site_id?.split('_')[1] || 'N/A'}</p>
+          <p>${site_name} ID: ${props.site || 'N/A'}</p>
+          <p>Unit Cost: <span style="color: ${props.unit_cost < 10 ? 'green' : 'red'
+          };">${props.unit_cost || 'No Data'}</span></p>
+          
+           <a href="#" id="link-${props.site_id}" style="color: #2563eb; text-decoration: underline; font-weight: 500;">More info</a>
+          `
+        )
+        .addTo(map.current);
+
+      // Add click handler for the link
+      setTimeout(() => {
+        const linkElement = document.getElementById(`link-${props.site_id}`);
+        if (linkElement) {
+          linkElement.addEventListener('click', function (e) {
+            e.preventDefault();
+            router.push(
+              `/portal/report/bill?account_number=${props.site_id.split('_')[1]}`
+            );
+          });
+        }
+      }, 100);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchError('');
+    if (popupRef.current) {
+      popupRef.current.remove();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Unit Cost Distribution Map</h2>
+      <div className="mb-4">
+        <div className="flex gap-2 items-start">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder={`Search by ${site_name} ID...`}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchError('');
+              }}
+              onKeyPress={handleKeyPress}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button onClick={handleSearch} size="default" type="button">
+            Search
+          </Button>
+        </div>
+        {searchError && (
+          <p className="text-sm text-destructive mt-2">{searchError}</p>
+        )}
+      </div>
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:justify-between">
         {/* <div className="flex gap-2">
           {['unit', 'swap'].map((key) => {

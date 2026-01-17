@@ -42,7 +42,7 @@ const HeroSection = dynamic(() => import('@/components/landing/hero-section'), {
 });
 
 export default async function Home() {
-  const kpiMetrics = await getStoredKPIMetrics('49af6e1b-8d81-4914-b8c4-ffd2e9af2521');
+  // const kpiMetrics = await getStoredKPIMetrics('49af6e1b-8d81-4914-b8c4-ffd2e9af2521');
 
   return (
     <div className='w-full relative min-h-screen'>
@@ -52,9 +52,9 @@ export default async function Home() {
       <Header />
       <main className="w-full pt-16 relative">
         <HeroSection />
-        {kpiMetrics && kpiMetrics.length > 0 && (
+        {/* {kpiMetrics && kpiMetrics.length > 0 && (
           <KPISection metrics={kpiMetrics} />
-        )}
+        )} */}
         <AboutSection />
         <FeaturesSection />
         <MapSection />

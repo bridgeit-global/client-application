@@ -35,343 +35,318 @@ CREATE INDEX IF NOT EXISTS idx_kpi_metrics_org_category_month ON portal.kpi_metr
 -- 2. Billing KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_billing_kpis(
-    p_org_id VARCHAR DEFAULT NULL,
-    p_start_date DATE DEFAULT NULL,
-    p_end_date DATE DEFAULT NULL
+  p_org_id uuid DEFAULT NULL,
+  p_start_date date DEFAULT NULL,
+  p_end_date date DEFAULT NULL
 )
 RETURNS TABLE (
-    kpi_name VARCHAR,
-    current_value NUMERIC,
-    last_month_value NUMERIC,
-    trend_percentage NUMERIC,
-    trend_direction VARCHAR,
-    unit VARCHAR
-) 
+  kpi_name varchar,
+  current_value numeric,
+  last_month_value numeric,
+  trend_percentage numeric,
+  trend_direction varchar,
+  unit varchar
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = portal, public
 AS $$
 DECLARE
-    v_this_month_start DATE;
-    v_this_month_end DATE;
-    v_last_month_start DATE;
-    v_last_month_end DATE;
-    v_org_id VARCHAR;
+  v_this_month_start date;
+  v_this_month_end date;
+  v_last_month_start date;
+  v_last_month_end date;
+  v_org_id uuid;
 BEGIN
-    -- Set default dates to current month and last month
-    v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE));
-    v_this_month_end := COALESCE(p_end_date, DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day');
-    v_last_month_start := v_this_month_start - INTERVAL '1 month';
-    v_last_month_end := v_this_month_start - INTERVAL '1 day';
-    
-    -- Get org_id from context if not provided
-    v_org_id := COALESCE(p_org_id, portal.get_request_user_org_id());
-    
-    RETURN QUERY
-    WITH this_month_data AS (
-        SELECT 
-            COALESCE(SUM(b.bill_amount), 0) AS total_amount,
-            COALESCE(SUM(b.billed_unit), 0) AS total_units,
-            COUNT(*) AS total_bills,
-            CASE 
-                WHEN SUM(b.billed_unit) > 0 THEN SUM(b.bill_amount) / SUM(b.billed_unit)
-                ELSE 0
-            END AS rate_per_unit
-        FROM portal.bills b
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.bill_date >= v_this_month_start
-            AND b.bill_date <= v_this_month_end
-            AND b.is_active = true
-            AND b.is_valid = true
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    ),
-    last_month_data AS (
-        SELECT 
-            COALESCE(SUM(b.bill_amount), 0) AS total_amount,
-            COALESCE(SUM(b.billed_unit), 0) AS total_units,
-            COUNT(*) AS total_bills,
-            CASE 
-                WHEN SUM(b.billed_unit) > 0 THEN SUM(b.bill_amount) / SUM(b.billed_unit)
-                ELSE 0
-            END AS rate_per_unit
-        FROM portal.bills b
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.bill_date >= v_last_month_start
-            AND b.bill_date <= v_last_month_end
-            AND b.is_active = true
-            AND b.is_valid = true
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    )
+  v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE)::date);
+  v_this_month_end := COALESCE(p_end_date, (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day')::date);
+  v_last_month_start := (v_this_month_start - INTERVAL '1 month')::date;
+  v_last_month_end := (v_this_month_start - INTERVAL '1 day')::date;
+
+  -- Use passed org id (fall back only if NULL)
+  v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+
+  RETURN QUERY
+  WITH this_month_data AS (
     SELECT 
-        'Total Amount'::VARCHAR AS kpi_name,
-        tm.total_amount AS current_value,
-        lm.total_amount AS last_month_value,
-        CASE 
-            WHEN lm.total_amount > 0 THEN 
-                ((tm.total_amount - lm.total_amount) / lm.total_amount) * 100
-            ELSE NULL
-        END AS trend_percentage,
-        CASE 
-            WHEN lm.total_amount = 0 THEN 'NEW'::VARCHAR
-            WHEN tm.total_amount > lm.total_amount THEN 'UP'::VARCHAR
-            WHEN tm.total_amount < lm.total_amount THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END AS trend_direction,
-        '₹'::VARCHAR AS unit
-    FROM this_month_data tm, last_month_data lm
-    
-    UNION ALL
-    
+      COALESCE(SUM(b.bill_amount), 0)::numeric AS total_amount,
+      COALESCE(SUM(b.billed_unit), 0)::numeric AS total_units,
+      COUNT(*)::numeric AS total_bills,
+      CASE WHEN COALESCE(SUM(b.billed_unit), 0) > 0
+           THEN SUM(b.bill_amount)::numeric / NULLIF(SUM(b.billed_unit)::numeric, 0)
+           ELSE 0::numeric END AS rate_per_unit
+    FROM portal.bills b
+    JOIN portal.connections c ON b.connection_id = c.id
+    WHERE b.bill_date >= v_this_month_start
+      AND b.bill_date <= v_this_month_end
+      AND b.is_active = true
+      AND b.is_valid = true
+      AND (
+        v_org_id IS NULL OR EXISTS (
+          SELECT 1
+          FROM portal.sites s
+          WHERE s.id = c.site_id
+            AND s.org_id = v_org_id
+        )
+      )
+  ),
+  last_month_data AS (
     SELECT 
-        'Total Units'::VARCHAR,
-        tm.total_units,
-        lm.total_units,
-        CASE 
-            WHEN lm.total_units > 0 THEN 
-                ((tm.total_units - lm.total_units) / lm.total_units) * 100
-            ELSE NULL
-        END,
-        CASE 
-            WHEN lm.total_units = 0 THEN 'NEW'::VARCHAR
-            WHEN tm.total_units > lm.total_units THEN 'UP'::VARCHAR
-            WHEN tm.total_units < lm.total_units THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END,
-        'Units'::VARCHAR
-    FROM this_month_data tm, last_month_data lm
-    
-    UNION ALL
-    
-    SELECT 
-        'Total Bills'::VARCHAR,
-        tm.total_bills::NUMERIC,
-        lm.total_bills::NUMERIC,
-        CASE 
-            WHEN lm.total_bills > 0 THEN 
-                ((tm.total_bills - lm.total_bills)::NUMERIC / lm.total_bills) * 100
-            ELSE NULL
-        END,
-        CASE 
-            WHEN lm.total_bills = 0 THEN 'NEW'::VARCHAR
-            WHEN tm.total_bills > lm.total_bills THEN 'UP'::VARCHAR
-            WHEN tm.total_bills < lm.total_bills THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END,
-        'Count'::VARCHAR
-    FROM this_month_data tm, last_month_data lm
-    
-    UNION ALL
-    
-    SELECT 
-        'Rate per Unit'::VARCHAR,
-        tm.rate_per_unit,
-        lm.rate_per_unit,
-        CASE 
-            WHEN lm.rate_per_unit > 0 THEN 
-                ((tm.rate_per_unit - lm.rate_per_unit) / lm.rate_per_unit) * 100
-            ELSE NULL
-        END,
-        CASE 
-            WHEN lm.rate_per_unit = 0 THEN 'NEW'::VARCHAR
-            WHEN tm.rate_per_unit > lm.rate_per_unit THEN 'UP'::VARCHAR
-            WHEN tm.rate_per_unit < lm.rate_per_unit THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END,
-        '₹'::VARCHAR
-    FROM this_month_data tm, last_month_data lm;
+      COALESCE(SUM(b.bill_amount), 0)::numeric AS total_amount,
+      COALESCE(SUM(b.billed_unit), 0)::numeric AS total_units,
+      COUNT(*)::numeric AS total_bills,
+      CASE WHEN COALESCE(SUM(b.billed_unit), 0) > 0
+           THEN SUM(b.bill_amount)::numeric / NULLIF(SUM(b.billed_unit)::numeric, 0)
+           ELSE 0::numeric END AS rate_per_unit
+    FROM portal.bills b
+    JOIN portal.connections c ON b.connection_id = c.id
+    WHERE b.bill_date >= v_last_month_start
+      AND b.bill_date <= v_last_month_end
+      AND b.is_active = true
+      AND b.is_valid = true
+      AND (
+        v_org_id IS NULL OR EXISTS (
+          SELECT 1
+          FROM portal.sites s
+          WHERE s.id = c.site_id
+            AND s.org_id = v_org_id
+        )
+      )
+  )
+  SELECT 
+    'Total Amount'::varchar,
+    tm.total_amount,
+    lm.total_amount,
+    CASE WHEN lm.total_amount > 0 THEN ((tm.total_amount - lm.total_amount) / lm.total_amount) * 100 ELSE NULL END,
+    CASE 
+      WHEN lm.total_amount = 0 THEN 'NEW'::varchar
+      WHEN tm.total_amount > lm.total_amount THEN 'UP'::varchar
+      WHEN tm.total_amount < lm.total_amount THEN 'DOWN'::varchar
+      ELSE 'NEUTRAL'::varchar
+    END,
+    '₹'::varchar
+  FROM this_month_data tm, last_month_data lm
+
+  UNION ALL
+  SELECT 
+    'Total Units'::varchar,
+    tm.total_units,
+    lm.total_units,
+    CASE WHEN lm.total_units > 0 THEN ((tm.total_units - lm.total_units) / lm.total_units) * 100 ELSE NULL END,
+    CASE 
+      WHEN lm.total_units = 0 THEN 'NEW'::varchar
+      WHEN tm.total_units > lm.total_units THEN 'UP'::varchar
+      WHEN tm.total_units < lm.total_units THEN 'DOWN'::varchar
+      ELSE 'NEUTRAL'::varchar
+    END,
+    'Units'::varchar
+  FROM this_month_data tm, last_month_data lm
+
+  UNION ALL
+  SELECT 
+    'Total Bills'::varchar,
+    tm.total_bills,
+    lm.total_bills,
+    CASE WHEN lm.total_bills > 0 THEN ((tm.total_bills - lm.total_bills) / lm.total_bills) * 100 ELSE NULL END,
+    CASE 
+      WHEN lm.total_bills = 0 THEN 'NEW'::varchar
+      WHEN tm.total_bills > lm.total_bills THEN 'UP'::varchar
+      WHEN tm.total_bills < lm.total_bills THEN 'DOWN'::varchar
+      ELSE 'NEUTRAL'::varchar
+    END,
+    'Count'::varchar
+  FROM this_month_data tm, last_month_data lm
+
+  UNION ALL
+  SELECT 
+    'Rate per Unit'::varchar,
+    tm.rate_per_unit,
+    lm.rate_per_unit,
+    CASE WHEN lm.rate_per_unit > 0 THEN ((tm.rate_per_unit - lm.rate_per_unit) / lm.rate_per_unit) * 100 ELSE NULL END,
+    CASE 
+      WHEN lm.rate_per_unit = 0 THEN 'NEW'::varchar
+      WHEN tm.rate_per_unit > lm.rate_per_unit THEN 'UP'::varchar
+      WHEN tm.rate_per_unit < lm.rate_per_unit THEN 'DOWN'::varchar
+      ELSE 'NEUTRAL'::varchar
+    END,
+    '₹'::varchar
+  FROM this_month_data tm, last_month_data lm;
 END;
 $$;
+
+-- select *
+-- from portal.get_billing_kpis(
+--   '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid
+-- );
+
 
 -- ----------------------------------------------------------------------------
 -- 3. Payment KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_payment_kpis(
-    p_org_id VARCHAR DEFAULT NULL,
-    p_start_date DATE DEFAULT NULL,
-    p_end_date DATE DEFAULT NULL
+    p_org_id uuid DEFAULT NULL,
+    p_start_date date DEFAULT NULL,
+    p_end_date date DEFAULT NULL
 )
 RETURNS TABLE (
-    kpi_name VARCHAR,
-    current_value NUMERIC,
-    last_month_value NUMERIC,
-    trend_percentage NUMERIC,
-    trend_direction VARCHAR,
-    unit VARCHAR
-) 
+    kpi_name varchar,
+    current_value numeric,
+    last_month_value numeric,
+    trend_percentage numeric,
+    trend_direction varchar,
+    unit varchar
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    v_this_month_start DATE;
-    v_this_month_end DATE;
-    v_last_month_start DATE;
-    v_last_month_end DATE;
-    v_org_id VARCHAR;
-    v_this_month_billed NUMERIC;
-    v_last_month_billed NUMERIC;
+    v_this_month_start date;
+    v_this_month_end date;
+    v_last_month_start date;
+    v_last_month_end date;
+    v_org_id uuid;
+    v_this_month_billed numeric;
+    v_last_month_billed numeric;
 BEGIN
-    -- Set default dates
     v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE));
     v_this_month_end := COALESCE(p_end_date, DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day');
     v_last_month_start := v_this_month_start - INTERVAL '1 month';
     v_last_month_end := v_this_month_start - INTERVAL '1 day';
-    
-    v_org_id := COALESCE(p_org_id, portal.get_request_user_org_id());
-    
-    -- Get billed amounts for collection efficiency calculation
+
+    v_org_id := COALESCE(p_org_id, portal.get_request_user_org_id()::uuid);
+
     SELECT COALESCE(SUM(b.bill_amount), 0) INTO v_this_month_billed
     FROM portal.bills b
     INNER JOIN portal.connections c ON b.connection_id = c.id
     WHERE b.bill_date >= v_this_month_start
-        AND b.bill_date <= v_this_month_end
-        AND b.is_active = true
-        AND b.is_valid = true
-        AND (v_org_id IS NULL OR EXISTS (
+      AND b.bill_date <= v_this_month_end
+      AND b.is_active = true
+      AND b.is_valid = true
+      AND (v_org_id IS NULL OR EXISTS (
             SELECT 1 FROM portal.sites s 
             WHERE s.id = c.site_id AND s.org_id = v_org_id
-        ));
-    
+      ));
+
     SELECT COALESCE(SUM(b.bill_amount), 0) INTO v_last_month_billed
     FROM portal.bills b
     INNER JOIN portal.connections c ON b.connection_id = c.id
     WHERE b.bill_date >= v_last_month_start
-        AND b.bill_date <= v_last_month_end
-        AND b.is_active = true
-        AND b.is_valid = true
-        AND (v_org_id IS NULL OR EXISTS (
+      AND b.bill_date <= v_last_month_end
+      AND b.is_active = true
+      AND b.is_valid = true
+      AND (v_org_id IS NULL OR EXISTS (
             SELECT 1 FROM portal.sites s 
             WHERE s.id = c.site_id AND s.org_id = v_org_id
-        ));
-    
+      ));
+
     RETURN QUERY
     WITH this_month_payments AS (
-        SELECT 
-            COALESCE(SUM(cp.paid_amount), 0) AS payment_amount,
-            COUNT(DISTINCT cp.id) AS payment_count
-        FROM portal.client_payments cp
-        INNER JOIN portal.batches b ON cp.batch_id = b.batch_id
-        WHERE cp.paid_date >= v_this_month_start
-            AND cp.paid_date <= v_this_month_end
-            AND cp.status = 'completed'
-            AND (v_org_id IS NULL OR b.org_id = v_org_id)
+      SELECT 
+        COALESCE(SUM(cp.paid_amount), 0) AS payment_amount,
+        COUNT(DISTINCT cp.id) AS payment_count
+      FROM portal.client_payments cp
+      INNER JOIN portal.batches b ON cp.batch_id = b.batch_id
+      WHERE cp.paid_date >= v_this_month_start
+        AND cp.paid_date <= v_this_month_end
+        AND cp.status = 'completed'
+        AND (v_org_id IS NULL OR b.org_id = v_org_id)
     ),
     last_month_payments AS (
-        SELECT 
-            COALESCE(SUM(cp.paid_amount), 0) AS payment_amount,
-            COUNT(DISTINCT cp.id) AS payment_count
-        FROM portal.client_payments cp
-        INNER JOIN portal.batches b ON cp.batch_id = b.batch_id
-        WHERE cp.paid_date >= v_last_month_start
-            AND cp.paid_date <= v_last_month_end
-            AND cp.status = 'completed'
-            AND (v_org_id IS NULL OR b.org_id = v_org_id)
+      SELECT 
+        COALESCE(SUM(cp.paid_amount), 0) AS payment_amount,
+        COUNT(DISTINCT cp.id) AS payment_count
+      FROM portal.client_payments cp
+      INNER JOIN portal.batches b ON cp.batch_id = b.batch_id
+      WHERE cp.paid_date >= v_last_month_start
+        AND cp.paid_date <= v_last_month_end
+        AND cp.status = 'completed'
+        AND (v_org_id IS NULL OR b.org_id = v_org_id)
     )
     SELECT 
-        'Payment Done Amount'::VARCHAR AS kpi_name,
-        tm.payment_amount AS current_value,
-        lm.payment_amount AS last_month_value,
-        CASE 
-            WHEN lm.payment_amount > 0 THEN 
-                ((tm.payment_amount - lm.payment_amount) / lm.payment_amount) * 100
-            ELSE NULL
-        END AS trend_percentage,
-        CASE 
-            WHEN lm.payment_amount = 0 THEN 'NEW'::VARCHAR
-            WHEN tm.payment_amount > lm.payment_amount THEN 'UP'::VARCHAR
-            WHEN tm.payment_amount < lm.payment_amount THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END AS trend_direction,
-        '₹'::VARCHAR AS unit
+      'Payment Done Amount'::varchar,
+      tm.payment_amount,
+      lm.payment_amount,
+      CASE WHEN lm.payment_amount > 0 
+           THEN ((tm.payment_amount - lm.payment_amount) / lm.payment_amount) * 100
+           ELSE NULL END,
+      CASE 
+        WHEN lm.payment_amount = 0 THEN 'NEW'::varchar
+        WHEN tm.payment_amount > lm.payment_amount THEN 'UP'::varchar
+        WHEN tm.payment_amount < lm.payment_amount THEN 'DOWN'::varchar
+        ELSE 'NEUTRAL'::varchar
+      END,
+      '₹'::varchar
     FROM this_month_payments tm, last_month_payments lm
-    
+
     UNION ALL
-    
+
     SELECT 
-        'Payments Completed'::VARCHAR,
-        tm.payment_count::NUMERIC,
-        lm.payment_count::NUMERIC,
-        CASE 
-            WHEN lm.payment_count > 0 THEN 
-                ((tm.payment_count - lm.payment_count)::NUMERIC / lm.payment_count) * 100
-            ELSE NULL
-        END,
-        CASE 
-            WHEN lm.payment_count = 0 THEN 'NEW'::VARCHAR
-            WHEN tm.payment_count > lm.payment_count THEN 'UP'::VARCHAR
-            WHEN tm.payment_count < lm.payment_count THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END,
-        'Count'::VARCHAR
+      'Payments Completed'::varchar,
+      tm.payment_count::numeric,
+      lm.payment_count::numeric,
+      CASE WHEN lm.payment_count > 0 
+           THEN ((tm.payment_count - lm.payment_count)::numeric / lm.payment_count) * 100
+           ELSE NULL END,
+      CASE 
+        WHEN lm.payment_count = 0 THEN 'NEW'::varchar
+        WHEN tm.payment_count > lm.payment_count THEN 'UP'::varchar
+        WHEN tm.payment_count < lm.payment_count THEN 'DOWN'::varchar
+        ELSE 'NEUTRAL'::varchar
+      END,
+      'Count'::varchar
     FROM this_month_payments tm, last_month_payments lm
-    
+
     UNION ALL
-    
+
     SELECT 
-        'Collection Efficiency'::VARCHAR,
-        CASE 
-            WHEN v_this_month_billed > 0 THEN 
-                (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
-            ELSE 0
-        END,
-        CASE 
-            WHEN v_last_month_billed > 0 THEN 
-                (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
-            ELSE 0
-        END,
-        CASE 
-            WHEN v_last_month_billed > 0 AND (SELECT payment_amount FROM last_month_payments) > 0 THEN
-                ((CASE 
-                    WHEN v_this_month_billed > 0 THEN 
-                        (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
-                    ELSE 0
-                END - CASE 
-                    WHEN v_last_month_billed > 0 THEN 
-                        (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
-                    ELSE 0
-                END) / CASE 
-                    WHEN v_last_month_billed > 0 THEN 
-                        (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
-                    ELSE 1
-                END) * 100
-            ELSE NULL
-        END,
-        CASE 
-            WHEN v_last_month_billed = 0 THEN 'NEW'::VARCHAR
-            WHEN (CASE 
-                WHEN v_this_month_billed > 0 THEN 
-                    (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
-                ELSE 0
-            END) > (CASE 
-                WHEN v_last_month_billed > 0 THEN 
-                    (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
-                ELSE 0
-            END) THEN 'UP'::VARCHAR
-            WHEN (CASE 
-                WHEN v_this_month_billed > 0 THEN 
-                    (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
-                ELSE 0
-            END) < (CASE 
-                WHEN v_last_month_billed > 0 THEN 
-                    (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
-                ELSE 0
-            END) THEN 'DOWN'::VARCHAR
-            ELSE 'NEUTRAL'::VARCHAR
-        END,
-        '%'::VARCHAR
+      'Collection Efficiency'::varchar,
+      CASE WHEN v_this_month_billed > 0 
+           THEN (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
+           ELSE 0 END,
+      CASE WHEN v_last_month_billed > 0 
+           THEN (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
+           ELSE 0 END,
+      CASE 
+        WHEN v_last_month_billed > 0 AND (SELECT payment_amount FROM last_month_payments) > 0 THEN
+          ((CASE WHEN v_this_month_billed > 0 
+                 THEN (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
+                 ELSE 0 END
+           - CASE WHEN v_last_month_billed > 0 
+                 THEN (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
+                 ELSE 0 END)
+           / CASE WHEN v_last_month_billed > 0 
+                 THEN (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
+                 ELSE 1 END) * 100
+        ELSE NULL
+      END,
+      CASE 
+        WHEN v_last_month_billed = 0 THEN 'NEW'::varchar
+        WHEN (CASE WHEN v_this_month_billed > 0 
+                   THEN (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
+                   ELSE 0 END)
+           > (CASE WHEN v_last_month_billed > 0 
+                   THEN (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
+                   ELSE 0 END) THEN 'UP'::varchar
+        WHEN (CASE WHEN v_this_month_billed > 0 
+                   THEN (SELECT payment_amount FROM this_month_payments) / v_this_month_billed * 100
+                   ELSE 0 END)
+           < (CASE WHEN v_last_month_billed > 0 
+                   THEN (SELECT payment_amount FROM last_month_payments) / v_last_month_billed * 100
+                   ELSE 0 END) THEN 'DOWN'::varchar
+        ELSE 'NEUTRAL'::varchar
+      END,
+      '%'::varchar
     FROM this_month_payments tm, last_month_payments lm;
 END;
 $$;
+
+-- SELECT portal.get_payment_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 
 -- ----------------------------------------------------------------------------
 -- 4. Benefits KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_benefits_kpis(
-    p_org_id VARCHAR DEFAULT NULL,
+    p_org_id uuid DEFAULT NULL,
     p_start_date DATE DEFAULT NULL,
     p_end_date DATE DEFAULT NULL
 )
@@ -392,83 +367,99 @@ DECLARE
     v_this_month_end DATE;
     v_last_month_start DATE;
     v_last_month_end DATE;
-    v_org_id VARCHAR;
+    v_org_id uuid;
 BEGIN
     v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE));
     v_this_month_end := COALESCE(p_end_date, DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day');
     v_last_month_start := v_this_month_start - INTERVAL '1 month';
     v_last_month_end := v_this_month_start - INTERVAL '1 day';
-    
-    v_org_id := COALESCE(p_org_id, portal.get_request_user_org_id());
-    
+
+    v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+
     RETURN QUERY
     WITH this_month_bills AS (
         SELECT COUNT(*) AS bill_count
         FROM portal.bills b
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.created_at >= v_this_month_start
-            AND b.created_at <= v_this_month_end
-            AND b.is_active = true
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND b.created_at <= v_this_month_end
+          AND b.is_active = true
+          AND (v_org_id IS NULL OR EXISTS (
+                SELECT 1
+                FROM portal.sites s
+                WHERE s.id = c.site_id
+                  AND s.org_id = v_org_id
+          ))
     ),
     last_month_bills AS (
         SELECT COUNT(*) AS bill_count
         FROM portal.bills b
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.created_at >= v_last_month_start
-            AND b.created_at <= v_last_month_end
-            AND b.is_active = true
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND b.created_at <= v_last_month_end
+          AND b.is_active = true
+          AND (v_org_id IS NULL OR EXISTS (
+                SELECT 1
+                FROM portal.sites s
+                WHERE s.id = c.site_id
+                  AND s.org_id = v_org_id
+          ))
     ),
     this_month_balances AS (
         SELECT COUNT(DISTINCT pb.id) AS balance_count
         FROM portal.prepaid_balances pb
-        INNER JOIN portal.connections c ON pb.id = c.id
+        INNER JOIN portal.connections c
+          -- Verify this join; see note below
+          ON pb.id = c.id
         WHERE pb.fetch_date >= v_this_month_start
-            AND pb.fetch_date <= v_this_month_end
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND pb.fetch_date <= v_this_month_end
+          AND (v_org_id IS NULL OR EXISTS (
+                SELECT 1
+                FROM portal.sites s
+                WHERE s.id = c.site_id
+                  AND s.org_id = v_org_id
+          ))
     ),
     last_month_balances AS (
         SELECT COUNT(DISTINCT pb.id) AS balance_count
         FROM portal.prepaid_balances pb
-        INNER JOIN portal.connections c ON pb.id = c.id
+        INNER JOIN portal.connections c
+          -- Verify this join; see note below
+          ON pb.id = c.id
         WHERE pb.fetch_date >= v_last_month_start
-            AND pb.fetch_date <= v_last_month_end
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND pb.fetch_date <= v_last_month_end
+          AND (v_org_id IS NULL OR EXISTS (
+                SELECT 1
+                FROM portal.sites s
+                WHERE s.id = c.site_id
+                  AND s.org_id = v_org_id
+          ))
     ),
     this_month_readings AS (
         SELECT COUNT(*) AS reading_count
         FROM portal.submeter_readings sr
         INNER JOIN portal.connections c ON sr.connection_id = c.id
         WHERE sr.reading_date >= v_this_month_start
-            AND sr.reading_date <= v_this_month_end
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND sr.reading_date <= v_this_month_end
+          AND (v_org_id IS NULL OR EXISTS (
+                SELECT 1
+                FROM portal.sites s
+                WHERE s.id = c.site_id
+                  AND s.org_id = v_org_id
+          ))
     ),
     last_month_readings AS (
         SELECT COUNT(*) AS reading_count
         FROM portal.submeter_readings sr
         INNER JOIN portal.connections c ON sr.connection_id = c.id
         WHERE sr.reading_date >= v_last_month_start
-            AND sr.reading_date <= v_last_month_end
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND sr.reading_date <= v_last_month_end
+          AND (v_org_id IS NULL OR EXISTS (
+                SELECT 1
+                FROM portal.sites s
+                WHERE s.id = c.site_id
+                  AND s.org_id = v_org_id
+          ))
     )
     SELECT 
         'Bills Generated'::VARCHAR AS kpi_name,
@@ -533,33 +524,37 @@ BEGIN
 END;
 $$;
 
+
+-- select *
+-- from portal.get_benefits_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+
 -- ----------------------------------------------------------------------------
 -- 5. Savings on Payment KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_payment_savings_kpis(
-    p_org_id VARCHAR DEFAULT NULL,
-    p_start_date DATE DEFAULT NULL,
-    p_end_date DATE DEFAULT NULL
+    p_org_id uuid DEFAULT NULL,
+    p_start_date date DEFAULT NULL,
+    p_end_date date DEFAULT NULL
 )
 RETURNS TABLE (
-    kpi_name VARCHAR,
-    potential_value NUMERIC,
-    accrued_value NUMERIC,
-    savings_percentage NUMERIC,
-    unit VARCHAR
-) 
+    kpi_name varchar,
+    potential_value numeric,
+    accrued_value numeric,
+    savings_percentage numeric,
+    unit varchar
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    v_this_month_start DATE;
-    v_this_month_end DATE;
-    v_org_id VARCHAR;
+    v_this_month_start date;
+    v_this_month_end date;
+    v_org_id uuid;
 BEGIN
-    v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE));
-    v_this_month_end := COALESCE(p_end_date, DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day');
-    v_org_id := COALESCE(p_org_id, portal.get_request_user_org_id());
-    
+    v_this_month_start := COALESCE(p_start_date, date_trunc('month', current_date)::date);
+    v_this_month_end := COALESCE(p_end_date, (date_trunc('month', current_date) + interval '1 month - 1 day')::date);
+    v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+
     RETURN QUERY
     WITH payment_data AS (
         SELECT 
@@ -570,7 +565,7 @@ BEGIN
             b.discount_date_rebate AS timely_potential,
             CASE 
                 WHEN b.paid_status = 'paid' AND b.payment_status = true 
-                    AND b.paid_status IS NOT NULL THEN COALESCE(b.rebate_accrued, 0)
+                     AND b.paid_status IS NOT NULL THEN COALESCE(b.rebate_accrued, 0)
                 ELSE 0
             END AS timely_accrued,
             COALESCE(ac.adjustment, 0) AS surcharge_potential,
@@ -582,16 +577,20 @@ BEGIN
         LEFT JOIN portal.additional_charges ac ON b.id = ac.id
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
-            AND b.bill_date <= v_this_month_end
-            AND b.is_active = true
-            AND b.is_valid = true
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
     )
     SELECT 
-        'Prompt Payment'::VARCHAR AS kpi_name,
+        'Prompt Payment'::varchar AS kpi_name,
         SUM(pd.prompt_potential) AS potential_value,
         SUM(pd.prompt_accrued) AS accrued_value,
         CASE 
@@ -599,191 +598,179 @@ BEGIN
                 (SUM(pd.prompt_accrued) / SUM(pd.prompt_potential)) * 100
             ELSE 0
         END AS savings_percentage,
-        '₹'::VARCHAR AS unit
+        '₹'::varchar AS unit
     FROM payment_data pd
-    
+
     UNION ALL
-    
+
     SELECT 
-        'Timely Payment'::VARCHAR,
-        SUM(pd.timely_potential) AS potential_value,
-        SUM(pd.timely_accrued) AS accrued_value,
+        'Timely Payment'::varchar,
+        SUM(pd.timely_potential),
+        SUM(pd.timely_accrued),
         CASE 
             WHEN SUM(pd.timely_potential) > 0 THEN 
                 (SUM(pd.timely_accrued) / SUM(pd.timely_potential)) * 100
             ELSE 0
         END,
-        '₹'::VARCHAR
+        '₹'::varchar
     FROM payment_data pd
-    
+
     UNION ALL
-    
+
     SELECT 
-        'Surcharges'::VARCHAR,
-        SUM(pd.surcharge_potential) AS potential_value,
-        SUM(pd.surcharge_accrued) AS accrued_value,
+        'Surcharges'::varchar,
+        SUM(pd.surcharge_potential),
+        SUM(pd.surcharge_accrued),
         CASE 
             WHEN SUM(pd.surcharge_potential) > 0 THEN 
                 (SUM(pd.surcharge_accrued) / SUM(pd.surcharge_potential)) * 100
             ELSE 0
         END,
-        '₹'::VARCHAR
+        '₹'::varchar
     FROM payment_data pd;
 END;
 $$;
+
+
+select *
+from portal.get_payment_savings_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 
 -- ----------------------------------------------------------------------------
 -- 6. Need Attention KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_need_attention_kpis(
-    p_org_id VARCHAR DEFAULT NULL
+  p_org_id uuid DEFAULT NULL
 )
 RETURNS TABLE (
-    kpi_name VARCHAR,
-    current_value NUMERIC,
-    unit VARCHAR,
-    severity VARCHAR
-) 
+  kpi_name varchar,
+  current_value numeric,
+  unit varchar,
+  severity varchar
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    v_org_id VARCHAR;
-    v_today DATE;
+  v_org_id uuid;
+  v_today date;
 BEGIN
-    v_org_id := COALESCE(p_org_id, portal.get_request_user_org_id());
-    v_today := CURRENT_DATE;
-    
-    RETURN QUERY
-    WITH lag_bills AS (
-        SELECT COUNT(*) AS lag_count
-        FROM portal.connections c
-        WHERE c.next_bill_date IS NOT NULL
-            AND c.next_bill_date < v_today
-            AND c.is_active = true
-            AND c.is_deleted = false
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    ),
-    lag_recharges AS (
-        SELECT COUNT(*) AS lag_count
-        FROM portal.prepaid_recharge pr
-        INNER JOIN portal.connections c ON pr.connection_id = c.id
-        WHERE pr.recharge_date < v_today - INTERVAL '30 days'
-            AND pr.recharge_status = 'pending'
-            AND pr.is_active = true
-            AND pr.is_deleted = false
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    ),
-    arrears_data AS (
-        SELECT 
-            COALESCE(SUM(ac.arrears), 0) AS total_arrears
-        FROM portal.additional_charges ac
-        INNER JOIN portal.bills b ON ac.id = b.id
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.is_active = true
-            AND b.is_valid = true
-            AND ac.arrears > 0
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    ),
-    penalties_data AS (
-        SELECT 
-            COALESCE(SUM(ad.capacitor_surcharge + ad.low_pf_surcharge + ad.lpsc + 
-                ad.misuse_surcharge + ad.power_factor_penalty + ad.sanctioned_load_penalty + 
-                ad.tod_surcharge), 0) AS total_penalties
-        FROM portal.adherence_charges ad
-        INNER JOIN portal.bills b ON ad.id = b.id
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.is_active = true
-            AND b.is_valid = true
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    ),
-    abnormal_bills AS (
-        SELECT COUNT(*) AS abnormal_count
-        FROM portal.bills b
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.is_active = true
-            AND b.is_valid = false
-            AND (v_org_id IS NULL OR EXISTS (
-                SELECT 1 FROM portal.sites s 
-                WHERE s.id = c.site_id AND s.org_id = v_org_id
-            ))
-    )
-    SELECT 
-        'Lag Bills'::VARCHAR AS kpi_name,
-        lb.lag_count::NUMERIC AS current_value,
-        'Count'::VARCHAR AS unit,
-        CASE 
-            WHEN lb.lag_count > 10 THEN 'HIGH'::VARCHAR
-            WHEN lb.lag_count > 5 THEN 'MEDIUM'::VARCHAR
-            ELSE 'LOW'::VARCHAR
-        END AS severity
-    FROM lag_bills lb
-    
-    UNION ALL
-    
-    SELECT 
-        'Lag Recharges'::VARCHAR,
-        lr.lag_count::NUMERIC,
-        'Count'::VARCHAR,
-        CASE 
-            WHEN lr.lag_count > 10 THEN 'HIGH'::VARCHAR
-            WHEN lr.lag_count > 5 THEN 'MEDIUM'::VARCHAR
-            ELSE 'LOW'::VARCHAR
-        END
-    FROM lag_recharges lr
-    
-    UNION ALL
-    
-    SELECT 
-        'Arrears'::VARCHAR,
-        ad.total_arrears,
-        '₹'::VARCHAR,
-        CASE 
-            WHEN ad.total_arrears > 1000000 THEN 'HIGH'::VARCHAR
-            WHEN ad.total_arrears > 500000 THEN 'MEDIUM'::VARCHAR
-            ELSE 'LOW'::VARCHAR
-        END
-    FROM arrears_data ad
-    
-    UNION ALL
-    
-    SELECT 
-        'Penalties'::VARCHAR,
-        pd.total_penalties,
-        '₹'::VARCHAR,
-        CASE 
-            WHEN pd.total_penalties > 1000000 THEN 'HIGH'::VARCHAR
-            WHEN pd.total_penalties > 500000 THEN 'MEDIUM'::VARCHAR
-            ELSE 'LOW'::VARCHAR
-        END
-    FROM penalties_data pd
-    
-    UNION ALL
-    
-    SELECT 
-        'Abnormal Bills'::VARCHAR,
-        ab.abnormal_count::NUMERIC,
-        'Count'::VARCHAR,
-        CASE 
-            WHEN ab.abnormal_count > 10 THEN 'HIGH'::VARCHAR
-            WHEN ab.abnormal_count > 5 THEN 'MEDIUM'::VARCHAR
-            ELSE 'LOW'::VARCHAR
-        END
-    FROM abnormal_bills ab;
+  v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+  v_today := CURRENT_DATE;
+
+  RETURN QUERY
+  WITH lag_bills AS (
+    SELECT COUNT(*) AS lag_count
+    FROM portal.connections c
+    WHERE c.next_bill_date IS NOT NULL
+      AND c.next_bill_date < v_today
+      AND c.is_active = true
+      AND c.is_deleted = false
+      AND (v_org_id IS NULL OR EXISTS (
+        SELECT 1 FROM portal.sites s
+        WHERE s.id = c.site_id AND s.org_id = v_org_id
+      ))
+  ),
+  lag_recharges AS (
+    SELECT COUNT(*) AS lag_count
+    FROM portal.prepaid_recharge pr
+    JOIN portal.connections c ON pr.connection_id = c.id
+    WHERE pr.recharge_date < v_today - INTERVAL '30 days'
+      AND pr.recharge_status = 'pending'
+      AND pr.is_active = true
+      AND pr.is_deleted = false
+      AND (v_org_id IS NULL OR EXISTS (
+        SELECT 1 FROM portal.sites s
+        WHERE s.id = c.site_id AND s.org_id = v_org_id
+      ))
+  ),
+  arrears_data AS (
+    SELECT COALESCE(SUM(ac.arrears), 0) AS total_arrears
+    FROM portal.additional_charges ac
+    JOIN portal.bills b ON ac.id = b.id
+    JOIN portal.connections c ON b.connection_id = c.id
+    WHERE b.is_active = true
+      AND b.is_valid = true
+      AND ac.arrears > 0
+      AND (v_org_id IS NULL OR EXISTS (
+        SELECT 1 FROM portal.sites s
+        WHERE s.id = c.site_id AND s.org_id = v_org_id
+      ))
+  ),
+  penalties_data AS (
+    SELECT COALESCE(SUM(
+      ad.capacitor_surcharge + ad.low_pf_surcharge + ad.lpsc +
+      ad.misuse_surcharge + ad.power_factor_penalty + ad.sanctioned_load_penalty +
+      ad.tod_surcharge
+    ), 0) AS total_penalties
+    FROM portal.adherence_charges ad
+    JOIN portal.bills b ON ad.id = b.id
+    JOIN portal.connections c ON b.connection_id = c.id
+    WHERE b.is_active = true
+      AND b.is_valid = true
+      AND (v_org_id IS NULL OR EXISTS (
+        SELECT 1 FROM portal.sites s
+        WHERE s.id = c.site_id AND s.org_id = v_org_id
+      ))
+  ),
+  abnormal_bills AS (
+    SELECT COUNT(*) AS abnormal_count
+    FROM portal.bills b
+    JOIN portal.connections c ON b.connection_id = c.id
+    WHERE b.is_active = true
+      AND b.is_valid = false
+      AND (v_org_id IS NULL OR EXISTS (
+        SELECT 1 FROM portal.sites s
+        WHERE s.id = c.site_id AND s.org_id = v_org_id
+      ))
+  )
+  SELECT
+    'Lag Bills'::varchar,
+    lb.lag_count::numeric,
+    'Count'::varchar,
+    CASE WHEN lb.lag_count > 10 THEN 'HIGH'
+         WHEN lb.lag_count > 5 THEN 'MEDIUM'
+         ELSE 'LOW' END::varchar
+  FROM lag_bills lb
+  UNION ALL
+  SELECT
+    'Lag Recharges',
+    lr.lag_count::numeric,
+    'Count',
+    CASE WHEN lr.lag_count > 10 THEN 'HIGH'
+         WHEN lr.lag_count > 5 THEN 'MEDIUM'
+         ELSE 'LOW' END
+  FROM lag_recharges lr
+  UNION ALL
+  SELECT
+    'Arrears',
+    ad.total_arrears,
+    '₹',
+    CASE WHEN ad.total_arrears > 1000000 THEN 'HIGH'
+         WHEN ad.total_arrears > 500000 THEN 'MEDIUM'
+         ELSE 'LOW' END
+  FROM arrears_data ad
+  UNION ALL
+  SELECT
+    'Penalties',
+    pd.total_penalties,
+    '₹',
+    CASE WHEN pd.total_penalties > 1000000 THEN 'HIGH'
+         WHEN pd.total_penalties > 500000 THEN 'MEDIUM'
+         ELSE 'LOW' END
+  FROM penalties_data pd
+  UNION ALL
+  SELECT
+    'Abnormal Bills',
+    ab.abnormal_count::numeric,
+    'Count',
+    CASE WHEN ab.abnormal_count > 10 THEN 'HIGH'
+         WHEN ab.abnormal_count > 5 THEN 'MEDIUM'
+         ELSE 'LOW' END
+  FROM abnormal_bills ab;
 END;
 $$;
+
+-- select * from portal.get_need_attention_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 
 -- ----------------------------------------------------------------------------
 -- 7. Master Function to Get All KPIs

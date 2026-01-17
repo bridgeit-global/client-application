@@ -11,7 +11,10 @@ const categoryLabels: Record<string, string> = {
     payment: 'Payment Metrics',
     benefits: 'Benefits Metrics',
     need_attention: 'Need Attention',
+    payment_savings: 'Payment Savings',
 };
+
+const categoryOrder = ['benefits', 'billing', 'payment', 'payment_savings', 'need_attention'];
 
 const formatMonth = (dateString: string): string => {
     try {
@@ -45,11 +48,15 @@ export function KPISection({ metrics }: KPISectionProps) {
         ? formatMonth(metrics[0].calculation_month)
         : 'Current Month';
 
+    // Sort categories by predefined order
+    const sortedCategories = categoryOrder.filter(cat => groupedMetrics[cat]?.length > 0)
+        .concat(Object.keys(groupedMetrics).filter(cat => !categoryOrder.includes(cat)));
+
     return (
         <section className="my-16 flex items-center justify-center py-8 md:snap-start">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl text-white font-bold tracking-tight sm:text-4xl">
+                    <h2 className="text-3xl text-white font-bold tracking-tight sm:text-4xl mb-2">
                         KPI Dashboard
                     </h2>
                     <p className="mx-auto mt-4 max-w-2xl text-xl text-white/80">
@@ -57,29 +64,42 @@ export function KPISection({ metrics }: KPISectionProps) {
                     </p>
                     <div className="mt-4 flex items-center justify-center gap-2 text-sm text-white/60">
                         <Calendar className="h-4 w-4" />
-                        <span>Showing data for <span className="font-semibold text-white/80">{calculationMonth}</span> only</span>
+                        <span>Showing data for <span className="font-semibold text-white/80">{calculationMonth}</span></span>
                     </div>
                 </div>
 
                 {/* Category-wise Metrics */}
-                <div className="space-y-12">
-                    {Object.entries(groupedMetrics).map(([category, categoryMetrics]) => (
-                        <div key={category}>
-                            <div className="mb-6">
-                                <h3 className="text-2xl font-semibold text-white capitalize">
-                                    {categoryLabels[category] || category.replace('_', ' ')}
-                                </h3>
-                                <p className="text-sm text-white/60 mt-1">
-                                    {categoryMetrics.length} {categoryMetrics.length === 1 ? 'metric' : 'metrics'}
-                                </p>
+                <div className="space-y-16">
+                    {sortedCategories.map((category) => {
+                        const categoryMetrics = groupedMetrics[category];
+                        if (!categoryMetrics || categoryMetrics.length === 0) return null;
+
+                        return (
+                            <div key={category} className="opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]">
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-2xl font-semibold text-white">
+                                            {categoryLabels[category] || category.replace('_', ' ')}
+                                        </h3>
+                                        <p className="text-sm text-white/60 mt-1">
+                                            {categoryMetrics.length} {categoryMetrics.length === 1 ? 'metric' : 'metrics'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-${categoryMetrics.length.toString()} gap-6`}>
+                                    {categoryMetrics.map((metric, index) => (
+                                        <div
+                                            key={metric.id}
+                                            className="opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
+                                            style={{ animationDelay: `${index * 50}ms` }}
+                                        >
+                                            <KPICard metric={metric} />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {categoryMetrics.map((metric) => (
-                                    <KPICard key={metric.id} metric={metric} />
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </section>

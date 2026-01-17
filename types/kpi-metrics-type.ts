@@ -8,7 +8,7 @@
 import { Json } from './supabase';
 
 // KPI Metrics Table Types
-export type KPIMetricCategory = 'billing' | 'payment' | 'benefits' | 'need_attention';
+export type KPIMetricCategory = 'billing' | 'payment' | 'benefits' | 'need_attention' | 'payment_savings';
 export type TrendDirection = 'UP' | 'DOWN' | 'NEUTRAL' | 'NEW';
 export type Severity = 'HIGH' | 'MEDIUM' | 'LOW';
 

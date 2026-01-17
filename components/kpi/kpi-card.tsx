@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { KPIMetric, TrendDirection } from '@/types/kpi-metrics-type';
+import { KPIMetric, TrendDirection, Severity } from '@/types/kpi-metrics-type';
 import { formatNumber, formatRupees } from '@/lib/utils/number-format';
 import {
     TrendingUp,
@@ -10,7 +10,11 @@ import {
     Sparkles,
     Receipt,
     CreditCard,
-    Zap
+    Zap,
+    AlertTriangle,
+    Info,
+    DollarSign,
+    TrendingUp as TrendingUpIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,11 +22,20 @@ interface KPICardProps {
     metric: KPIMetric;
 }
 
+interface MetricMetadata {
+    benefitDescription?: string;
+    severity?: Severity;
+    accruedValue?: number;
+    potentialValue?: number;
+    savingsPercentage?: number;
+}
+
 const categoryIcons = {
     billing: Receipt,
     payment: CreditCard,
     benefits: Sparkles,
-    need_attention: Zap,
+    need_attention: AlertTriangle,
+    payment_savings: DollarSign,
 };
 
 const categoryColors = {
@@ -31,34 +44,64 @@ const categoryColors = {
         border: 'border-blue-500/20',
         icon: 'text-blue-400',
         accent: 'text-blue-400',
+        hover: 'hover:border-blue-500/40',
     },
     payment: {
         bg: 'bg-green-500/10',
         border: 'border-green-500/20',
         icon: 'text-green-400',
         accent: 'text-green-400',
+        hover: 'hover:border-green-500/40',
     },
     benefits: {
         bg: 'bg-purple-500/10',
         border: 'border-purple-500/20',
         icon: 'text-purple-400',
         accent: 'text-purple-400',
+        hover: 'hover:border-purple-500/40',
     },
     need_attention: {
         bg: 'bg-orange-500/10',
         border: 'border-orange-500/20',
         icon: 'text-orange-400',
         accent: 'text-orange-400',
+        hover: 'hover:border-orange-500/40',
+    },
+    payment_savings: {
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/20',
+        icon: 'text-emerald-400',
+        accent: 'text-emerald-400',
+        hover: 'hover:border-emerald-500/40',
+    },
+};
+
+const severityColors = {
+    HIGH: {
+        bg: 'bg-red-500/20',
+        text: 'text-red-400',
+        border: 'border-red-500/30',
+    },
+    MEDIUM: {
+        bg: 'bg-yellow-500/20',
+        text: 'text-yellow-400',
+        border: 'border-yellow-500/30',
+    },
+    LOW: {
+        bg: 'bg-blue-500/20',
+        text: 'text-blue-400',
+        border: 'border-blue-500/30',
     },
 };
 
 export function KPICard({ metric }: KPICardProps) {
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const colors = categoryColors[metric.kpi_category] || categoryColors.benefits;
+    const metadata = (metric.metadata as MetricMetadata | null) || {};
 
     const formatValue = (value: number, unit: string): string => {
         if (unit === '₹') {
-            return formatRupees(value);
+            return '₹' + formatNumber(value);
         }
         if (unit === '%') {
             return `${value.toFixed(1)}%`;
@@ -94,26 +137,44 @@ export function KPICard({ metric }: KPICardProps) {
 
     const TrendIcon = getTrendIcon(metric.trend_direction);
     const trendColor = getTrendColor(metric.trend_direction);
+    const severityStyle = metadata.severity ? severityColors[metadata.severity] : null;
+
+    // For payment_savings category, show different layout
+    const isPaymentSavings = metric.kpi_category === 'payment_savings';
+    const showSavingsInfo = isPaymentSavings && (metadata.accruedValue !== undefined || metadata.potentialValue !== undefined);
 
     return (
         <Card
             className={cn(
                 'relative overflow-hidden bg-white/5 backdrop-blur-sm border transition-all duration-300',
-                'hover:bg-white/10 hover:scale-[1.02] hover:shadow-lg',
-                colors.border
+                'hover:bg-white/10 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/20',
+                colors.border,
+                colors.hover
             )}
         >
             {/* Decorative gradient overlay */}
-            <div className={cn('absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-20', colors.bg)} />
+            <div className={cn('absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-20 blur-xl', colors.bg)} />
 
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <div className="flex items-center gap-2">
-                    <div className={cn('p-2 rounded-lg', colors.bg)}>
-                        <Icon className={cn('h-4 w-4', colors.icon)} />
+            {/* Severity badge for need_attention */}
+            {metadata.severity && (
+                <div className={cn(
+                    'absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-semibold border',
+                    severityStyle?.bg,
+                    severityStyle?.text,
+                    severityStyle?.border
+                )}>
+                    {metadata.severity}
+                </div>
+            )}
+
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className={cn('p-2.5 rounded-lg shrink-0', colors.bg)}>
+                        <Icon className={cn('h-5 w-5', colors.icon)} />
                     </div>
-                    <div className="flex flex-col">
-                        <p className="text-xs font-medium text-white/60 uppercase tracking-wider">
-                            {metric.kpi_category}
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-1">
+                            {metric.kpi_category.replace('_', ' ')}
                         </p>
                         <h3 className="text-sm font-semibold text-white leading-tight">
                             {metric.kpi_name}
@@ -122,9 +183,9 @@ export function KPICard({ metric }: KPICardProps) {
                 </div>
             </CardHeader>
 
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
                 {/* Main Value */}
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-3xl font-bold text-white">
                         {formatValue(metric.current_value, metric.unit)}
                     </span>
@@ -133,10 +194,40 @@ export function KPICard({ metric }: KPICardProps) {
                     )}
                 </div>
 
+                {/* Payment Savings Info */}
+                {showSavingsInfo && (
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                        {metadata.accruedValue !== undefined && (
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-white/70">Accrued</span>
+                                <span className="font-semibold text-emerald-400">
+                                    {formatValue(metadata.accruedValue, metric.unit)}
+                                </span>
+                            </div>
+                        )}
+                        {metadata.potentialValue !== undefined && (
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-white/70">Potential</span>
+                                <span className="font-semibold text-white/80">
+                                    {formatValue(metadata.potentialValue, metric.unit)}
+                                </span>
+                            </div>
+                        )}
+                        {metadata.savingsPercentage !== undefined && (
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                                <TrendingUpIcon className="h-4 w-4 text-emerald-400" />
+                                <span className="text-sm font-medium text-emerald-400">
+                                    {metadata.savingsPercentage.toFixed(1)}% savings
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Trend Indicator */}
-                {metric.trend_direction && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <div className={cn('flex items-center gap-1', trendColor)}>
+                {metric.trend_direction && !isPaymentSavings && (
+                    <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-white/10">
+                        <div className={cn('flex items-center gap-1.5', trendColor)}>
                             <TrendIcon className="h-4 w-4" />
                             {metric.trend_percentage !== null && !isNaN(metric.trend_percentage) ? (
                                 <span className="text-sm font-medium">
@@ -156,6 +247,18 @@ export function KPICard({ metric }: KPICardProps) {
                                     vs {formatValue(metric.last_month_value, metric.unit)} last month
                                 </span>
                             )}
+                    </div>
+                )}
+
+                {/* Benefit Description */}
+                {metadata.benefitDescription && (
+                    <div className="pt-2 border-t border-white/10">
+                        <div className="flex items-start gap-2">
+                            <Info className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
+                            <p className="text-xs text-white/70 leading-relaxed">
+                                {metadata.benefitDescription}
+                            </p>
+                        </div>
                     </div>
                 )}
             </CardContent>

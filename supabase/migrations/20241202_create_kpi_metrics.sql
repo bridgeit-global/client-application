@@ -560,12 +560,6 @@ BEGIN
         SELECT 
             b.id,
             b.bill_amount,
-            b.discount_date_rebate AS timely_potential,
-            CASE 
-                WHEN b.paid_status = 'paid' AND b.payment_status = true 
-                     AND b.paid_status IS NOT NULL THEN COALESCE(b.rebate_accrued, 0)
-                ELSE 0
-            END AS timely_accrued,
             COALESCE(ac.adjustment, 0) AS surcharge_potential,
             CASE 
                 WHEN ac.adjustment < 0 THEN ABS(ac.adjustment)
@@ -617,7 +611,45 @@ BEGIN
           AND b.is_valid = true
           AND b.discount_date IS NOT NULL
           AND p.collection_date >= b.discount_date
-          AND p.collection_date >= b.bill_date
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
+    ),
+    timely_payment_potential AS (
+        SELECT 
+            COALESCE(SUM(b.bill_amount), 0) AS total_potential
+        FROM portal.bills b
+        INNER JOIN portal.connections c ON b.connection_id = c.id
+        WHERE b.bill_date >= v_this_month_start
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
+    ),
+    timely_payment_accrued AS (
+        SELECT 
+            COALESCE(SUM(p.amount), 0) AS total_accrued
+        FROM portal.payments p
+        INNER JOIN portal.bills b ON p.connection_id = b.connection_id
+        INNER JOIN portal.connections c ON b.connection_id = c.id
+        WHERE b.bill_date >= v_this_month_start
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND b.due_date IS NOT NULL
+          AND p.collection_date >= b.due_date
           AND (
                v_org_id IS NULL OR EXISTS (
                  SELECT 1
@@ -644,15 +676,16 @@ BEGIN
 
     SELECT 
         'Timely Payment'::varchar,
-        SUM(pd.timely_potential),
-        SUM(pd.timely_accrued),
+        tpp.total_potential,
+        tpa.total_accrued,
         CASE 
-            WHEN SUM(pd.timely_potential) > 0 THEN 
-                (SUM(pd.timely_accrued) / SUM(pd.timely_potential)) * 100
+            WHEN tpp.total_potential > 0 THEN 
+                (tpa.total_accrued / tpp.total_potential) * 100
             ELSE 0
         END,
         '₹'::varchar
-    FROM payment_data pd
+    FROM timely_payment_potential tpp
+    CROSS JOIN timely_payment_accrued tpa
 
     UNION ALL
 

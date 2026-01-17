@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { KPIMetric, TrendDirection, Severity } from '@/types/kpi-metrics-type';
-import { formatNumber, formatRupees } from '@/lib/utils/number-format';
+import { formatNumber, formatRupees, formatMinutesToTime } from '@/lib/utils/number-format';
 import {
     TrendingUp,
     TrendingDown,
@@ -28,6 +28,9 @@ interface MetricMetadata {
     accruedValue?: number;
     potentialValue?: number;
     savingsPercentage?: number;
+    bill_fetch_per_min?: number;
+    balance_fetch_per_min?: number;
+    reading_fetch_per_min?: number;
 }
 
 const categoryIcons = {
@@ -98,6 +101,28 @@ export function KPICard({ metric }: KPICardProps) {
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const colors = categoryColors[metric.kpi_category] || categoryColors.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
+
+    // Calculate time saved for benefits KPIs
+    const getTimeSaved = (): string | null => {
+        if (metric.kpi_category !== 'benefits') return null;
+
+        let minutes: number | null = null;
+
+        if (metric.kpi_name === 'Bills Generated') {
+            // bill_fetch_per_min = current_value * 120
+            minutes = metric.current_value * 120;
+        } else if (metric.kpi_name === 'Balance Fetched') {
+            // balance_fetch_per_min = current_value
+            minutes = metric.current_value;
+        } else if (metric.kpi_name === 'Sub meter readings captured') {
+            // reading_fetch_per_min = current_value
+            minutes = metric.current_value;
+        }
+
+        return minutes !== null && minutes > 0 ? formatMinutesToTime(minutes) : null;
+    };
+
+    const timeSaved = getTimeSaved();
 
     const formatValue = (value: number, unit: string): string => {
         if (unit === '₹') {
@@ -193,6 +218,18 @@ export function KPICard({ metric }: KPICardProps) {
                         <span className="text-sm text-white/60">{metric.unit}</span>
                     )}
                 </div>
+
+                {/* Time Saved for Benefits KPIs */}
+                {timeSaved && (
+                    <div className="pt-2 border-t border-white/10">
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-purple-400 shrink-0" />
+                            <span className="text-sm font-medium text-purple-400">
+                                Time saved: {timeSaved}
+                            </span>
+                        </div>
+                    </div>
+                )}
 
                 {/* Payment Savings Info */}
                 {showSavingsInfo && (

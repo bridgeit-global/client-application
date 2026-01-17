@@ -406,7 +406,7 @@ BEGIN
           ))
     ),
     this_month_balances AS (
-        SELECT COUNT(DISTINCT pb.id) AS balance_count
+        SELECT COUNT(*) AS balance_count
         FROM portal.prepaid_balances pb
         INNER JOIN portal.connections c
           -- Verify this join; see note below
@@ -421,7 +421,7 @@ BEGIN
           ))
     ),
     last_month_balances AS (
-        SELECT COUNT(DISTINCT pb.id) AS balance_count
+        SELECT COUNT(*) AS balance_count
         FROM portal.prepaid_balances pb
         INNER JOIN portal.connections c
           -- Verify this join; see note below
@@ -941,7 +941,25 @@ BEGIN
             v_kpi_record.current_value, v_kpi_record.last_month_value,
             v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
             v_kpi_record.unit, p_calculation_month,
-            jsonb_build_object('benefitDescription', v_kpi_record.benefit_description)
+            CASE 
+                WHEN v_kpi_record.kpi_name = 'Bills Generated' THEN
+                    jsonb_build_object(
+                        'benefitDescription', v_kpi_record.benefit_description,
+                        'bill_fetch_per_min', v_kpi_record.current_value * 120
+                    )
+                WHEN v_kpi_record.kpi_name = 'Balance Fetched' THEN
+                    jsonb_build_object(
+                        'benefitDescription', v_kpi_record.benefit_description,
+                        'balance_fetch_per_min', v_kpi_record.current_value
+                    )
+                WHEN v_kpi_record.kpi_name = 'Sub meter readings captured' THEN
+                    jsonb_build_object(
+                        'benefitDescription', v_kpi_record.benefit_description,
+                        'reading_fetch_per_min', v_kpi_record.current_value
+                    )
+                ELSE
+                    jsonb_build_object('benefitDescription', v_kpi_record.benefit_description)
+            END
         )
         ON CONFLICT (org_id, kpi_name, calculation_month)
         DO UPDATE SET

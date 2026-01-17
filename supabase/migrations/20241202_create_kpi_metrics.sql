@@ -861,162 +861,213 @@ $$;
 -- ----------------------------------------------------------------------------
 -- 8. Function to Store KPI Metrics
 -- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION portal.clamp_trend(p NUMERIC)
+RETURNS NUMERIC
+LANGUAGE plpgsql
+AS $f$
+BEGIN
+  IF p IS NULL THEN RETURN NULL; END IF;
+  IF p > 100 THEN RETURN 100; END IF;
+  IF p < -100 THEN RETURN -100; END IF;
+  RETURN p;
+END;
+$f$;
+
 CREATE OR REPLACE FUNCTION portal.store_kpi_metrics(
-    p_org_id UUID,
-    p_calculation_month DATE DEFAULT DATE_TRUNC('month', CURRENT_DATE)
+  p_org_id UUID,
+  p_calculation_month DATE DEFAULT date_trunc('month', current_date)
 )
-RETURNS VOID
+RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-    v_start_date DATE;
-    v_end_date DATE;
-    v_kpi_record RECORD;
+  v_start_date DATE;
+  v_end_date DATE;
+  v_kpi_record RECORD;
 BEGIN
-    v_start_date := p_calculation_month;
-    v_end_date := p_calculation_month + INTERVAL '1 month' - INTERVAL '1 day';
-    
-    -- Store Billing KPIs
-    FOR v_kpi_record IN 
-        SELECT * FROM portal.get_billing_kpis(p_org_id, v_start_date, v_end_date)
-    LOOP
-        INSERT INTO portal.kpi_metrics (
-            org_id, kpi_name, kpi_category, current_value, 
-            last_month_value, trend_percentage, trend_direction, 
-            unit, calculation_month
-        )
-        VALUES (
-            p_org_id, v_kpi_record.kpi_name, 'billing',
-            v_kpi_record.current_value, v_kpi_record.last_month_value,
-            v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
-            v_kpi_record.unit, p_calculation_month
-        )
-        ON CONFLICT (org_id, kpi_name, calculation_month)
-        DO UPDATE SET
-            current_value = EXCLUDED.current_value,
-            last_month_value = EXCLUDED.last_month_value,
-            trend_percentage = EXCLUDED.trend_percentage,
-            trend_direction = EXCLUDED.trend_direction,
-            updated_at = NOW();
-    END LOOP;
-    
-    -- Store Payment KPIs
-    FOR v_kpi_record IN 
-        SELECT * FROM portal.get_payment_kpis(p_org_id, v_start_date, v_end_date)
-    LOOP
-        INSERT INTO portal.kpi_metrics (
-            org_id, kpi_name, kpi_category, current_value, 
-            last_month_value, trend_percentage, trend_direction, 
-            unit, calculation_month
-        )
-        VALUES (
-            p_org_id, v_kpi_record.kpi_name, 'payment',
-            v_kpi_record.current_value, v_kpi_record.last_month_value,
-            v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
-            v_kpi_record.unit, p_calculation_month
-        )
-        ON CONFLICT (org_id, kpi_name, calculation_month)
-        DO UPDATE SET
-            current_value = EXCLUDED.current_value,
-            last_month_value = EXCLUDED.last_month_value,
-            trend_percentage = EXCLUDED.trend_percentage,
-            trend_direction = EXCLUDED.trend_direction,
-            updated_at = NOW();
-    END LOOP;
-    
-    -- Store Benefits KPIs
-    FOR v_kpi_record IN 
-        SELECT kpi_name, current_value, last_month_value, 
-               trend_percentage, trend_direction, unit, benefit_description
-        FROM portal.get_benefits_kpis(p_org_id, v_start_date, v_end_date)
-    LOOP
-        INSERT INTO portal.kpi_metrics (
-            org_id, kpi_name, kpi_category, current_value, 
-            last_month_value, trend_percentage, trend_direction, 
-            unit, calculation_month, metadata
-        )
-        VALUES (
-            p_org_id, v_kpi_record.kpi_name, 'benefits',
-            v_kpi_record.current_value, v_kpi_record.last_month_value,
-            v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
-            v_kpi_record.unit, p_calculation_month,
-            CASE 
-                WHEN v_kpi_record.kpi_name = 'Bills Generated' THEN
-                    jsonb_build_object(
-                        'benefitDescription', v_kpi_record.benefit_description,
-                        'bill_fetch_per_min', v_kpi_record.current_value * 120
-                    )
-                WHEN v_kpi_record.kpi_name = 'Balance Fetched' THEN
-                    jsonb_build_object(
-                        'benefitDescription', v_kpi_record.benefit_description,
-                        'balance_fetch_per_min', v_kpi_record.current_value
-                    )
-                WHEN v_kpi_record.kpi_name = 'Sub meter readings captured' THEN
-                    jsonb_build_object(
-                        'benefitDescription', v_kpi_record.benefit_description,
-                        'reading_fetch_per_min', v_kpi_record.current_value
-                    )
-                ELSE
-                    jsonb_build_object('benefitDescription', v_kpi_record.benefit_description)
-            END
-        )
-        ON CONFLICT (org_id, kpi_name, calculation_month)
-        DO UPDATE SET
-            current_value = EXCLUDED.current_value,
-            last_month_value = EXCLUDED.last_month_value,
-            trend_percentage = EXCLUDED.trend_percentage,
-            trend_direction = EXCLUDED.trend_direction,
-            metadata = EXCLUDED.metadata,
-            updated_at = NOW();
-    END LOOP;
-    
-    -- Store Payment Savings KPIs
-    FOR v_kpi_record IN
-        SELECT * FROM portal.get_payment_savings_kpis(p_org_id, v_start_date, v_end_date)
-    LOOP
-        INSERT INTO portal.kpi_metrics (
-            org_id, kpi_name, kpi_category, current_value, 
-            unit, calculation_month, metadata
-        )
-        VALUES (
-            p_org_id, v_kpi_record.kpi_name, 'payment_savings',
-            v_kpi_record.accrued_value, v_kpi_record.unit, p_calculation_month,
-            jsonb_build_object(
-                'potentialValue', v_kpi_record.potential_value,
-                'accruedValue', v_kpi_record.accrued_value,
-                'savingsPercentage', v_kpi_record.savings_percentage
-            )
-        )
-        ON CONFLICT (org_id, kpi_name, calculation_month)
-        DO UPDATE SET
-            current_value = EXCLUDED.current_value,
-            metadata = EXCLUDED.metadata,
-            updated_at = NOW();
-    END LOOP;
-    
-    -- Store Need Attention KPIs
-    FOR v_kpi_record IN
-        SELECT * FROM portal.get_need_attention_kpis(p_org_id)
-    LOOP
-        INSERT INTO portal.kpi_metrics (
-            org_id, kpi_name, kpi_category, current_value, 
-            unit, calculation_month, metadata
-        )
-        VALUES (
-            p_org_id, v_kpi_record.kpi_name, 'need_attention',
-            v_kpi_record.current_value, v_kpi_record.unit, p_calculation_month,
-            jsonb_build_object('severity', v_kpi_record.severity)
-        )
-        ON CONFLICT (org_id, kpi_name, calculation_month)
-        DO UPDATE SET
-            current_value = EXCLUDED.current_value,
-            metadata = EXCLUDED.metadata,
-            updated_at = NOW();
-    END LOOP;
+  v_start_date := p_calculation_month;
+  v_end_date := (date_trunc('month', p_calculation_month) + interval '1 month - 1 day')::date;
+
+  -- Billing
+  FOR v_kpi_record IN
+    SELECT * FROM portal.get_billing_kpis(p_org_id, v_start_date, v_end_date)
+  LOOP
+    INSERT INTO portal.kpi_metrics (
+      org_id, kpi_name, kpi_category, current_value,
+      last_month_value, trend_percentage, trend_direction,
+      unit, calculation_month
+    )
+    VALUES (
+      p_org_id, v_kpi_record.kpi_name, 'billing',
+      round(v_kpi_record.current_value::numeric, 4),
+      round(v_kpi_record.last_month_value::numeric, 4),
+      round(
+        (
+          CASE
+            WHEN v_kpi_record.trend_percentage IS NULL THEN NULL
+            WHEN v_kpi_record.trend_percentage > 100 THEN 100
+            WHEN v_kpi_record.trend_percentage < -100 THEN -100
+            ELSE v_kpi_record.trend_percentage
+          END
+        )::numeric, 2
+      ),
+      v_kpi_record.trend_direction,
+      v_kpi_record.unit, p_calculation_month
+    )
+    ON CONFLICT (org_id, kpi_name, calculation_month)
+    DO UPDATE SET
+      current_value     = EXCLUDED.current_value,
+      last_month_value  = EXCLUDED.last_month_value,
+      trend_percentage  = EXCLUDED.trend_percentage,
+      trend_direction   = EXCLUDED.trend_direction,
+      updated_at        = NOW();
+  END LOOP;
+
+  -- Payment
+  FOR v_kpi_record IN
+    SELECT * FROM portal.get_payment_kpis(p_org_id, v_start_date, v_end_date)
+  LOOP
+    INSERT INTO portal.kpi_metrics (
+      org_id, kpi_name, kpi_category, current_value,
+      last_month_value, trend_percentage, trend_direction,
+      unit, calculation_month
+    )
+    VALUES (
+      p_org_id, v_kpi_record.kpi_name, 'payment',
+      round(v_kpi_record.current_value::numeric, 4),
+      round(v_kpi_record.last_month_value::numeric, 4),
+      round(
+        (
+          CASE
+            WHEN v_kpi_record.trend_percentage IS NULL THEN NULL
+            WHEN v_kpi_record.trend_percentage > 100 THEN 100
+            WHEN v_kpi_record.trend_percentage < -100 THEN -100
+            ELSE v_kpi_record.trend_percentage
+          END
+        )::numeric, 2
+      ),
+      v_kpi_record.trend_direction,
+      v_kpi_record.unit, p_calculation_month
+    )
+    ON CONFLICT (org_id, kpi_name, calculation_month)
+    DO UPDATE SET
+      current_value     = EXCLUDED.current_value,
+      last_month_value  = EXCLUDED.last_month_value,
+      trend_percentage  = EXCLUDED.trend_percentage,
+      trend_direction   = EXCLUDED.trend_direction,
+      updated_at        = NOW();
+  END LOOP;
+
+  -- Benefits
+  FOR v_kpi_record IN
+    SELECT kpi_name, current_value, last_month_value,
+           trend_percentage, trend_direction, unit, benefit_description
+    FROM portal.get_benefits_kpis(p_org_id, v_start_date, v_end_date)
+  LOOP
+    INSERT INTO portal.kpi_metrics (
+      org_id, kpi_name, kpi_category, current_value,
+      last_month_value, trend_percentage, trend_direction,
+      unit, calculation_month, metadata
+    )
+    VALUES (
+      p_org_id, v_kpi_record.kpi_name, 'benefits',
+      round(v_kpi_record.current_value::numeric, 4),
+      round(v_kpi_record.last_month_value::numeric, 4),
+      round(
+        (
+          CASE
+            WHEN v_kpi_record.trend_percentage IS NULL THEN NULL
+            WHEN v_kpi_record.trend_percentage > 100 THEN 100
+            WHEN v_kpi_record.trend_percentage < -100 THEN -100
+            ELSE v_kpi_record.trend_percentage
+          END
+        )::numeric, 2
+      ),
+      v_kpi_record.trend_direction,
+      v_kpi_record.unit, p_calculation_month,
+      CASE
+        WHEN v_kpi_record.kpi_name = 'Bills Generated' THEN
+          jsonb_build_object(
+            'benefitDescription', v_kpi_record.benefit_description,
+            'bill_fetch_per_min', v_kpi_record.current_value * 120
+          )
+        WHEN v_kpi_record.kpi_name = 'Balance Fetched' THEN
+          jsonb_build_object(
+            'benefitDescription', v_kpi_record.benefit_description,
+            'balance_fetch_per_min', v_kpi_record.current_value
+          )
+        WHEN v_kpi_record.kpi_name = 'Sub meter readings captured' THEN
+          jsonb_build_object(
+            'benefitDescription', v_kpi_record.benefit_description,
+            'reading_fetch_per_min', v_kpi_record.current_value
+          )
+        ELSE
+          jsonb_build_object('benefitDescription', v_kpi_record.benefit_description)
+      END
+    )
+    ON CONFLICT (org_id, kpi_name, calculation_month)
+    DO UPDATE SET
+      current_value     = EXCLUDED.current_value,
+      last_month_value  = EXCLUDED.last_month_value,
+      trend_percentage  = EXCLUDED.trend_percentage,
+      trend_direction   = EXCLUDED.trend_direction,
+      metadata          = EXCLUDED.metadata,
+      updated_at        = NOW();
+  END LOOP;
+
+  -- Payment Savings
+  FOR v_kpi_record IN
+    SELECT * FROM portal.get_payment_savings_kpis(p_org_id, v_start_date, v_end_date)
+  LOOP
+    INSERT INTO portal.kpi_metrics (
+      org_id, kpi_name, kpi_category, current_value,
+      unit, calculation_month, metadata
+    )
+    VALUES (
+      p_org_id, v_kpi_record.kpi_name, 'payment_savings',
+      round(v_kpi_record.accrued_value::numeric, 4),
+      v_kpi_record.unit, p_calculation_month,
+      jsonb_build_object(
+        'potentialValue', v_kpi_record.potential_value,
+        'accruedValue', v_kpi_record.accrued_value,
+        'savingsPercentage', v_kpi_record.savings_percentage
+      )
+    )
+    ON CONFLICT (org_id, kpi_name, calculation_month)
+    DO UPDATE SET
+      current_value = EXCLUDED.current_value,
+      metadata      = EXCLUDED.metadata,
+      updated_at    = NOW();
+  END LOOP;
+
+  -- Need Attention
+  FOR v_kpi_record IN
+    SELECT * FROM portal.get_need_attention_kpis(p_org_id)
+  LOOP
+    INSERT INTO portal.kpi_metrics (
+      org_id, kpi_name, kpi_category, current_value,
+      unit, calculation_month, metadata
+    )
+    VALUES (
+      p_org_id, v_kpi_record.kpi_name, 'need_attention',
+      round(v_kpi_record.current_value::numeric, 4),
+      v_kpi_record.unit, p_calculation_month,
+      jsonb_build_object('severity', v_kpi_record.severity)
+    )
+    ON CONFLICT (org_id, kpi_name, calculation_month)
+    DO UPDATE SET
+      current_value = EXCLUDED.current_value,
+      metadata      = EXCLUDED.metadata,
+      updated_at    = NOW();
+  END LOOP;
 END;
 $$;
 
+-- Example run
+SELECT portal.store_kpi_metrics('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid,'2025-10-01');
+
+select * from portal.kpi_metrics;
 -- ----------------------------------------------------------------------------
 -- 9. RLS Policies for kpi_metrics table
 -- ----------------------------------------------------------------------------

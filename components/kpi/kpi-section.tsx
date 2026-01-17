@@ -6,7 +6,7 @@ import { Calendar } from 'lucide-react';
 import { MonthPicker } from './month-picker';
 import { useStoreKPIMetrics } from './store-kpi-action';
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface KPISectionProps {
@@ -60,6 +60,8 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [isStoring, setIsStoring] = useState(false);
     const { storeKPIMetrics, isPending } = useStoreKPIMetrics();
     const supabase = createClient();
+    // Track if we've already attempted to store metrics for this month/orgId combination
+    const lastStoreAttemptRef = useRef<string | null>(null);
 
     // Get orgId from user if not provided
     useEffect(() => {
@@ -77,8 +79,9 @@ export function KPISection({ orgId }: KPISectionProps) {
 
     /**
      * Fetches KPI metrics for the current organization and selected month
+     * Returns the fetched data or null if there was an error
      */
-    const fetchKPIMetrics = async (orgId: string, month: Date) => {
+    const fetchKPIMetrics = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
         const calculationMonth = formatCalculationMonth(month);
 
         try {
@@ -95,15 +98,16 @@ export function KPISection({ orgId }: KPISectionProps) {
             if (error) {
                 console.error('Error fetching stored KPI metrics:', error);
                 setMetrics(null);
-                return false;
+                return null;
             }
 
-            setMetrics(data as KPIMetric[]);
-            return true;
+            const metricsData = (data as KPIMetric[]) || [];
+            setMetrics(metricsData);
+            return metricsData;
         } catch (error) {
             console.error('Error in fetchKPIMetrics:', error);
             setMetrics(null);
-            return false;
+            return null;
         }
     };
 
@@ -116,7 +120,31 @@ export function KPISection({ orgId }: KPISectionProps) {
             }
 
             setIsLoading(true);
-            await fetchKPIMetrics(currentOrgId, selectedMonth);
+            const calculationMonth = formatCalculationMonth(selectedMonth);
+            const storeKey = `${currentOrgId}-${calculationMonth}`;
+
+            // Fetch metrics first
+            const fetchedMetrics = await fetchKPIMetrics(currentOrgId, selectedMonth);
+
+            // If metrics are empty and we haven't tried storing yet, call storeKPIMetrics
+            if (fetchedMetrics !== null && fetchedMetrics.length === 0 && lastStoreAttemptRef.current !== storeKey) {
+                lastStoreAttemptRef.current = storeKey;
+                setIsStoring(true);
+
+                try {
+                    const storeSuccess = await storeKPIMetrics(currentOrgId, calculationMonth);
+
+                    // After storing, fetch once more (only one try)
+                    if (storeSuccess) {
+                        await fetchKPIMetrics(currentOrgId, selectedMonth);
+                    }
+                } catch (error) {
+                    console.error('Error storing KPI metrics:', error);
+                } finally {
+                    setIsStoring(false);
+                }
+            }
+
             setIsLoading(false);
         };
 

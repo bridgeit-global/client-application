@@ -4,9 +4,8 @@ import { KPIMetric } from '@/types/kpi-metrics-type';
 import { KPICard } from './kpi-card';
 import { Calendar } from 'lucide-react';
 import { MonthPicker } from './month-picker';
-import { useStoreKPIMetrics } from './store-kpi-action';
 import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface KPISectionProps {
@@ -57,11 +56,7 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [currentOrgId, setCurrentOrgId] = useState<string | undefined>(orgId);
     const [metrics, setMetrics] = useState<KPIMetric[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isStoring, setIsStoring] = useState(false);
-    const { storeKPIMetrics, isPending } = useStoreKPIMetrics();
     const supabase = createClient();
-    // Track if we've already attempted to store metrics for this month/orgId combination
-    const lastStoreAttemptRef = useRef<string | null>(null);
 
     // Get orgId from user if not provided
     useEffect(() => {
@@ -120,31 +115,7 @@ export function KPISection({ orgId }: KPISectionProps) {
             }
 
             setIsLoading(true);
-            const calculationMonth = formatCalculationMonth(selectedMonth);
-            const storeKey = `${currentOrgId}-${calculationMonth}`;
-
-            // Fetch metrics first
-            const fetchedMetrics = await fetchKPIMetrics(currentOrgId, selectedMonth);
-
-            // If metrics are empty and we haven't tried storing yet, call storeKPIMetrics
-            if (fetchedMetrics !== null && fetchedMetrics.length === 0 && lastStoreAttemptRef.current !== storeKey) {
-                lastStoreAttemptRef.current = storeKey;
-                setIsStoring(true);
-
-                try {
-                    const storeSuccess = await storeKPIMetrics(currentOrgId, calculationMonth);
-
-                    // After storing, fetch once more (only one try)
-                    if (storeSuccess) {
-                        await fetchKPIMetrics(currentOrgId, selectedMonth);
-                    }
-                } catch (error) {
-                    console.error('Error storing KPI metrics:', error);
-                } finally {
-                    setIsStoring(false);
-                }
-            }
-
+            await fetchKPIMetrics(currentOrgId, selectedMonth);
             setIsLoading(false);
         };
 
@@ -158,26 +129,20 @@ export function KPISection({ orgId }: KPISectionProps) {
             return;
         }
 
-        setIsStoring(true);
-        const calculationMonth = formatCalculationMonth(date);
+        // Prevent selecting a month greater than the current month
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+        const selectedYear = date.getFullYear();
+        const selectedMonth = date.getMonth();
 
-        try {
-            const success = await storeKPIMetrics(currentOrgId, calculationMonth);
-
-            if (success) {
-                // Update selected month which will trigger the fetch effect
-                setSelectedMonth(date);
-            } else {
-                // If storing failed, still update the month to show existing data
-                setSelectedMonth(date);
-            }
-        } catch (error) {
-            console.error('Error in handleMonthSelect:', error);
-            // Still update the month to show existing data even if storing failed
-            setSelectedMonth(date);
-        } finally {
-            setIsStoring(false);
+        if (selectedYear > currentYear || (selectedYear === currentYear && selectedMonth > currentMonth)) {
+            // Don't allow selection beyond current month
+            return;
         }
+
+        // Update selected month which will trigger the fetch effect
+        setSelectedMonth(date);
     };
 
     if (isLoading) {
@@ -192,7 +157,7 @@ export function KPISection({ orgId }: KPISectionProps) {
         );
     }
 
-    const isLoadingMetrics = isLoading || isStoring;
+    const isLoadingMetrics = isLoading;
 
     // Get the calculation month display text
     // Prefer the month from metrics if available, otherwise use selectedMonth
@@ -237,13 +202,11 @@ export function KPISection({ orgId }: KPISectionProps) {
                             <MonthPicker
                                 value={selectedMonth}
                                 onSelect={handleMonthSelect}
-                                placeholder="Select month to store"
+                                placeholder="Select month"
                                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                                 disabled={isLoadingMetrics}
+                                maxDate={new Date()}
                             />
-                            {(isPending || isStoring) && (
-                                <Loader2 className="h-4 w-4 animate-spin text-white/60" />
-                            )}
                         </div>
                     </div>
                 </div>
@@ -255,7 +218,7 @@ export function KPISection({ orgId }: KPISectionProps) {
                             No KPI metrics available for {calculationMonth}.
                         </p>
                         <p className="text-white/40 text-sm mt-2">
-                            Select a month above and click to store metrics.
+                            Select a month above to view metrics.
                         </p>
                     </div>
                 )}

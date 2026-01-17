@@ -24,6 +24,7 @@ interface MonthPickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  maxDate?: Date;
 }
 
 export function MonthPicker({
@@ -31,7 +32,8 @@ export function MonthPicker({
   onSelect,
   placeholder = 'Select month',
   className,
-  disabled = false
+  disabled = false,
+  maxDate = new Date()
 }: MonthPickerProps) {
   const [month, setMonth] = React.useState<Date>(value || new Date());
 
@@ -41,6 +43,11 @@ export function MonthPicker({
       setMonth(value);
     }
   }, [value]);
+
+  const currentDate = new Date();
+  const maxDateToUse = maxDate || currentDate;
+  const maxYear = maxDateToUse.getFullYear();
+  const maxMonth = maxDateToUse.getMonth();
 
   const years = Array.from(
     { length: 10 },
@@ -63,15 +70,44 @@ export function MonthPicker({
   ];
 
   const handleMonthChange = (monthIndex: string) => {
-    const newDate = new Date(month.getFullYear(), parseInt(monthIndex));
+    const selectedMonth = parseInt(monthIndex);
+    const selectedYear = month.getFullYear();
+
+    // Check if the selected month/year exceeds the max date
+    if (selectedYear > maxYear || (selectedYear === maxYear && selectedMonth > maxMonth)) {
+      return; // Don't allow selection beyond max date
+    }
+
+    const newDate = new Date(selectedYear, selectedMonth);
     setMonth(newDate);
     onSelect(newDate);
   };
 
   const handleYearChange = (year: string) => {
-    const newDate = new Date(parseInt(year), month.getMonth());
+    const selectedYear = parseInt(year);
+    const currentMonth = month.getMonth();
+
+    // Check if the selected year/month exceeds the max date
+    if (selectedYear > maxYear || (selectedYear === maxYear && currentMonth > maxMonth)) {
+      // If the current month would exceed max, set to max month
+      const newDate = new Date(selectedYear, Math.min(currentMonth, maxMonth));
+      setMonth(newDate);
+      onSelect(newDate);
+      return;
+    }
+
+    const newDate = new Date(selectedYear, currentMonth);
     setMonth(newDate);
     onSelect(newDate);
+  };
+
+  const isMonthDisabled = (monthIndex: number, year: number): boolean => {
+    return year > maxYear || (year === maxYear && monthIndex > maxMonth);
+  };
+
+  const isYearDisabled = (year: number): boolean => {
+    // A year is disabled if all months in that year are beyond max date
+    return year > maxYear;
   };
 
   return (
@@ -101,11 +137,18 @@ export function MonthPicker({
               <SelectValue>{months[month.getMonth()]}</SelectValue>
             </SelectTrigger>
             <SelectContent position="popper">
-              {months.map((monthName, index) => (
-                <SelectItem key={monthName} value={index.toString()}>
-                  {monthName}
-                </SelectItem>
-              ))}
+              {months.map((monthName, index) => {
+                const isDisabled = isMonthDisabled(index, month.getFullYear());
+                return (
+                  <SelectItem
+                    key={monthName}
+                    value={index.toString()}
+                    disabled={isDisabled}
+                  >
+                    {monthName}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           <Select
@@ -116,11 +159,18 @@ export function MonthPicker({
               <SelectValue>{month.getFullYear()}</SelectValue>
             </SelectTrigger>
             <SelectContent position="popper">
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
+              {years.map((year) => {
+                const isDisabled = isYearDisabled(year);
+                return (
+                  <SelectItem
+                    key={year}
+                    value={year.toString()}
+                    disabled={isDisabled}
+                  >
+                    {year}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

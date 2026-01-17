@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS portal.kpi_metrics (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     org_id VARCHAR(255) NOT NULL REFERENCES portal.organizations(id) ON DELETE CASCADE,
     kpi_name VARCHAR(255) NOT NULL,
-    kpi_category VARCHAR(50) NOT NULL CHECK (kpi_category IN ('billing', 'payment', 'benefits', 'need_attention')),
+    kpi_category VARCHAR(50) NOT NULL CHECK (kpi_category IN ('billing', 'payment', 'benefits', 'need_attention', 'payment_savings')),
     current_value NUMERIC(15, 2) NOT NULL,
     last_month_value NUMERIC(15, 2),
     trend_percentage NUMERIC(5, 2),
@@ -776,7 +776,7 @@ $$;
 -- 7. Master Function to Get All KPIs
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_all_kpi_metrics(
-    p_org_id VARCHAR DEFAULT NULL,
+    p_org_id UUID DEFAULT NULL,
     p_start_date DATE DEFAULT NULL,
     p_end_date DATE DEFAULT NULL
 )
@@ -786,7 +786,139 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_result JSONB;
+    v_calculation_month DATE;
+    v_kpi_record RECORD;
+    v_org_id_uuid UUID;
 BEGIN
+    -- Set calculation month based on start_date or current month
+    v_calculation_month := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE)::DATE);
+    -- Use org_id directly (already UUID type)
+    v_org_id_uuid := p_org_id;
+    
+    -- Only store records if org_id is provided (required by table constraint)
+    IF p_org_id IS NOT NULL THEN
+        -- Store Billing KPIs
+        FOR v_kpi_record IN 
+            SELECT * FROM portal.get_billing_kpis(v_org_id_uuid, p_start_date, p_end_date)
+        LOOP
+            INSERT INTO portal.kpi_metrics (
+                org_id, kpi_name, kpi_category, current_value, 
+                last_month_value, trend_percentage, trend_direction, 
+                unit, calculation_month
+            )
+            VALUES (
+                v_org_id_uuid::VARCHAR, v_kpi_record.kpi_name, 'billing',
+                v_kpi_record.current_value, v_kpi_record.last_month_value,
+                v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
+                v_kpi_record.unit, v_calculation_month
+            )
+            ON CONFLICT (org_id, kpi_name, calculation_month)
+            DO UPDATE SET
+                current_value = EXCLUDED.current_value,
+                last_month_value = EXCLUDED.last_month_value,
+                trend_percentage = EXCLUDED.trend_percentage,
+                trend_direction = EXCLUDED.trend_direction,
+                updated_at = NOW();
+        END LOOP;
+        
+        -- Store Payment KPIs
+        FOR v_kpi_record IN 
+            SELECT * FROM portal.get_payment_kpis(v_org_id_uuid, p_start_date, p_end_date)
+        LOOP
+            INSERT INTO portal.kpi_metrics (
+                org_id, kpi_name, kpi_category, current_value, 
+                last_month_value, trend_percentage, trend_direction, 
+                unit, calculation_month
+            )
+            VALUES (
+                v_org_id_uuid::VARCHAR, v_kpi_record.kpi_name, 'payment',
+                v_kpi_record.current_value, v_kpi_record.last_month_value,
+                v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
+                v_kpi_record.unit, v_calculation_month
+            )
+            ON CONFLICT (org_id, kpi_name, calculation_month)
+            DO UPDATE SET
+                current_value = EXCLUDED.current_value,
+                last_month_value = EXCLUDED.last_month_value,
+                trend_percentage = EXCLUDED.trend_percentage,
+                trend_direction = EXCLUDED.trend_direction,
+                updated_at = NOW();
+        END LOOP;
+        
+        -- Store Benefits KPIs
+        FOR v_kpi_record IN 
+            SELECT kpi_name, current_value, last_month_value, 
+                   trend_percentage, trend_direction, unit, benefit_description
+            FROM portal.get_benefits_kpis(v_org_id_uuid, p_start_date, p_end_date)
+        LOOP
+            INSERT INTO portal.kpi_metrics (
+                org_id, kpi_name, kpi_category, current_value, 
+                last_month_value, trend_percentage, trend_direction, 
+                unit, calculation_month, metadata
+            )
+            VALUES (
+                v_org_id_uuid::VARCHAR, v_kpi_record.kpi_name, 'benefits',
+                v_kpi_record.current_value, v_kpi_record.last_month_value,
+                v_kpi_record.trend_percentage, v_kpi_record.trend_direction,
+                v_kpi_record.unit, v_calculation_month,
+                jsonb_build_object('benefitDescription', v_kpi_record.benefit_description)
+            )
+            ON CONFLICT (org_id, kpi_name, calculation_month)
+            DO UPDATE SET
+                current_value = EXCLUDED.current_value,
+                last_month_value = EXCLUDED.last_month_value,
+                trend_percentage = EXCLUDED.trend_percentage,
+                trend_direction = EXCLUDED.trend_direction,
+                metadata = EXCLUDED.metadata,
+                updated_at = NOW();
+        END LOOP;
+        
+        -- Store Payment Savings KPIs
+        FOR v_kpi_record IN
+            SELECT * FROM portal.get_payment_savings_kpis(v_org_id_uuid, p_start_date, p_end_date)
+        LOOP
+            INSERT INTO portal.kpi_metrics (
+                org_id, kpi_name, kpi_category, current_value, 
+                unit, calculation_month, metadata
+            )
+            VALUES (
+                v_org_id_uuid::VARCHAR, v_kpi_record.kpi_name, 'payment_savings',
+                v_kpi_record.accrued_value, v_kpi_record.unit, v_calculation_month,
+                jsonb_build_object(
+                    'potentialValue', v_kpi_record.potential_value,
+                    'accruedValue', v_kpi_record.accrued_value,
+                    'savingsPercentage', v_kpi_record.savings_percentage
+                )
+            )
+            ON CONFLICT (org_id, kpi_name, calculation_month)
+            DO UPDATE SET
+                current_value = EXCLUDED.current_value,
+                metadata = EXCLUDED.metadata,
+                updated_at = NOW();
+        END LOOP;
+        
+        -- Store Need Attention KPIs
+        FOR v_kpi_record IN
+            SELECT * FROM portal.get_need_attention_kpis(v_org_id_uuid)
+        LOOP
+            INSERT INTO portal.kpi_metrics (
+                org_id, kpi_name, kpi_category, current_value, 
+                unit, calculation_month, metadata
+            )
+            VALUES (
+                v_org_id_uuid::VARCHAR, v_kpi_record.kpi_name, 'need_attention',
+                v_kpi_record.current_value, v_kpi_record.unit, v_calculation_month,
+                jsonb_build_object('severity', v_kpi_record.severity)
+            )
+            ON CONFLICT (org_id, kpi_name, calculation_month)
+            DO UPDATE SET
+                current_value = EXCLUDED.current_value,
+                metadata = EXCLUDED.metadata,
+                updated_at = NOW();
+        END LOOP;
+    END IF; -- End of storage block (only if org_id provided)
+    
+    -- Build and return JSONB result
     SELECT jsonb_build_object(
         'billing', (
             SELECT jsonb_agg(
@@ -799,7 +931,7 @@ BEGIN
                     'unit', unit
                 )
             )
-            FROM portal.get_billing_kpis(p_org_id, p_start_date, p_end_date)
+            FROM portal.get_billing_kpis(v_org_id_uuid, p_start_date, p_end_date)
         ),
         'payment', (
             SELECT jsonb_agg(
@@ -812,7 +944,7 @@ BEGIN
                     'unit', unit
                 )
             )
-            FROM portal.get_payment_kpis(p_org_id, p_start_date, p_end_date)
+            FROM portal.get_payment_kpis(v_org_id_uuid, p_start_date, p_end_date)
         ),
         'benefits', (
             SELECT jsonb_agg(
@@ -826,7 +958,7 @@ BEGIN
                     'benefitDescription', benefit_description
                 )
             )
-            FROM portal.get_benefits_kpis(p_org_id, p_start_date, p_end_date)
+            FROM portal.get_benefits_kpis(v_org_id_uuid, p_start_date, p_end_date)
         ),
         'paymentSavings', (
             SELECT jsonb_agg(
@@ -838,7 +970,7 @@ BEGIN
                     'unit', unit
                 )
             )
-            FROM portal.get_payment_savings_kpis(p_org_id, p_start_date, p_end_date)
+            FROM portal.get_payment_savings_kpis(v_org_id_uuid, p_start_date, p_end_date)
         ),
         'needAttention', (
             SELECT jsonb_agg(
@@ -849,7 +981,7 @@ BEGIN
                     'severity', severity
                 )
             )
-            FROM portal.get_need_attention_kpis(p_org_id)
+            FROM portal.get_need_attention_kpis(v_org_id_uuid)
         )
     ) INTO v_result;
     

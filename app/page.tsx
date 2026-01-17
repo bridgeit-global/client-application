@@ -7,6 +7,9 @@ import MetricsSection from '@/components/landing/metrics-section';
 import CTASection from '@/components/landing/cta-section';
 import MapSection from '@/components/landing/map-section';
 import Footer from '@/components/layout/landing/footer';
+import { createClient } from '@/lib/supabase/server';
+import { getStoredKPIMetrics } from '@/services/kpi-metrics';
+import { KPISection } from '@/components/kpi/kpi-section';
 
 // Dynamically import client components for incremental loading
 const Header = dynamic(() => import('@/components/layout/landing/header'), {
@@ -39,6 +42,8 @@ const HeroSection = dynamic(() => import('@/components/landing/hero-section'), {
 });
 
 export default async function Home() {
+  const kpiMetrics = await getStoredKPIMetrics('49af6e1b-8d81-4914-b8c4-ffd2e9af2521');
+
   return (
     <div className='w-full relative min-h-screen'>
       {/* Mesh overlay */}
@@ -47,6 +52,9 @@ export default async function Home() {
       <Header />
       <main className="w-full pt-16 relative">
         <HeroSection />
+        {kpiMetrics && kpiMetrics.length > 0 && (
+          <KPISection metrics={kpiMetrics} />
+        )}
         <AboutSection />
         <FeaturesSection />
         <MapSection />

@@ -560,8 +560,6 @@ BEGIN
         SELECT 
             b.id,
             b.bill_amount,
-            b.due_date_rebate AS prompt_potential,
-            COALESCE(b.rebate_accrued, 0) AS prompt_accrued,
             b.discount_date_rebate AS timely_potential,
             CASE 
                 WHEN b.paid_status = 'paid' AND b.payment_status = true 
@@ -588,18 +586,59 @@ BEGIN
                    AND s.org_id = v_org_id
                )
           )
+    ),
+    prompt_payment_potential AS (
+        SELECT 
+            COALESCE(SUM(b.discount_date_rebate), 0) AS total_potential
+        FROM portal.bills b
+        INNER JOIN portal.connections c ON b.connection_id = c.id
+        WHERE b.bill_date >= v_this_month_start
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
+    ),
+    prompt_payment_accrued AS (
+        SELECT 
+            COALESCE(SUM(p.amount), 0) AS total_accrued
+        FROM portal.payments p
+        INNER JOIN portal.bills b ON p.connection_id = b.connection_id
+        INNER JOIN portal.connections c ON b.connection_id = c.id
+        WHERE b.bill_date >= v_this_month_start
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND b.discount_date IS NOT NULL
+          AND p.collection_date >= b.discount_date
+          AND p.collection_date >= b.bill_date
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
     )
     SELECT 
         'Prompt Payment'::varchar AS kpi_name,
-        SUM(pd.prompt_potential) AS potential_value,
-        SUM(pd.prompt_accrued) AS accrued_value,
+        ppp.total_potential AS potential_value,
+        ppa.total_accrued AS accrued_value,
         CASE 
-            WHEN SUM(pd.prompt_potential) > 0 THEN 
-                (SUM(pd.prompt_accrued) / SUM(pd.prompt_potential)) * 100
+            WHEN ppp.total_potential > 0 THEN 
+                (ppa.total_accrued / ppp.total_potential) * 100
             ELSE 0
         END AS savings_percentage,
         '₹'::varchar AS unit
-    FROM payment_data pd
+    FROM prompt_payment_potential ppp
+    CROSS JOIN prompt_payment_accrued ppa
 
     UNION ALL
 

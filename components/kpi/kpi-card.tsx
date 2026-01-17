@@ -15,6 +15,7 @@ import {
     Info,
     DollarSign,
     TrendingUp as TrendingUpIcon,
+    CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -134,6 +135,9 @@ export function KPICard({ metric }: KPICardProps) {
         return formatNumber(value);
     };
 
+    // Check if this metric benefits from a decrease (lower is better)
+    const isDecreasePositive = metric.kpi_name === 'Rate per Unit' || metric.kpi_name === 'Total Units';
+
     const getTrendIcon = (direction: TrendDirection | null) => {
         switch (direction) {
             case 'UP':
@@ -147,7 +151,22 @@ export function KPICard({ metric }: KPICardProps) {
         }
     };
 
-    const getTrendColor = (direction: TrendDirection | null) => {
+    const getTrendColor = (direction: TrendDirection | null, isDecreaseGood: boolean = false) => {
+        // For metrics where decrease is positive, invert the colors
+        if (isDecreaseGood) {
+            switch (direction) {
+                case 'UP':
+                    return 'text-red-400'; // Increase is bad
+                case 'DOWN':
+                    return 'text-green-400'; // Decrease is good
+                case 'NEW':
+                    return 'text-blue-400';
+                default:
+                    return 'text-gray-400';
+            }
+        }
+
+        // Default behavior: increase is good, decrease is bad
         switch (direction) {
             case 'UP':
                 return 'text-green-400';
@@ -161,7 +180,7 @@ export function KPICard({ metric }: KPICardProps) {
     };
 
     const TrendIcon = getTrendIcon(metric.trend_direction);
-    const trendColor = getTrendColor(metric.trend_direction);
+    const trendColor = getTrendColor(metric.trend_direction, isDecreasePositive);
     const severityStyle = metadata.severity ? severityColors[metadata.severity] : null;
 
     // For payment_savings category, show different layout
@@ -177,6 +196,12 @@ export function KPICard({ metric }: KPICardProps) {
                 colors.hover
             )}
         >
+            {isDecreasePositive && metric.trend_direction === 'DOWN' && (
+                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-green-500/20 border border-green-500/30">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+                    <span className="text-xs font-medium text-green-400">Good</span>
+                </div>
+            )}
             {/* Decorative gradient overlay */}
             <div className={cn('absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-20 blur-xl', colors.bg)} />
 
@@ -218,6 +243,7 @@ export function KPICard({ metric }: KPICardProps) {
                         <span className="text-sm text-white/60">{metric.unit}</span>
                     )}
                 </div>
+
 
                 {/* Time Saved for Benefits KPIs */}
                 {timeSaved && (
@@ -277,6 +303,8 @@ export function KPICard({ metric }: KPICardProps) {
                                 </span>
                             )}
                         </div>
+                        {/* Success indicator for metrics where decrease is positive */}
+
                         {metric.last_month_value !== null &&
                             metric.last_month_value !== 0 &&
                             metric.trend_direction !== 'NEW' && (

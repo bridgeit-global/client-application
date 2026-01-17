@@ -556,31 +556,7 @@ BEGIN
     v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 
     RETURN QUERY
-    WITH payment_data AS (
-        SELECT 
-            b.id,
-            b.bill_amount,
-            COALESCE(ac.adjustment, 0) AS surcharge_potential,
-            CASE 
-                WHEN ac.adjustment < 0 THEN ABS(ac.adjustment)
-                ELSE 0
-            END AS surcharge_accrued
-        FROM portal.bills b
-        LEFT JOIN portal.additional_charges ac ON b.id = ac.id
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.bill_date >= v_this_month_start
-          AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
-          AND b.is_valid = true
-          AND (
-               v_org_id IS NULL OR EXISTS (
-                 SELECT 1
-                 FROM portal.sites s
-                 WHERE s.id = c.site_id
-                   AND s.org_id = v_org_id
-               )
-          )
-    ),
+    WITH
     prompt_payment_potential AS (
         SELECT 
             COALESCE(SUM(b.discount_date_rebate), 0) AS total_potential
@@ -658,6 +634,61 @@ BEGIN
                    AND s.org_id = v_org_id
                )
           )
+    ),
+    surcharge_potential AS (
+        SELECT 
+            COALESCE(SUM(
+                ad.lpsc + 
+                ad.tod_surcharge + 
+                ad.low_pf_surcharge + 
+                ad.sanctioned_load_penalty + 
+                ad.power_factor_penalty + 
+                ad.capacitor_surcharge + 
+                ad.misuse_surcharge
+            ), 0) AS total_potential
+        FROM portal.adherence_charges ad
+        INNER JOIN portal.bills b ON ad.id = b.id
+        INNER JOIN portal.connections c ON b.connection_id = c.id
+        WHERE b.bill_date >= v_this_month_start
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
+    ),
+    surcharge_accrued AS (
+        SELECT 
+            COALESCE(SUM(
+                ad.lpsc + 
+                ad.tod_surcharge + 
+                ad.low_pf_surcharge + 
+                ad.sanctioned_load_penalty + 
+                ad.power_factor_penalty + 
+                ad.capacitor_surcharge + 
+                ad.misuse_surcharge
+            ), 0) AS total_accrued
+        FROM portal.adherence_charges ad
+        INNER JOIN portal.bills b ON ad.id = b.id
+        INNER JOIN portal.connections c ON b.connection_id = c.id
+        WHERE b.bill_date >= v_this_month_start
+          AND b.bill_date <= v_this_month_end
+          AND b.is_active = true
+          AND b.is_valid = true
+          AND b.payment_status = true
+          AND (
+               v_org_id IS NULL OR EXISTS (
+                 SELECT 1
+                 FROM portal.sites s
+                 WHERE s.id = c.site_id
+                   AND s.org_id = v_org_id
+               )
+          )
     )
     SELECT 
         'Prompt Payment'::varchar AS kpi_name,
@@ -691,15 +722,16 @@ BEGIN
 
     SELECT 
         'Surcharges'::varchar,
-        SUM(pd.surcharge_potential),
-        SUM(pd.surcharge_accrued),
+        sp.total_potential,
+        sa.total_accrued,
         CASE 
-            WHEN SUM(pd.surcharge_potential) > 0 THEN 
-                (SUM(pd.surcharge_accrued) / SUM(pd.surcharge_potential)) * 100
+            WHEN sp.total_potential > 0 THEN 
+                (sa.total_accrued / sp.total_potential) * 100
             ELSE 0
         END,
         '₹'::varchar
-    FROM payment_data pd;
+    FROM surcharge_potential sp
+    CROSS JOIN surcharge_accrued sa;
 END;
 $$;
 

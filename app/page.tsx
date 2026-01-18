@@ -50,7 +50,6 @@ export default async function Home() {
       <Header />
       <main className="w-full pt-16 relative">
         <HeroSection />
-        <KPISection orgId="49af6e1b-8d81-4914-b8c4-ffd2e9af2521" />
         <AboutSection />
         <FeaturesSection />
         <MapSection />

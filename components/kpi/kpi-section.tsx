@@ -150,7 +150,7 @@ export function KPISection({ orgId }: KPISectionProps) {
             <section className="my-16 flex items-center justify-center py-8 md:snap-start">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full">
                     <div className="flex items-center justify-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                 </div>
             </section>
@@ -187,23 +187,25 @@ export function KPISection({ orgId }: KPISectionProps) {
         <section className="my-16 flex items-center justify-center py-8 md:snap-start">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl text-white font-bold tracking-tight sm:text-4xl mb-2">
+                    <h2 className="text-3xl text-foreground font-bold tracking-tight sm:text-4xl mb-2">
                         KPI Dashboard
                     </h2>
-                    <p className="mx-auto mt-4 max-w-2xl text-xl text-white/80">
+                    <p className="mx-auto mt-4 max-w-2xl text-xl text-muted-foreground">
                         Track your key performance indicators at a glance
                     </p>
                     <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
-                        <div className="flex items-center gap-2 text-sm text-white/60">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            <span>Showing data for <span className="font-semibold text-white/80">{calculationMonth}</span></span>
+                            <span>
+                                Showing data for <span className="font-semibold text-foreground">{calculationMonth}</span>
+                            </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <MonthPicker
                                 value={selectedMonth}
                                 onSelect={handleMonthSelect}
                                 placeholder="Select month"
-                                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                className="bg-background border-input text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
                                 disabled={isLoadingMetrics}
                                 maxDate={new Date()}
                             />
@@ -214,10 +216,10 @@ export function KPISection({ orgId }: KPISectionProps) {
                 {/* Show message if no metrics */}
                 {(!metrics || metrics.length === 0) && !isLoading && (
                     <div className="text-center py-12">
-                        <p className="text-white/60 text-lg">
+                        <p className="text-muted-foreground text-lg">
                             No KPI metrics available for {calculationMonth}.
                         </p>
-                        <p className="text-white/40 text-sm mt-2">
+                        <p className="text-muted-foreground text-sm mt-2">
                             Select a month above to view metrics.
                         </p>
                     </div>
@@ -234,10 +236,10 @@ export function KPISection({ orgId }: KPISectionProps) {
                                 <div key={category} className="opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]">
                                     <div className="mb-6 flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-2xl font-semibold text-white">
+                                            <h3 className="text-2xl font-semibold text-foreground">
                                                 {categoryLabels[category] || category.replace('_', ' ')}
                                             </h3>
-                                            <p className="text-sm text-white/60 mt-1">
+                                            <p className="text-sm text-muted-foreground mt-1">
                                                 {categoryMetrics.length} {categoryMetrics.length === 1 ? 'metric' : 'metrics'}
                                             </p>
                                         </div>

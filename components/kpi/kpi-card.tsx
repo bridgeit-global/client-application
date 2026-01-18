@@ -190,8 +190,9 @@ export function KPICard({ metric }: KPICardProps) {
     return (
         <Card
             className={cn(
-                'relative overflow-hidden bg-white/5 backdrop-blur-sm border transition-all duration-300',
-                'hover:bg-white/10 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/20',
+                'relative overflow-hidden border bg-card text-card-foreground transition-all duration-300',
+                'dark:bg-white/5 dark:backdrop-blur-sm hover:scale-[1.02] hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/20',
+                'hover:bg-accent/50 dark:hover:bg-white/10',
                 colors.border,
                 colors.hover
             )}
@@ -223,10 +224,10 @@ export function KPICard({ metric }: KPICardProps) {
                         <Icon className={cn('h-5 w-5', colors.icon)} />
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
-                        <p className="text-xs font-medium text-white/60 uppercase tracking-wider mb-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
                             {metric.kpi_category.replace('_', ' ')}
                         </p>
-                        <h3 className="text-sm font-semibold text-white leading-tight">
+                        <h3 className="text-sm font-semibold text-foreground leading-tight">
                             {metric.kpi_name}
                         </h3>
                     </div>
@@ -236,18 +237,18 @@ export function KPICard({ metric }: KPICardProps) {
             <CardContent className="space-y-4">
                 {/* Main Value */}
                 <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-3xl font-bold text-white">
+                    <span className="text-3xl font-bold text-foreground">
                         {formatValue(metric.current_value, metric.unit)}
                     </span>
                     {metric.unit !== '₹' && metric.unit !== '%' && (
-                        <span className="text-sm text-white/60">{metric.unit}</span>
+                        <span className="text-sm text-muted-foreground">{metric.unit}</span>
                     )}
                 </div>
 
 
                 {/* Time Saved for Benefits KPIs */}
                 {timeSaved && (
-                    <div className="pt-2 border-t border-white/10">
+                    <div className="pt-2 border-t border-border/60 dark:border-white/10">
                         <div className="flex items-center gap-2">
                             <Zap className="h-4 w-4 text-purple-400 shrink-0" />
                             <span className="text-sm font-medium text-purple-400">
@@ -259,10 +260,10 @@ export function KPICard({ metric }: KPICardProps) {
 
                 {/* Payment Savings Info */}
                 {showSavingsInfo && (
-                    <div className="space-y-2 pt-2 border-t border-white/10">
+                    <div className="space-y-2 pt-2 border-t border-border/60 dark:border-white/10">
                         {metadata.accruedValue !== undefined && (
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/70">Accrued</span>
+                                <span className="text-muted-foreground">Accrued</span>
                                 <span className="font-semibold text-emerald-400">
                                     {formatValue(metadata.accruedValue, metric.unit)}
                                 </span>
@@ -270,14 +271,14 @@ export function KPICard({ metric }: KPICardProps) {
                         )}
                         {metadata.potentialValue !== undefined && (
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-white/70">Potential</span>
-                                <span className="font-semibold text-white/80">
+                                <span className="text-muted-foreground">Potential</span>
+                                <span className="font-semibold text-foreground">
                                     {formatValue(metadata.potentialValue, metric.unit)}
                                 </span>
                             </div>
                         )}
                         {metadata.savingsPercentage !== undefined && (
-                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/60 dark:border-white/10">
                                 <TrendingUpIcon className="h-4 w-4 text-emerald-400" />
                                 <span className="text-sm font-medium text-emerald-400">
                                     {metadata.savingsPercentage.toFixed(1)}% savings
@@ -289,7 +290,7 @@ export function KPICard({ metric }: KPICardProps) {
 
                 {/* Trend Indicator */}
                 {metric.trend_direction && !isPaymentSavings && (
-                    <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60 dark:border-white/10">
                         <div className={cn('flex items-center gap-1.5', trendColor)}>
                             <TrendIcon className="h-4 w-4" />
                             {metric.trend_percentage !== null && !isNaN(metric.trend_percentage) ? (
@@ -308,7 +309,7 @@ export function KPICard({ metric }: KPICardProps) {
                         {metric.last_month_value !== null &&
                             metric.last_month_value !== 0 &&
                             metric.trend_direction !== 'NEW' && (
-                                <span className="text-xs text-white/50">
+                                <span className="text-xs text-muted-foreground">
                                     vs {formatValue(metric.last_month_value, metric.unit)} last month
                                 </span>
                             )}
@@ -317,10 +318,10 @@ export function KPICard({ metric }: KPICardProps) {
 
                 {/* Benefit Description */}
                 {metadata.benefitDescription && (
-                    <div className="pt-2 border-t border-white/10">
+                    <div className="pt-2 border-t border-border/60 dark:border-white/10">
                         <div className="flex items-start gap-2">
                             <Info className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
-                            <p className="text-xs text-white/70 leading-relaxed">
+                            <p className="text-xs text-muted-foreground leading-relaxed">
                                 {metadata.benefitDescription}
                             </p>
                         </div>

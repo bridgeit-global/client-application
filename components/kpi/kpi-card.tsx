@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { KPIMetric, TrendDirection, Severity } from '@/types/kpi-metrics-type';
-import { formatNumber, formatRupees, formatMinutesToTime } from '@/lib/utils/number-format';
+import { formatNumber, formatMinutesToTime } from '@/lib/utils/number-format';
 import {
     TrendingUp,
     TrendingDown,

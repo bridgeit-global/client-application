@@ -184,32 +184,24 @@ export function KPISection({ orgId }: KPISectionProps) {
         .concat(Object.keys(groupedMetrics).filter(cat => !categoryOrder.includes(cat)));
 
     return (
-        <section className="my-16 flex items-center justify-center py-8 md:snap-start">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full">
-                <div className="text-center mb-12">
-                    <h2 className="text-3xl text-foreground font-bold tracking-tight sm:text-4xl mb-2">
-                        KPI Dashboard
-                    </h2>
-                    <p className="mx-auto mt-4 max-w-2xl text-xl text-muted-foreground">
-                        Track your key performance indicators at a glance
-                    </p>
-                    <div className="mt-4 flex items-center justify-center gap-4 flex-wrap">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                                Showing data for <span className="font-semibold text-foreground">{calculationMonth}</span>
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <MonthPicker
-                                value={selectedMonth}
-                                onSelect={handleMonthSelect}
-                                placeholder="Select month"
-                                className="bg-background border-input text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
-                                disabled={isLoadingMetrics}
-                                maxDate={new Date()}
-                            />
-                        </div>
+        <section className="flex items-center justify-center md:snap-start">
+            <div className="mx-auto w-full">
+                <div className="flex items-center justify-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                            Showing data for
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <MonthPicker
+                            value={selectedMonth}
+                            onSelect={handleMonthSelect}
+                            placeholder="Select month"
+                            className="bg-background border-input text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
+                            disabled={isLoadingMetrics}
+                            maxDate={new Date()}
+                        />
                     </div>
                 </div>
 

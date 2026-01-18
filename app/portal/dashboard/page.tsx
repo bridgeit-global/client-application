@@ -77,12 +77,12 @@ export default async function Page(
           Updated every 1 hour
         </div>
         <Suspense fallback={<div>Loading metrics...</div>}>
-          <KPISection orgId={user?.user_metadata?.org_id} />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4 md:gap-6 lg:grid-cols-4">
             {dashboardData?.map((item: DashboardData, index: number) => (
               <MetricCard key={`metric-${index}`} {...item} />
             ))}
           </div>
+          <KPISection orgId={user?.user_metadata?.org_id} />
         </Suspense>
 
         {/* <Suspense fallback={<div>Loading financial chart...</div>}>

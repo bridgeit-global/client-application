@@ -48,35 +48,35 @@ const categoryColors = {
         border: 'border-blue-500/20',
         icon: 'text-blue-400',
         accent: 'text-blue-400',
-        hover: 'hover:border-blue-500/40',
+        hover: 'hover:border-blue-500/40 hover:bg-primary/10',
     },
     payment: {
         bg: 'bg-green-500/10',
         border: 'border-green-500/20',
         icon: 'text-green-400',
         accent: 'text-green-400',
-        hover: 'hover:border-green-500/40',
+        hover: 'hover:border-green-500/40 hover:bg-primary/10',
     },
     benefits: {
         bg: 'bg-purple-500/10',
         border: 'border-purple-500/20',
         icon: 'text-purple-400',
         accent: 'text-purple-400',
-        hover: 'hover:border-purple-500/40',
+        hover: 'hover:border-purple-500/40 hover:bg-primary/10',
     },
     need_attention: {
         bg: 'bg-orange-500/10',
         border: 'border-orange-500/20',
         icon: 'text-orange-400',
         accent: 'text-orange-400',
-        hover: 'hover:border-orange-500/40',
+        hover: 'hover:border-orange-500/40 hover:bg-primary/10',
     },
     payment_savings: {
         bg: 'bg-emerald-500/10',
         border: 'border-emerald-500/20',
         icon: 'text-emerald-400',
         accent: 'text-emerald-400',
-        hover: 'hover:border-emerald-500/40',
+        hover: 'hover:border-emerald-500/40 hover:bg-primary/10',
     },
 };
 
@@ -191,8 +191,6 @@ export function KPICard({ metric }: KPICardProps) {
         <Card
             className={cn(
                 'relative overflow-hidden border bg-card text-card-foreground transition-all duration-300',
-                'dark:bg-white/5 dark:backdrop-blur-sm hover:scale-[1.02] hover:shadow-xl hover:shadow-black/10 dark:hover:shadow-black/20',
-                'hover:bg-accent/50 dark:hover:bg-white/10',
                 colors.border,
                 colors.hover
             )}

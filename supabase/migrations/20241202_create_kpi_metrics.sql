@@ -557,15 +557,24 @@ BEGIN
 
     RETURN QUERY
     WITH
-    prompt_payment_potential AS (
-        SELECT 
-            COALESCE(SUM(b.discount_date_rebate), 0) AS total_potential
+    prompt_payment_base AS (
+        SELECT
+            b.id,
+            b.discount_date,
+            b.discount_date_rebate,
+            (
+                SELECT MIN(p.collection_date)
+                FROM portal.payments p
+                WHERE p.connection_id = b.connection_id
+                  AND p.collection_date > b.bill_date
+            ) AS first_collection_after_bill
         FROM portal.bills b
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
           AND b.is_valid = true
+          AND b.discount_date IS NOT NULL
+          AND b.discount_date_rebate IS NOT NULL
           AND (
                v_org_id IS NULL OR EXISTS (
                  SELECT 1
@@ -575,26 +584,17 @@ BEGIN
                )
           )
     ),
+    prompt_payment_potential AS (
+        SELECT 
+            COALESCE(SUM(ppb.discount_date_rebate), 0) AS total_potential
+        FROM prompt_payment_base ppb
+    ),
     prompt_payment_accrued AS (
         SELECT 
-            COALESCE(SUM(p.amount), 0) AS total_accrued
-        FROM portal.payments p
-        INNER JOIN portal.bills b ON p.connection_id = b.connection_id
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.bill_date >= v_this_month_start
-          AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
-          AND b.is_valid = true
-          AND b.discount_date IS NOT NULL
-          AND p.collection_date >= b.discount_date
-          AND (
-               v_org_id IS NULL OR EXISTS (
-                 SELECT 1
-                 FROM portal.sites s
-                 WHERE s.id = c.site_id
-                   AND s.org_id = v_org_id
-               )
-          )
+            COALESCE(SUM(ppb.discount_date_rebate), 0) AS total_accrued
+        FROM prompt_payment_base ppb
+        WHERE ppb.first_collection_after_bill IS NOT NULL
+          AND ppb.first_collection_after_bill <= ppb.discount_date
     ),
     timely_payment_potential AS (
         SELECT 
@@ -603,7 +603,6 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
           AND b.is_valid = true
           AND (
                v_org_id IS NULL OR EXISTS (
@@ -622,7 +621,6 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
           AND b.is_valid = true
           AND b.due_date IS NOT NULL
           AND p.collection_date >= b.due_date
@@ -651,7 +649,6 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
           AND b.is_valid = true
           AND (
                v_org_id IS NULL OR EXISTS (
@@ -678,7 +675,6 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
-          AND b.is_active = true
           AND b.is_valid = true
           AND b.payment_status = true
           AND (
@@ -1168,8 +1164,38 @@ BEGIN
 END;
 $$;
 
+-- ----------------------------------------------------------------------------
+-- 8.1. Function to Store KPI Metrics for Entire Year
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION portal.store_kpi_metrics_for_year(
+  p_org_id UUID,
+  p_year INTEGER
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_month INTEGER;
+  v_calculation_month DATE;
+BEGIN
+  -- Loop through all 12 months
+  FOR v_month IN 1..12 LOOP
+    -- Construct the first day of the month for the given year
+    v_calculation_month := make_date(p_year, v_month, 1);
+    
+    -- Call store_kpi_metrics for this month
+    PERFORM portal.store_kpi_metrics(p_org_id, v_calculation_month);
+  END LOOP;
+END;
+$$;
+
 -- Example run
+-- Store KPIs for a single month
 SELECT portal.store_kpi_metrics('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid,'2025-10-01');
+
+-- Store KPIs for entire year (all 12 months)
+-- SELECT portal.store_kpi_metrics_for_year('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid, 2025);
 
 select * from portal.kpi_metrics;
 -- ----------------------------------------------------------------------------
@@ -1203,3 +1229,4 @@ COMMENT ON FUNCTION portal.get_payment_savings_kpis IS 'Calculates payment savin
 COMMENT ON FUNCTION portal.get_need_attention_kpis IS 'Calculates need attention metrics: Lag Bills, Lag Recharges, Arrears, Penalties, Abnormal Bills';
 COMMENT ON FUNCTION portal.get_all_kpi_metrics IS 'Master function that returns all KPI metrics as JSONB';
 COMMENT ON FUNCTION portal.store_kpi_metrics IS 'Stores calculated KPIs in kpi_metrics table for historical tracking';
+COMMENT ON FUNCTION portal.store_kpi_metrics_for_year IS 'Stores KPI metrics for all 12 months of a given year by calling store_kpi_metrics in a loop';

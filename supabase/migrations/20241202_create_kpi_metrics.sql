@@ -623,7 +623,12 @@ BEGIN
           AND b.bill_date <= v_this_month_end
           AND b.is_valid = true
           AND b.due_date IS NOT NULL
-          AND p.collection_date >= b.due_date
+          AND (
+               SELECT MIN(p.collection_date)
+               FROM portal.payments p
+               WHERE p.connection_id = b.connection_id
+                 AND p.collection_date > b.bill_date
+           ) >= b.due_date
           AND (
                v_org_id IS NULL OR EXISTS (
                  SELECT 1

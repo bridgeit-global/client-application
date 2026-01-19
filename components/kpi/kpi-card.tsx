@@ -203,19 +203,6 @@ export function KPICard({ metric }: KPICardProps) {
             )}
             {/* Decorative gradient overlay */}
             <div className={cn('absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-20 blur-xl', colors.bg)} />
-
-            {/* Severity badge for need_attention */}
-            {metadata.severity && (
-                <div className={cn(
-                    'absolute top-3 right-3 px-2 py-1 rounded-md text-xs font-semibold border',
-                    severityStyle?.bg,
-                    severityStyle?.text,
-                    severityStyle?.border
-                )}>
-                    {metadata.severity}
-                </div>
-            )}
-
             <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className={cn('p-2.5 rounded-lg shrink-0', colors.bg)}>
@@ -283,34 +270,6 @@ export function KPICard({ metric }: KPICardProps) {
                                 </span>
                             </div>
                         )}
-                    </div>
-                )}
-
-                {/* Trend Indicator */}
-                {metric.trend_direction && !isPaymentSavings && (
-                    <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/60 dark:border-white/10">
-                        <div className={cn('flex items-center gap-1.5', trendColor)}>
-                            <TrendIcon className="h-4 w-4" />
-                            {metric.trend_percentage !== null && !isNaN(metric.trend_percentage) ? (
-                                <span className="text-sm font-medium">
-                                    {Math.abs(metric.trend_percentage).toFixed(1)}%
-                                </span>
-                            ) : (
-                                <span className="text-xs font-medium">
-                                    {metric.trend_direction === 'NEW' ? 'New' :
-                                        metric.trend_direction === 'NEUTRAL' ? 'No change' : 'N/A'}
-                                </span>
-                            )}
-                        </div>
-                        {/* Success indicator for metrics where decrease is positive */}
-
-                        {metric.last_month_value !== null &&
-                            metric.last_month_value !== 0 &&
-                            metric.trend_direction !== 'NEW' && (
-                                <span className="text-xs text-muted-foreground">
-                                    vs {formatValue(metric.last_month_value, metric.unit)} last month
-                                </span>
-                            )}
                     </div>
                 )}
 

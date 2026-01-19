@@ -638,23 +638,24 @@ BEGIN
                )
           )
     ),
-    surcharge_potential AS (
-        SELECT 
-            COALESCE(SUM(
-                ad.lpsc + 
-                ad.tod_surcharge + 
-                ad.low_pf_surcharge + 
-                ad.sanctioned_load_penalty + 
-                ad.power_factor_penalty + 
-                ad.capacitor_surcharge + 
-                ad.misuse_surcharge
-            ), 0) AS total_potential
-        FROM portal.adherence_charges ad
-        INNER JOIN portal.bills b ON ad.id = b.id
+    surcharge_base AS (
+        SELECT
+            b.id,
+            b.due_date,
+            b.penalty_amount,
+            (
+                SELECT MIN(p.collection_date)
+                FROM portal.payments p
+                WHERE p.connection_id = b.connection_id
+                  AND p.collection_date > b.bill_date
+            ) AS first_collection_after_bill
+        FROM portal.bills b
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
           AND b.is_valid = true
+          AND b.due_date IS NOT NULL
+          AND b.penalty_amount IS NOT NULL
           AND (
                v_org_id IS NULL OR EXISTS (
                  SELECT 1
@@ -664,32 +665,17 @@ BEGIN
                )
           )
     ),
+    surcharge_potential AS (
+        SELECT 
+            COALESCE(SUM(sb.penalty_amount), 0) AS total_potential
+        FROM surcharge_base sb
+    ),
     surcharge_accrued AS (
         SELECT 
-            COALESCE(SUM(
-                ad.lpsc + 
-                ad.tod_surcharge + 
-                ad.low_pf_surcharge + 
-                ad.sanctioned_load_penalty + 
-                ad.power_factor_penalty + 
-                ad.capacitor_surcharge + 
-                ad.misuse_surcharge
-            ), 0) AS total_accrued
-        FROM portal.adherence_charges ad
-        INNER JOIN portal.bills b ON ad.id = b.id
-        INNER JOIN portal.connections c ON b.connection_id = c.id
-        WHERE b.bill_date >= v_this_month_start
-          AND b.bill_date <= v_this_month_end
-          AND b.is_valid = true
-          AND b.payment_status = true
-          AND (
-               v_org_id IS NULL OR EXISTS (
-                 SELECT 1
-                 FROM portal.sites s
-                 WHERE s.id = c.site_id
-                   AND s.org_id = v_org_id
-               )
-          )
+            COALESCE(SUM(sb.penalty_amount), 0) AS total_accrued
+        FROM surcharge_base sb
+        WHERE sb.first_collection_after_bill IS NOT NULL
+          AND sb.first_collection_after_bill < sb.due_date
     )
     SELECT 
         'Prompt Payment'::varchar AS kpi_name,
@@ -822,7 +808,7 @@ BEGIN
     FROM portal.bills b
     JOIN portal.connections c ON b.connection_id = c.id
     WHERE b.is_active = true
-      AND b.is_valid = false
+      AND b.bill_type = 'Abnoraml'
       AND (v_org_id IS NULL OR EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
@@ -874,6 +860,7 @@ BEGIN
   FROM abnormal_bills ab;
 END;
 $$;
+
 
 -- select * from portal.get_need_attention_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 

@@ -763,12 +763,18 @@ BEGIN
   ),
   lag_recharges AS (
     SELECT COUNT(*) AS lag_count
-    FROM portal.prepaid_recharge pr
-    JOIN portal.connections c ON pr.connection_id = c.id
-    WHERE pr.recharge_date < v_today - INTERVAL '30 days'
-      AND pr.recharge_status = 'pending'
-      AND pr.is_active = true
-      AND pr.is_deleted = false
+    FROM portal.connections c
+    LEFT JOIN LATERAL (
+      SELECT MAX(pb.fetch_date) AS last_fetch_date
+      FROM portal.prepaid_balances pb
+      WHERE pb.id = c.id
+    ) pb ON true
+    WHERE c.is_active = true
+      AND c.is_deleted = false
+      -- Lag definition:
+      -- If we did not receive any prepaid balance fetch in the last 3 days,
+      -- the displayed balance stays the same => treat as "lag".
+      AND pb.last_fetch_date <= v_today - 3
       AND (v_org_id IS NULL OR EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
@@ -779,8 +785,7 @@ BEGIN
     FROM portal.additional_charges ac
     JOIN portal.bills b ON ac.id = b.id
     JOIN portal.connections c ON b.connection_id = c.id
-    WHERE b.is_active = true
-      AND b.is_valid = true
+    WHERE b.is_valid = true
       AND ac.arrears > 0
       AND (v_org_id IS NULL OR EXISTS (
         SELECT 1 FROM portal.sites s
@@ -796,8 +801,7 @@ BEGIN
     FROM portal.adherence_charges ad
     JOIN portal.bills b ON ad.id = b.id
     JOIN portal.connections c ON b.connection_id = c.id
-    WHERE b.is_active = true
-      AND b.is_valid = true
+    WHERE b.is_valid = true
       AND (v_org_id IS NULL OR EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
@@ -807,8 +811,7 @@ BEGIN
     SELECT COUNT(*) AS abnormal_count
     FROM portal.bills b
     JOIN portal.connections c ON b.connection_id = c.id
-    WHERE b.is_active = true
-      AND b.bill_type = 'Abnoraml'
+    WHERE b.bill_type = 'Abnoraml'
       AND (v_org_id IS NULL OR EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id

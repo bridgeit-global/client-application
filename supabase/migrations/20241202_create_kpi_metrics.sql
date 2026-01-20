@@ -419,6 +419,13 @@ from portal.get_payment_savings_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uui
 -- ----------------------------------------------------------------------------
 -- 4. Need Attention KPIs Calculation Function
 -- ----------------------------------------------------------------------------
+-- NOTE:
+-- Older versions of this function existed with signature:
+--   portal.get_need_attention_kpis(p_org_id uuid DEFAULT NULL)
+-- After adding date params (all DEFAULT NULL), calling `portal.get_need_attention_kpis()`
+-- becomes ambiguous unless we drop the old 1-arg overload.
+DROP FUNCTION IF EXISTS portal.get_need_attention_kpis(uuid);
+
 CREATE OR REPLACE FUNCTION portal.get_need_attention_kpis(
   p_org_id uuid DEFAULT NULL,
   p_start_date date DEFAULT NULL,
@@ -432,6 +439,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = portal, public
 AS $$
 DECLARE
   v_this_month_start date;
@@ -587,32 +595,6 @@ DECLARE
 BEGIN
     -- Build and return JSONB result
     SELECT jsonb_build_object(
-        'billing', (
-            SELECT jsonb_agg(
-                jsonb_build_object(
-                    'kpiName', kpi_name,
-                    'currentValue', current_value,
-                    'lastMonthValue', last_month_value,
-                    'trendPercentage', trend_percentage,
-                    'trendDirection', trend_direction,
-                    'unit', unit
-                )
-            )
-            FROM portal.get_billing_kpis(p_org_id, p_start_date, p_end_date)
-        ),
-        'payment', (
-            SELECT jsonb_agg(
-                jsonb_build_object(
-                    'kpiName', kpi_name,
-                    'currentValue', current_value,
-                    'lastMonthValue', last_month_value,
-                    'trendPercentage', trend_percentage,
-                    'trendDirection', trend_direction,
-                    'unit', unit
-                )
-            )
-            FROM portal.get_payment_kpis(p_org_id, p_start_date, p_end_date)
-        ),
         'benefits', (
             SELECT jsonb_agg(
                 jsonb_build_object(
@@ -686,76 +668,6 @@ DECLARE
 BEGIN
   v_start_date := p_calculation_month;
   v_end_date := (date_trunc('month', p_calculation_month) + interval '1 month - 1 day')::date;
-
-  -- Billing
-  FOR v_kpi_record IN
-    SELECT * FROM portal.get_billing_kpis(p_org_id, v_start_date, v_end_date)
-  LOOP
-    INSERT INTO portal.kpi_metrics (
-      org_id, kpi_name, kpi_category, current_value,
-      last_month_value, trend_percentage, trend_direction,
-      unit, calculation_month
-    )
-    VALUES (
-      p_org_id, v_kpi_record.kpi_name, 'billing',
-      round(v_kpi_record.current_value::numeric, 4),
-      round(v_kpi_record.last_month_value::numeric, 4),
-      round(
-        (
-          CASE
-            WHEN v_kpi_record.trend_percentage IS NULL THEN NULL
-            WHEN v_kpi_record.trend_percentage > 100 THEN 100
-            WHEN v_kpi_record.trend_percentage < -100 THEN -100
-            ELSE v_kpi_record.trend_percentage
-          END
-        )::numeric, 2
-      ),
-      v_kpi_record.trend_direction,
-      v_kpi_record.unit, p_calculation_month
-    )
-    ON CONFLICT (org_id, kpi_name, calculation_month)
-    DO UPDATE SET
-      current_value     = EXCLUDED.current_value,
-      last_month_value  = EXCLUDED.last_month_value,
-      trend_percentage  = EXCLUDED.trend_percentage,
-      trend_direction   = EXCLUDED.trend_direction,
-      updated_at        = NOW();
-  END LOOP;
-
-  -- Payment
-  FOR v_kpi_record IN
-    SELECT * FROM portal.get_payment_kpis(p_org_id, v_start_date, v_end_date)
-  LOOP
-    INSERT INTO portal.kpi_metrics (
-      org_id, kpi_name, kpi_category, current_value,
-      last_month_value, trend_percentage, trend_direction,
-      unit, calculation_month
-    )
-    VALUES (
-      p_org_id, v_kpi_record.kpi_name, 'payment',
-      round(v_kpi_record.current_value::numeric, 4),
-      round(v_kpi_record.last_month_value::numeric, 4),
-      round(
-        (
-          CASE
-            WHEN v_kpi_record.trend_percentage IS NULL THEN NULL
-            WHEN v_kpi_record.trend_percentage > 100 THEN 100
-            WHEN v_kpi_record.trend_percentage < -100 THEN -100
-            ELSE v_kpi_record.trend_percentage
-          END
-        )::numeric, 2
-      ),
-      v_kpi_record.trend_direction,
-      v_kpi_record.unit, p_calculation_month
-    )
-    ON CONFLICT (org_id, kpi_name, calculation_month)
-    DO UPDATE SET
-      current_value     = EXCLUDED.current_value,
-      last_month_value  = EXCLUDED.last_month_value,
-      trend_percentage  = EXCLUDED.trend_percentage,
-      trend_direction   = EXCLUDED.trend_direction,
-      updated_at        = NOW();
-  END LOOP;
 
   -- Benefits
   FOR v_kpi_record IN
@@ -924,7 +836,7 @@ COMMENT ON FUNCTION portal.get_billing_kpis IS 'Calculates billing KPIs: Total A
 COMMENT ON FUNCTION portal.get_payment_kpis IS 'Calculates payment KPIs: Payment Done Amount, Payments Completed, Collection Efficiency';
 COMMENT ON FUNCTION portal.get_benefits_kpis IS 'Calculates benefits KPIs: Bills Generated, Balance Fetched, Sub meter readings';
 COMMENT ON FUNCTION portal.get_payment_savings_kpis IS 'Calculates payment savings: Prompt Payment, Timely Payment, Surcharges';
-COMMENT ON FUNCTION portal.get_need_attention_kpis IS 'Calculates need attention metrics: Lag Bills, Lag Recharges, Arrears, Penalties, Abnormal Bills';
+COMMENT ON FUNCTION portal.get_need_attention_kpis(uuid, date, date) IS 'Calculates need attention metrics: Lag Bills, Lag Recharges, Arrears, Penalties, Abnormal Bills';
 COMMENT ON FUNCTION portal.get_all_kpi_metrics IS 'Master function that returns all KPI metrics as JSONB';
 COMMENT ON FUNCTION portal.store_kpi_metrics IS 'Stores calculated KPIs in kpi_metrics table for historical tracking';
 COMMENT ON FUNCTION portal.store_kpi_metrics_for_year IS 'Stores KPI metrics for all 12 months of a given year by calling store_kpi_metrics in a loop';

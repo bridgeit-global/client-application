@@ -13,14 +13,12 @@ interface KPISectionProps {
 }
 
 const categoryLabels: Record<string, string> = {
-    billing: 'Billing Metrics',
-    payment: 'Payment Metrics',
     benefits: 'Benefits Metrics',
     need_attention: 'Need Attention',
     payment_savings: 'Payment Savings',
 };
 
-const categoryOrder = ['benefits', 'billing', 'payment', 'payment_savings', 'need_attention'];
+const categoryOrder = ['benefits', 'payment_savings', 'need_attention'];
 
 const formatMonth = (dateString: string): string => {
     try {

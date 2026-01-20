@@ -155,13 +155,15 @@ export const getPaymentSavingsKPIs = cache(async (
  * Fetch need attention KPIs
  */
 export const getNeedAttentionKPIs = cache(async (
-    orgId?: string
+    params?: GetKPIsParams
 ): Promise<NeedAttentionKPI[] | null> => {
     const supabase = await createClient();
 
     try {
         const { data, error } = await supabase.rpc('get_need_attention_kpis', {
-            p_org_id: orgId || null,
+            p_org_id: params?.org_id || null,
+            p_start_date: params?.start_date || null,
+            p_end_date: params?.end_date || null,
         });
 
         if (error) {

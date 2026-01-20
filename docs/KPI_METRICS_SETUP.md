@@ -85,7 +85,7 @@ SELECT * FROM portal.get_payment_savings_kpis(
 );
 ```
 
-### 5. `get_need_attention_kpis(p_org_id)`
+### 5. `get_need_attention_kpis(p_org_id, p_start_date, p_end_date)`
 
 Calculates need attention metrics:
 - **Lag Bills** (Count) - Bills that are overdue

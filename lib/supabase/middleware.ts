@@ -39,6 +39,13 @@ export async function updateSession(request: NextRequest) {
   const isPortalRoute = path.startsWith('/portal');
   const isProtectedRoute = isSupportRoute || isPortalRoute;
   const isLoginRoute = path === '/login';
+  const isAuthCallbackRoute = path === '/api/auth/callback';
+  
+  // Allow OAuth callback route to proceed without authentication checks
+  if (isAuthCallbackRoute) {
+    return addSecurityHeaders(NextResponse.next());
+  }
+  
   // Home page is not a protected route, so both logged-in and non-logged-in users can access it
 
   const supabase = await createClient();

@@ -278,14 +278,16 @@ export function PaymentActions({ data }: PaymentActionsProps) {
         }
       }
 
-      const response = await fetch(`${API_URL}/payment/bill-payment`, {
+      console.log('user?.id', user?.id);
+
+      const response = await fetch(`${API_URL}payment/bill-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'single_bill_payment',
-          userId: user?.id,
+          userId: user?.id || 'f801860b-cc08-420a-bbd8-75e7ba869f30',
           paymentDetails: {
             billId: data.bill_id,
             batchId: data.batch_id,
@@ -389,14 +391,14 @@ export function PaymentActions({ data }: PaymentActionsProps) {
         return;
       }
 
-      const response = await fetch(`${API_URL}/payment/bill-payment`, {
+      const response = await fetch(`${API_URL}payment/bill-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           type: 'single_reversal_payment',
-          userId: user?.id,
+          userId: 'f801860b-cc08-420a-bbd8-75e7ba869f30',
           paymentDetails: {
             rechargeId: data.recharge_id,
             batchId: data.batch_id,

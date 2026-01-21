@@ -62,9 +62,6 @@ interface UserTableProps {
 
 export function UserTable({ users }: UserTableProps) {
 
-
-
-
     const supabase = createClient();
     const { user: currentUser } = useUserStore();
     const [isDeleting, setIsDeleting] = React.useState<string | null>(null)

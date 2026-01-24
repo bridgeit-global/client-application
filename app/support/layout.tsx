@@ -3,6 +3,8 @@ import { Footer } from '@/components/layout/footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SupportSidebar } from '@/components/sidebar/support-sidebar';
 import Header from '@/components/layout/header';
+import { UserInitializer } from '@/components/providers/user-initializer';
+
 export default function RootLayout({
   children
 }: {
@@ -10,6 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <div className="flex h-screen">
+      <UserInitializer />
       <SidebarProvider>
         <SupportSidebar />
         <main className="w-full flex-1 flex flex-col overflow-hidden">

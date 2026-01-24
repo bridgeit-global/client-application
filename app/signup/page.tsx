@@ -76,6 +76,7 @@ const steps = [
 function SignUpContent() {
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone");
+  const email = searchParams.get("email"); // Get email from OAuth redirect
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [requestId, setRequestId] = useState<string | null>(null);
@@ -89,7 +90,7 @@ function SignUpContent() {
     defaultValues: {
       company_name: '',
       business_type: '',
-      email: '',
+      email: email || '', // Pre-fill email from Google OAuth
       phone: phone || '',
       number_of_locations: '',
       average_monthly_bill: '',

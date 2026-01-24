@@ -168,7 +168,8 @@ No additional environment variables are needed - all OAuth credentials are store
 5. Supabase processes the OAuth flow and links accounts (if email matches)
 6. Supabase redirects to your application callback: `/api/auth/callback`
 7. Your callback handler exchanges the code for a session
-8. User is redirected to appropriate dashboard based on role
+8. **New User Flow**: If user doesn't have `org_id` in metadata, redirect to `/signup` to create organization
+9. **Existing User Flow**: If user has `org_id`, redirect to appropriate dashboard based on role
 
 ### Account Linking
 
@@ -182,6 +183,48 @@ Users can then sign in using either:
 - Google OAuth (new method)
 
 Both methods access the same account if the email matches.
+
+### New User Organization Setup
+
+When a new user signs in with Google SSO for the first time:
+
+1. **OAuth Callback Check**: The callback handler checks if `user.user_metadata.org_id` exists
+2. **Redirect to Signup**: If no `org_id`, user is redirected to `/signup` with email pre-filled
+3. **Organization Creation**: User completes the signup form with:
+   - Contact information (name, email, phone)
+   - Company details (name, PAN, GST, CIN)
+   - Business information (type, locations, monthly bill)
+4. **External Processing**: Form submission creates a `contact_request` record
+5. **Admin Approval**: Admin reviews and approves the request via external API
+6. **Organization Setup**: Upon approval:
+   - Organization is created in `organizations` table
+   - User metadata is updated with `org_id`
+   - Default site types are configured in `org_master` table
+   - User receives onboarding email
+
+### Site Types Configuration
+
+Site types are organization-specific and stored in the `org_master` table:
+
+**Default Site Types** (if none configured):
+- COCO (Company Owned, Company Operated)
+- POPO (Partner Owned, Partner Operated)
+- COPO (Company Owned, Partner Operated)
+- POCO (Partner Owned, Company Operated)
+- Warehouse
+
+**Custom Site Types**:
+Organizations can have custom site types configured by admin during organization setup. These are stored as:
+```
+org_master {
+  org_id: <organization_id>
+  type: 'site_type'
+  value: <site_type_code>
+  name: <display_name>
+}
+```
+
+The application automatically uses custom site types if configured, otherwise falls back to default types.
 
 ## Security Considerations
 

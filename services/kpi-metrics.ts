@@ -16,32 +16,6 @@ import type {
     GetKPIsParams,
 } from '@/types/kpi-metrics-type';
 
-/**
- * Fetch all KPI metrics for the current organization
- */
-export const getAllKPIMetrics = cache(async (
-    params?: GetKPIsParams
-): Promise<AllKPIMetrics | null> => {
-    const supabase = await createClient();
-
-    try {
-        const { data, error } = await supabase.rpc('get_all_kpi_metrics', {
-            p_org_id: params?.org_id || null,
-            p_start_date: params?.start_date || null,
-            p_end_date: params?.end_date || null,
-        });
-
-        if (error) {
-            console.error('Error fetching all KPI metrics:', error);
-            return null;
-        }
-
-        return data as AllKPIMetrics;
-    } catch (error) {
-        console.error('Error in getAllKPIMetrics:', error);
-        return null;
-    }
-});
 
 /**
  * Fetch billing KPIs

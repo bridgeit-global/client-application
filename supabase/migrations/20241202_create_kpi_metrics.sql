@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS portal.kpi_metrics (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(org_id, kpi_name, calculation_month)
 );
-
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_kpi_metrics_org_id ON portal.kpi_metrics(org_id);
 CREATE INDEX IF NOT EXISTS idx_kpi_metrics_category ON portal.kpi_metrics(kpi_category);
@@ -215,8 +214,7 @@ END;
 $$;
 
 
--- select *
--- from portal.get_benefits_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+-- select *  from portal.get_benefits_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 
 -- ----------------------------------------------------------------------------
 -- 3. Savings on Payment KPIs Calculation Function
@@ -294,6 +292,7 @@ BEGIN
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
           AND b.is_valid = true
+          AND b.due_date IS NOT NULL
           AND (
                v_org_id IS NULL OR EXISTS (
                  SELECT 1
@@ -311,14 +310,17 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.bill_date >= v_this_month_start
           AND b.bill_date <= v_this_month_end
+          AND p.collection_date >= v_this_month_start
+          AND p.collection_date <= v_this_month_end
+          AND p.collection_date <= b.due_date
           AND b.is_valid = true
           AND b.due_date IS NOT NULL
           AND (
-               SELECT MIN(p.collection_date)
-               FROM portal.payments p
-               WHERE p.connection_id = b.connection_id
-                 AND p.collection_date > b.bill_date
-           ) >= b.due_date
+               SELECT MIN(p2.collection_date)
+               FROM portal.payments p2
+               WHERE p2.connection_id = b.connection_id
+                 AND p2.collection_date > b.bill_date
+           ) <= b.due_date
           AND (
                v_org_id IS NULL OR EXISTS (
                  SELECT 1
@@ -413,8 +415,7 @@ END;
 $$;
 
 
-select *
-from portal.get_payment_savings_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+-- select * from portal.get_payment_savings_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
 
 -- ----------------------------------------------------------------------------
 -- 4. Need Attention KPIs Calculation Function
@@ -424,7 +425,7 @@ from portal.get_payment_savings_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uui
 --   portal.get_need_attention_kpis(p_org_id uuid DEFAULT NULL)
 -- After adding date params (all DEFAULT NULL), calling `portal.get_need_attention_kpis()`
 -- becomes ambiguous unless we drop the old 1-arg overload.
-DROP FUNCTION IF EXISTS portal.get_need_attention_kpis(uuid);
+
 
 CREATE OR REPLACE FUNCTION portal.get_need_attention_kpis(
   p_org_id uuid DEFAULT NULL,

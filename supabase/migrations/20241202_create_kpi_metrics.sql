@@ -79,7 +79,7 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.created_at >= v_this_month_start
           AND b.created_at <= v_this_month_end
-          AND b.is_active = true
+          AND b.is_valid = true
           AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
@@ -93,7 +93,7 @@ BEGIN
         INNER JOIN portal.connections c ON b.connection_id = c.id
         WHERE b.created_at >= v_last_month_start
           AND b.created_at <= v_last_month_end
-          AND b.is_active = true
+          AND b.is_valid = true
           AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
@@ -579,22 +579,7 @@ $$;
 -- select * from portal.get_need_attention_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid, null, null);
 
 -- ----------------------------------------------------------------------------
--- 5. clamp trend function
--- ----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION portal.clamp_trend(p NUMERIC)
-RETURNS NUMERIC
-LANGUAGE plpgsql
-AS $f$
-BEGIN
-  IF p IS NULL THEN RETURN NULL; END IF;
-  IF p > 100 THEN RETURN 100; END IF;
-  IF p < -100 THEN RETURN -100; END IF;
-  RETURN p;
-END;
-$f$;
-
--- ----------------------------------------------------------------------------
--- 6. Function to Store KPI Metrics
+-- 5. Function to Store KPI Metrics
 -- ----------------------------------------------------------------------------
 
 

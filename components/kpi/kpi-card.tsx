@@ -36,8 +36,14 @@ interface MetricMetadata {
 
 const kpiDisplayNames: Record<string, string> = {
     // Need attention - make "lag" labels normal-person friendly
-    'Lag Bills': 'Overdue Bills',
+    'Lag Bills': 'Bills Not Fetched (This Month)',
     'Lag Recharges': 'Balances Not Updated (3+ days)',
+};
+
+const kpiDescriptions: Record<string, string> = {
+    // These are product meanings (not literal English "lag")
+    'Lag Bills': 'Latest bill was not fetched for this month’s bill date.',
+    'Lag Recharges': 'No prepaid balance fetch received in the last 3 days.',
 };
 
 const categoryIcons = {
@@ -109,6 +115,7 @@ export function KPICard({ metric }: KPICardProps) {
     const colors = categoryColors[metric.kpi_category] || categoryColors.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
     const displayName = kpiDisplayNames[metric.kpi_name] ?? metric.kpi_name;
+    const description = kpiDescriptions[metric.kpi_name];
 
     // Calculate time saved for benefits KPIs
     const getTimeSaved = (): string | null => {
@@ -236,6 +243,18 @@ export function KPICard({ metric }: KPICardProps) {
                         <span className="text-sm text-muted-foreground">{metric.unit}</span>
                     )}
                 </div>
+
+                {/* KPI Explanation (for non-technical users) */}
+                {description && (
+                    <div className="pt-2 border-t border-border/60 dark:border-white/10">
+                        <div className="flex items-start gap-2">
+                            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                {description}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Last month + Trend */}
                 {(metric.last_month_value !== null ||

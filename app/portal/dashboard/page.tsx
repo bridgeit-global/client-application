@@ -14,9 +14,6 @@ export default async function Page() {
         <h1 className="text-2xl font-bold">
           Welcome {user?.user_metadata?.first_name ?? ''} {user?.user_metadata?.last_name ?? ''}
         </h1>
-        <div className="text-xs text-muted-foreground text-right">
-          Updated every 1 hour
-        </div>
         <KPISection orgId={user?.user_metadata?.org_id} />
       </div>
     );

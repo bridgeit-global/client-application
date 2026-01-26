@@ -18,7 +18,7 @@ interface KPISectionProps {
 }
 
 const categoryLabels: Record<string, string> = {
-    benefits: 'Benefits Metrics',
+    benefits: 'MTD Benefits',
     need_attention: 'Need Attention',
     payment_savings: 'Payment Savings',
 };
@@ -314,9 +314,7 @@ export function KPISection({ orgId }: KPISectionProps) {
                                             <h3 className="text-2xl font-semibold text-foreground">
                                                 {categoryLabels[category] || category.replace('_', ' ')}
                                             </h3>
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                {categoryMetrics.length} {categoryMetrics.length === 1 ? 'metric' : 'metrics'}
-                                            </p>
+
                                         </div>
                                     </div>
                                     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-${categoryMetrics.length.toString()} gap-6`}>
@@ -340,9 +338,7 @@ export function KPISection({ orgId }: KPISectionProps) {
                                         <h3 className="text-2xl font-semibold text-foreground">
                                             Delays & Overdue Items
                                         </h3>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            {lagMetrics.length} {lagMetrics.length === 1 ? 'metric' : 'metrics'}
-                                        </p>
+
                                     </div>
                                 </div>
                                 <div

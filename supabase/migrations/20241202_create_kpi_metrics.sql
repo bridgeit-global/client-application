@@ -56,12 +56,19 @@ DECLARE
     v_this_month_end DATE;
     v_last_month_start DATE;
     v_last_month_end DATE;
+    v_range_days INTEGER;
+    v_last_month_last_day DATE;
     v_org_id uuid;
 BEGIN
-    v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE));
-    v_this_month_end := COALESCE(p_end_date, DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day');
-    v_last_month_start := v_this_month_start - INTERVAL '1 month';
-    v_last_month_end := v_this_month_start - INTERVAL '1 day';
+    v_this_month_start := COALESCE(p_start_date, DATE_TRUNC('month', CURRENT_DATE)::date);
+    v_this_month_end := COALESCE(p_end_date, (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' - INTERVAL '1 day')::date);
+
+    -- "Last month" should match the same day-span as the selected range.
+    -- Example: 2025-02-01..2025-02-25 => 2025-01-01..2025-01-25
+    v_range_days := (v_this_month_end - v_this_month_start);
+    v_last_month_start := (v_this_month_start - INTERVAL '1 month')::date;
+    v_last_month_last_day := (DATE_TRUNC('month', v_last_month_start) + INTERVAL '1 month' - INTERVAL '1 day')::date;
+    v_last_month_end := LEAST(v_last_month_start + v_range_days, v_last_month_last_day);
 
     v_org_id := p_org_id;
 

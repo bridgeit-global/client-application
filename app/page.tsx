@@ -7,9 +7,6 @@ import MetricsSection from '@/components/landing/metrics-section';
 import CTASection from '@/components/landing/cta-section';
 import MapSection from '@/components/landing/map-section';
 import Footer from '@/components/layout/landing/footer';
-import { createClient } from '@/lib/supabase/server';
-import { getStoredKPIMetrics } from '@/services/kpi-metrics';
-import { KPISection } from '@/components/kpi/kpi-section';
 
 // Dynamically import client components for incremental loading
 const Header = dynamic(() => import('@/components/layout/landing/header'), {

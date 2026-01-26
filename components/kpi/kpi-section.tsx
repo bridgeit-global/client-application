@@ -61,10 +61,6 @@ export function KPISection({ orgId }: KPISectionProps) {
      */
     const fetchKPIMetrics = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
         const calculationMonth = formatCalculationMonth(month);
-
-
-        console.log('fetchKPIMetrics', orgId, calculationMonth);
-
         try {
             const { data, error } = await supabase
                 .from('kpi_metrics')

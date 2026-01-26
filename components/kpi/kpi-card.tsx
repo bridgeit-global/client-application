@@ -230,6 +230,30 @@ export function KPICard({ metric }: KPICardProps) {
                     )}
                 </div>
 
+                {/* Last month + Trend */}
+                {(metric.last_month_value !== null ||
+                    (metric.trend_percentage !== null && metric.trend_direction !== null)) && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                            {metric.last_month_value !== null && (
+                                <div className="flex items-center gap-2">
+                                    <span>Last month</span>
+                                    <span className="font-medium text-foreground">
+                                        {formatValue(metric.last_month_value, metric.unit)}
+                                    </span>
+                                </div>
+                            )}
+
+                            {metric.trend_percentage !== null && metric.trend_direction !== null && (
+                                <div className={cn('flex items-center gap-1.5', trendColor)}>
+                                    <TrendIcon className="h-4 w-4" />
+                                    <span className="font-medium">
+                                        {Math.abs(metric.trend_percentage).toFixed(1)}%
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
 
                 {/* Time Saved for Benefits KPIs */}
                 {timeSaved && (

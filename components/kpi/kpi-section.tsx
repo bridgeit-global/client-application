@@ -1,6 +1,11 @@
 'use client';
 
-import { KPIMetric } from '@/types/kpi-metrics-type';
+import type {
+    BenefitsKPI,
+    NeedAttentionKPI,
+    PaymentSavingsKPI,
+    KPIMetric,
+} from '@/types/kpi-metrics-type';
 import { KPICard } from './kpi-card';
 import { Calendar } from 'lucide-react';
 import { MonthPicker } from './month-picker';
@@ -39,6 +44,17 @@ const formatCalculationMonth = (date: Date): string => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 };
 
+const formatDateYYYYMMDD = (date: Date): string => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate()
+    ).padStart(2, '0')}`;
+};
+
+const getMonthStart = (date: Date): Date => new Date(date.getFullYear(), date.getMonth(), 1);
+const getMonthEnd = (date: Date): Date => new Date(date.getFullYear(), date.getMonth() + 1, 0);
+const isSameMonth = (a: Date, b: Date): boolean =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+
 /**
  * Formats a Date object to a readable month/year string
  */
@@ -55,37 +71,108 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 
-    /**
-     * Fetches KPI metrics for the current organization and selected month
-     * Returns the fetched data or null if there was an error
-     */
-    const fetchKPIMetrics = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
+    const buildKPIMetricsFromFunctions = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
+        const today = new Date();
         const calculationMonth = formatCalculationMonth(month);
-        try {
-            const { data, error } = await supabase
-                .from('kpi_metrics')
-                .select('*')
-                .eq('org_id', orgId)
-                .eq('calculation_month', calculationMonth)
-                .order('kpi_category', { ascending: true })
-                .order('kpi_name', { ascending: true })
-                .order('calculation_month', { ascending: false })
-                .limit(100);
+        const startDate = formatDateYYYYMMDD(getMonthStart(month));
+        const endDate = formatDateYYYYMMDD(
+            isSameMonth(month, today) ? today : getMonthEnd(month)
+        );
+        const nowIso = new Date().toISOString();
 
-            if (error) {
-                console.error('Error fetching stored KPI metrics:', error);
-                setMetrics(null);
-                return null;
-            }
+        const [benefitsRes, paymentSavingsRes, needAttentionRes] = await Promise.all([
+            supabase.rpc('get_benefits_kpis', {
+                p_org_id: orgId,
+                p_start_date: startDate,
+                p_end_date: endDate,
+            }),
+            supabase.rpc('get_payment_savings_kpis', {
+                p_org_id: orgId,
+                p_start_date: startDate,
+                p_end_date: endDate,
+            }),
+            supabase.rpc('get_need_attention_kpis', {
+                p_org_id: orgId,
+                p_start_date: startDate,
+                p_end_date: endDate,
+            }),
+        ]);
 
-            const metricsData = (data as KPIMetric[]) || [];
-            setMetrics(metricsData);
-            return metricsData;
-        } catch (error) {
-            console.error('Error in fetchKPIMetrics:', error);
-            setMetrics(null);
+        if (benefitsRes.error || paymentSavingsRes.error || needAttentionRes.error) {
+            console.error('Error fetching live KPI metrics via RPC:', {
+                benefits: benefitsRes.error,
+                paymentSavings: paymentSavingsRes.error,
+                needAttention: needAttentionRes.error,
+            });
             return null;
         }
+
+        const benefits = (benefitsRes.data as BenefitsKPI[]) || [];
+        const paymentSavings = (paymentSavingsRes.data as PaymentSavingsKPI[]) || [];
+        const needAttention = (needAttentionRes.data as NeedAttentionKPI[]) || [];
+
+        const mapped: KPIMetric[] = [
+            ...benefits.map((kpi) => ({
+                id: `live-benefits-${kpi.kpi_name}`,
+                org_id: orgId,
+                kpi_name: kpi.kpi_name,
+                kpi_category: 'benefits' as const,
+                current_value: Number(kpi.current_value),
+                last_month_value: kpi.last_month_value ?? null,
+                trend_percentage: kpi.trend_percentage ?? null,
+                trend_direction: kpi.trend_direction ?? null,
+                unit: kpi.unit,
+                calculation_month: calculationMonth,
+                metadata: {
+                    benefitDescription: kpi.benefit_description,
+                    ...(kpi.kpi_name === 'Bills Generated'
+                        ? { bill_fetch_per_min: Number(kpi.current_value) * 120 }
+                        : kpi.kpi_name === 'Balance Fetched'
+                            ? { balance_fetch_per_min: Number(kpi.current_value) }
+                            : kpi.kpi_name === 'Sub meter readings captured'
+                                ? { reading_fetch_per_min: Number(kpi.current_value) }
+                                : {}),
+                },
+                created_at: nowIso,
+                updated_at: nowIso,
+            })),
+            ...paymentSavings.map((kpi) => ({
+                id: `live-payment_savings-${kpi.kpi_name}`,
+                org_id: orgId,
+                kpi_name: kpi.kpi_name,
+                kpi_category: 'payment_savings' as const,
+                current_value: Number(kpi.accrued_value),
+                last_month_value: null,
+                trend_percentage: null,
+                trend_direction: null,
+                unit: kpi.unit,
+                calculation_month: calculationMonth,
+                metadata: {
+                    potentialValue: Number(kpi.potential_value),
+                    accruedValue: Number(kpi.accrued_value),
+                    savingsPercentage: Number(kpi.savings_percentage),
+                },
+                created_at: nowIso,
+                updated_at: nowIso,
+            })),
+            ...needAttention.map((kpi) => ({
+                id: `live-need_attention-${kpi.kpi_name}`,
+                org_id: orgId,
+                kpi_name: kpi.kpi_name,
+                kpi_category: 'need_attention' as const,
+                current_value: Number(kpi.current_value),
+                last_month_value: null,
+                trend_percentage: null,
+                trend_direction: null,
+                unit: kpi.unit,
+                calculation_month: calculationMonth,
+                metadata: { severity: kpi.severity },
+                created_at: nowIso,
+                updated_at: nowIso,
+            })),
+        ];
+
+        return mapped;
     };
 
     // Fetch KPI metrics when orgId or selectedMonth changes
@@ -97,8 +184,15 @@ export function KPISection({ orgId }: KPISectionProps) {
             }
 
             setIsLoading(true);
-            await fetchKPIMetrics(orgId, selectedMonth);
-            setIsLoading(false);
+            try {
+                const data = await buildKPIMetricsFromFunctions(orgId, selectedMonth);
+                setMetrics(data);
+            } catch (error) {
+                console.error('Error loading KPI metrics:', error);
+                setMetrics(null);
+            } finally {
+                setIsLoading(false);
+            }
         };
 
         loadMetrics();

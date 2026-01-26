@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_kpi_metrics_org_category_month ON portal.kpi_metr
 -- 2. Benefits KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_benefits_kpis(
-    p_org_id uuid DEFAULT NULL,
+    p_org_id uuid,
     p_start_date DATE DEFAULT NULL,
     p_end_date DATE DEFAULT NULL
 )
@@ -63,7 +63,7 @@ BEGIN
     v_last_month_start := v_this_month_start - INTERVAL '1 month';
     v_last_month_end := v_this_month_start - INTERVAL '1 day';
 
-    v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+    v_org_id := p_org_id;
 
     RETURN QUERY
     WITH this_month_bills AS (
@@ -73,12 +73,12 @@ BEGIN
         WHERE b.created_at >= v_this_month_start
           AND b.created_at <= v_this_month_end
           AND b.is_active = true
-          AND (v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
                 WHERE s.id = c.site_id
                   AND s.org_id = v_org_id
-          ))
+          )
     ),
     last_month_bills AS (
         SELECT COUNT(*) AS bill_count
@@ -87,12 +87,12 @@ BEGIN
         WHERE b.created_at >= v_last_month_start
           AND b.created_at <= v_last_month_end
           AND b.is_active = true
-          AND (v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
                 WHERE s.id = c.site_id
                   AND s.org_id = v_org_id
-          ))
+          )
     ),
     this_month_balances AS (
         SELECT COUNT(*) AS balance_count
@@ -102,12 +102,12 @@ BEGIN
           ON pb.id = c.id
         WHERE pb.fetch_date >= v_this_month_start
           AND pb.fetch_date <= v_this_month_end
-          AND (v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
                 WHERE s.id = c.site_id
                   AND s.org_id = v_org_id
-          ))
+          )
     ),
     last_month_balances AS (
         SELECT COUNT(*) AS balance_count
@@ -117,12 +117,12 @@ BEGIN
           ON pb.id = c.id
         WHERE pb.fetch_date >= v_last_month_start
           AND pb.fetch_date <= v_last_month_end
-          AND (v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
                 WHERE s.id = c.site_id
                   AND s.org_id = v_org_id
-          ))
+          )
     ),
     this_month_readings AS (
         SELECT COUNT(*) AS reading_count
@@ -130,12 +130,12 @@ BEGIN
         INNER JOIN portal.connections c ON sr.connection_id = c.id
         WHERE sr.reading_date >= v_this_month_start
           AND sr.reading_date <= v_this_month_end
-          AND (v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
                 WHERE s.id = c.site_id
                   AND s.org_id = v_org_id
-          ))
+          )
     ),
     last_month_readings AS (
         SELECT COUNT(*) AS reading_count
@@ -143,12 +143,12 @@ BEGIN
         INNER JOIN portal.connections c ON sr.connection_id = c.id
         WHERE sr.reading_date >= v_last_month_start
           AND sr.reading_date <= v_last_month_end
-          AND (v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                 SELECT 1
                 FROM portal.sites s
                 WHERE s.id = c.site_id
                   AND s.org_id = v_org_id
-          ))
+          )
     )
     SELECT 
         'Bills Generated'::VARCHAR AS kpi_name,
@@ -220,7 +220,7 @@ $$;
 -- 3. Savings on Payment KPIs Calculation Function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.get_payment_savings_kpis(
-    p_org_id uuid DEFAULT NULL,
+    p_org_id uuid,
     p_start_date date DEFAULT NULL,
     p_end_date date DEFAULT NULL
 )
@@ -241,7 +241,7 @@ DECLARE
 BEGIN
     v_this_month_start := COALESCE(p_start_date, date_trunc('month', current_date)::date);
     v_this_month_end := COALESCE(p_end_date, (date_trunc('month', current_date) + interval '1 month - 1 day')::date);
-    v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+    v_org_id := p_org_id;
 
     RETURN QUERY
     WITH
@@ -263,14 +263,12 @@ BEGIN
           AND b.is_valid = true
           AND b.discount_date IS NOT NULL
           AND b.discount_date_rebate IS NOT NULL
-          AND (
-               v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                  SELECT 1
                  FROM portal.sites s
                  WHERE s.id = c.site_id
                    AND s.org_id = v_org_id
                )
-          )
     ),
     prompt_payment_potential AS (
         SELECT 
@@ -293,14 +291,12 @@ BEGIN
           AND b.bill_date <= v_this_month_end
           AND b.is_valid = true
           AND b.due_date IS NOT NULL
-          AND (
-               v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                  SELECT 1
                  FROM portal.sites s
                  WHERE s.id = c.site_id
                    AND s.org_id = v_org_id
                )
-          )
     ),
     timely_payment_accrued AS (
         SELECT 
@@ -321,14 +317,12 @@ BEGIN
                WHERE p2.connection_id = b.connection_id
                  AND p2.collection_date > b.bill_date
            ) <= b.due_date
-          AND (
-               v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                  SELECT 1
                  FROM portal.sites s
                  WHERE s.id = c.site_id
                    AND s.org_id = v_org_id
                )
-          )
     ),
     surcharge_base AS (
         SELECT
@@ -348,14 +342,12 @@ BEGIN
           AND b.is_valid = true
           AND b.due_date IS NOT NULL
           AND b.penalty_amount IS NOT NULL
-          AND (
-               v_org_id IS NULL OR EXISTS (
+          AND EXISTS (
                  SELECT 1
                  FROM portal.sites s
                  WHERE s.id = c.site_id
                    AND s.org_id = v_org_id
                )
-          )
     ),
     surcharge_potential AS (
         SELECT 
@@ -428,7 +420,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION portal.get_need_attention_kpis(
-  p_org_id uuid DEFAULT NULL,
+  p_org_id uuid,
   p_start_date date DEFAULT NULL,
   p_end_date date DEFAULT NULL
 )
@@ -450,7 +442,7 @@ DECLARE
 BEGIN
   v_this_month_start := COALESCE(p_start_date, date_trunc('month', current_date)::date);
   v_this_month_end := COALESCE(p_end_date, (date_trunc('month', current_date) + interval '1 month - 1 day')::date);
-  v_org_id := COALESCE(p_org_id, '49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid);
+  v_org_id := p_org_id;
   -- Use end_date as reference date when provided (for historical month-end snapshots)
   v_today := COALESCE(p_end_date, CURRENT_DATE);
 
@@ -462,10 +454,10 @@ BEGIN
       AND c.next_bill_date < v_today
       AND c.is_active = true
       AND c.is_deleted = false
-      AND (v_org_id IS NULL OR EXISTS (
+      AND EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
-      ))
+      )
   ),
   lag_recharges AS (
     SELECT COUNT(*) AS lag_count
@@ -481,10 +473,10 @@ BEGIN
       -- If we did not receive any prepaid balance fetch in the last 3 days,
       -- the displayed balance stays the same => treat as "lag".
       AND pb.last_fetch_date <= v_today - 3
-      AND (v_org_id IS NULL OR EXISTS (
+      AND EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
-      ))
+      )
   ),
   arrears_data AS (
     SELECT COALESCE(SUM(ac.arrears), 0) AS total_arrears
@@ -495,10 +487,10 @@ BEGIN
       AND ac.arrears > 0
       AND b.bill_date >= v_this_month_start
       AND b.bill_date <= v_this_month_end
-      AND (v_org_id IS NULL OR EXISTS (
+      AND EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
-      ))
+      )
   ),
   penalties_data AS (
     SELECT COALESCE(SUM(
@@ -512,10 +504,10 @@ BEGIN
     WHERE b.is_valid = true
       AND b.bill_date >= v_this_month_start
       AND b.bill_date <= v_this_month_end
-      AND (v_org_id IS NULL OR EXISTS (
+      AND EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
-      ))
+      )
   ),
   abnormal_bills AS (
     SELECT COUNT(*) AS abnormal_count
@@ -524,10 +516,10 @@ BEGIN
     WHERE b.bill_type IN ('Abnoraml', 'Abnormal')
       AND b.bill_date >= v_this_month_start
       AND b.bill_date <= v_this_month_end
-      AND (v_org_id IS NULL OR EXISTS (
+      AND EXISTS (
         SELECT 1 FROM portal.sites s
         WHERE s.id = c.site_id AND s.org_id = v_org_id
-      ))
+      )
   )
   SELECT
     'Lag Bills'::varchar,

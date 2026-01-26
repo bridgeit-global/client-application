@@ -24,6 +24,7 @@ const categoryLabels: Record<string, string> = {
 };
 
 const categoryOrder = ['benefits', 'payment_savings', 'need_attention'];
+const lagKpiNames = new Set(['Lag Bills', 'Lag Recharges']);
 
 const formatMonth = (dateString: string): string => {
     try {
@@ -255,6 +256,11 @@ export function KPISection({ orgId }: KPISectionProps) {
         }, {} as Record<string, KPIMetric[]>)
         : {};
 
+    const lagMetrics =
+        groupedMetrics.need_attention?.filter((m) => lagKpiNames.has(m.kpi_name)) ?? [];
+    const nonLagNeedAttentionMetrics =
+        groupedMetrics.need_attention?.filter((m) => !lagKpiNames.has(m.kpi_name)) ?? [];
+
     // Sort categories by predefined order
     const sortedCategories = categoryOrder.filter(cat => groupedMetrics[cat]?.length > 0)
         .concat(Object.keys(groupedMetrics).filter(cat => !categoryOrder.includes(cat)));
@@ -289,10 +295,16 @@ export function KPISection({ orgId }: KPISectionProps) {
                 )}
 
                 {/* Category-wise Metrics */}
-                {sortedCategories.length > 0 && (
+                {(sortedCategories.length > 0 || lagMetrics.length > 0) && (
                     <div className="space-y-16">
+                        {/* Lag metrics shown separately for clarity */}
+
+
                         {sortedCategories.map((category) => {
-                            const categoryMetrics = groupedMetrics[category];
+                            const categoryMetrics =
+                                category === 'need_attention'
+                                    ? nonLagNeedAttentionMetrics
+                                    : groupedMetrics[category];
                             if (!categoryMetrics || categoryMetrics.length === 0) return null;
 
                             return (
@@ -321,6 +333,33 @@ export function KPISection({ orgId }: KPISectionProps) {
                                 </div>
                             );
                         })}
+                        {lagMetrics.length > 0 && (
+                            <div className="opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]">
+                                <div className="mb-6 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-2xl font-semibold text-foreground">
+                                            Delays & Overdue Items
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {lagMetrics.length} {lagMetrics.length === 1 ? 'metric' : 'metrics'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div
+                                    className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-${lagMetrics.length.toString()} gap-6`}
+                                >
+                                    {lagMetrics.map((metric, index) => (
+                                        <div
+                                            key={metric.id}
+                                            className="opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
+                                            style={{ animationDelay: `${index * 50}ms` }}
+                                        >
+                                            <KPICard metric={metric} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

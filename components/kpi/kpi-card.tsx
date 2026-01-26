@@ -34,6 +34,12 @@ interface MetricMetadata {
     reading_fetch_per_min?: number;
 }
 
+const kpiDisplayNames: Record<string, string> = {
+    // Need attention - make "lag" labels normal-person friendly
+    'Lag Bills': 'Overdue Bills',
+    'Lag Recharges': 'Balances Not Updated (3+ days)',
+};
+
 const categoryIcons = {
     billing: Receipt,
     payment: CreditCard,
@@ -102,6 +108,7 @@ export function KPICard({ metric }: KPICardProps) {
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const colors = categoryColors[metric.kpi_category] || categoryColors.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
+    const displayName = kpiDisplayNames[metric.kpi_name] ?? metric.kpi_name;
 
     // Calculate time saved for benefits KPIs
     const getTimeSaved = (): string | null => {
@@ -213,7 +220,7 @@ export function KPICard({ metric }: KPICardProps) {
                             {metric.kpi_category.replace('_', ' ')}
                         </p>
                         <h3 className="text-sm font-semibold text-foreground leading-tight">
-                            {metric.kpi_name}
+                            {displayName}
                         </h3>
                     </div>
                 </div>

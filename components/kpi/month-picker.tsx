@@ -1,20 +1,8 @@
 'use client';
 
-import * as React from 'react';
-import { Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { addMonths, format, isAfter, startOfMonth, subMonths } from 'date-fns';
 import '@/components/calendar/calendar.css';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
 
 interface MonthPickerProps {
   value?: Date;
@@ -28,55 +16,43 @@ interface MonthPickerProps {
 export function MonthPicker({
   value,
   onSelect,
-  placeholder = 'Select month',
   className,
   disabled = false,
   maxDate = new Date()
 }: MonthPickerProps) {
-  const selected = value || new Date();
+  const selected = startOfMonth(value || new Date());
+  const maxMonth = startOfMonth(maxDate);
+
+  const prevMonth = subMonths(selected, 1);
+  const nextMonth = addMonths(selected, 1);
+  const prevDisabled = disabled;
+  const nextDisabled = disabled || isAfter(nextMonth, maxMonth);
 
   return (
-    <div className="datepicker-container">
-      <DatePicker
-        selected={selected}
-        onChange={(date: Date | null) => date && onSelect(date)}
-        calendarClassName="custom-calendar"
-        inline
-        showMonthYearPicker
-        showFullMonthYearPicker
-        maxDate={maxDate}
-        locale={enUS}
-        renderCustomHeader={({
-          date,
-          decreaseMonth,
-          increaseMonth,
-          prevMonthButtonDisabled,
-          nextMonthButtonDisabled,
-        }) => (
-          <div className="month-navigation">
-            <button
-              type="button"
-              onClick={decreaseMonth}
-              className="month-nav-button prev"
-              aria-label="Previous Month"
-              disabled={prevMonthButtonDisabled}
-            >
-              <ChevronLeft />
-            </button>
-            <span className="month-label">{format(date, 'MMMM yyyy')}</span>
-            <button
-              type="button"
-              onClick={increaseMonth}
-              className="month-nav-button next"
-              aria-label="Next Month"
-              disabled={nextMonthButtonDisabled}
-            >
-              <ChevronRight />
-            </button>
-          </div>
-        )}
-        fixedHeight
-      />
+    <div className={`datepicker-container ${className ?? ''}`.trim()}>
+      <div className="month-navigation">
+        <button
+          type="button"
+          onClick={() => onSelect(prevMonth)}
+          className="month-nav-button prev"
+          aria-label="Previous Month"
+          disabled={prevDisabled}
+        >
+          <ChevronLeft />
+        </button>
+
+        <span className="month-label">{format(selected, 'MMMM yyyy')}</span>
+
+        <button
+          type="button"
+          onClick={() => onSelect(nextMonth)}
+          className="month-nav-button next"
+          aria-label="Next Month"
+          disabled={nextDisabled}
+        >
+          <ChevronRight />
+        </button>
+      </div>
     </div>
   );
 }

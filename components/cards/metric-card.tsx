@@ -17,12 +17,12 @@ export const MetricCard: React.FC<DashboardData> = ({
 }) => {
   const site_name = useSiteName();
   const isDisable = !status;
-  
+
   // Replace "Stations" or "Station" with dynamic site name
   const displayTitle = title
     ?.replace(/Stations/gi, `${site_name}s`)
     ?.replace(/Station/gi, site_name);
-  
+
   return (
     <Link href={`/portal/${path}`} scroll={false}>
       <Card

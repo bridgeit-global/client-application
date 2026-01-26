@@ -45,3 +45,26 @@ export const formatNumber = (num: any): string => {
     // Format to one decimal place if necessary
     return `${num.toFixed(num % 1 === 0 ? 0 : 1)}${suffixes[suffixIndex]}`;
 };
+
+/**
+ * Formats minutes into a human-readable time format (e.g., "4d 6h 5m")
+ * @param minutes - The number of minutes to format
+ * @returns Formatted string like "4d 6h 5m" or "6h 5m" or "5m"
+ */
+export const formatMinutesToTime = (minutes: number): string => {
+    if (typeof minutes !== 'number' || isNaN(minutes) || minutes < 0) {
+        return '0m';
+    }
+
+    const totalMinutes = Math.floor(minutes);
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const mins = totalMinutes % 60;
+
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+
+    return parts.join(' ');
+};

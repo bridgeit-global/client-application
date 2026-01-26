@@ -12,6 +12,7 @@ import { formatNumber } from '@/lib/utils/number-format';
 import { camelCaseToTitleCase } from '@/lib/utils/string-format';
 import { useSiteName } from '@/lib/utils/site';
 import { fetchOrganization } from '@/services/organization';
+import BillerStatsTable from '@/components/dashboard/biller-stats-table';
 
 interface SummaryType {
   active_count: number;
@@ -64,7 +65,8 @@ async function SiteOverview() {
       { data: payment_type, error: payment_error },
       { data: raw_station_type_map, error: station_map_error },
       { data: raw_paytype_map, error: paytype_map_error },
-      { data: zoneData, error: zone_error }
+      { data: zoneData, error: zone_error },
+      { data: billerBoardWiseData, error: biller_board_wise_error }
     ] = await Promise.all([
       supabase.rpc('get_site_type_summary'),
       supabase.rpc('get_connection_paytype_summary'),
@@ -82,7 +84,8 @@ async function SiteOverview() {
           )
         `)
         .not('paytype', 'is', null).eq('is_active', true),
-      supabase.rpc('get_zone_site_summary')
+      supabase.rpc('get_zone_site_summary'),
+      supabase.rpc('get_active_connections_by_board')
     ]);
 
     // Check for any Supabase errors
@@ -91,7 +94,8 @@ async function SiteOverview() {
       { error: payment_error, name: 'Payment Type Summary' },
       { error: station_map_error, name: `${site_name} Map Data` },
       { error: paytype_map_error, name: 'Payment Type Map Data' },
-      { error: zone_error, name: 'Zone Data' }
+      { error: zone_error, name: 'Zone Data' },
+      { error: biller_board_wise_error, name: 'Biller Board Wise Data' }
     ];
 
     const firstError = errors.find(e => e.error);
@@ -100,7 +104,7 @@ async function SiteOverview() {
     }
 
     // Check for missing data
-    if (!station_type || !payment_type || !raw_station_type_map || !raw_paytype_map || !zoneData) {
+    if (!station_type || !payment_type || !raw_station_type_map || !raw_paytype_map || !zoneData || !billerBoardWiseData) {
       throw new Error('Some required data is missing. Please try again later.');
     }
 
@@ -311,6 +315,7 @@ async function SiteOverview() {
               );
             })}
           </div>
+          <BillerStatsTable data={billerBoardWiseData} />
         </div>
       </div>
     );

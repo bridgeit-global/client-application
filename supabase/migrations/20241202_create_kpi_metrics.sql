@@ -9,20 +9,20 @@
 -- 1. KPI Metrics Storage Table
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS portal.kpi_metrics (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    org_id VARCHAR(255) NOT NULL REFERENCES portal.organizations(id) ON DELETE CASCADE,
-    kpi_name VARCHAR(255) NOT NULL,
-    kpi_category VARCHAR(50) NOT NULL CHECK (kpi_category IN ('billing', 'payment', 'benefits', 'need_attention', 'payment_savings')),
-    current_value NUMERIC(15, 2) NOT NULL,
-    last_month_value NUMERIC(15, 2),
-    trend_percentage NUMERIC(5, 2),
-    trend_direction VARCHAR(10) CHECK (trend_direction IN ('UP', 'DOWN', 'NEUTRAL', 'NEW')),
-    unit VARCHAR(50) NOT NULL,
-    calculation_month DATE NOT NULL,
-    metadata JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(org_id, kpi_name, calculation_month)
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  org_id uuid NOT NULL REFERENCES portal.organizations(id) ON DELETE CASCADE,
+  kpi_name varchar(255) NOT NULL,
+  kpi_category varchar(50) NOT NULL CHECK (kpi_category IN ('benefits', 'need_attention', 'payment_savings')),
+  current_value numeric(15,2) NOT NULL,
+  last_month_value numeric(15,2),
+  trend_percentage numeric(5,2),
+  trend_direction varchar(10) CHECK (trend_direction IN ('UP','DOWN','NEUTRAL','NEW')),
+  unit varchar(50) NOT NULL,
+  calculation_month date NOT NULL,
+  metadata jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(org_id, kpi_name, calculation_month)
 );
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_kpi_metrics_org_id ON portal.kpi_metrics(org_id);
@@ -580,67 +580,7 @@ $$;
 -- select * from portal.get_need_attention_kpis('49af6e1b-8d81-4914-b8c4-ffd2e9af2521'::uuid, null, null);
 
 -- ----------------------------------------------------------------------------
--- 5. Master Function to Get All KPIs
--- ----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION portal.get_all_kpi_metrics(
-    p_org_id UUID DEFAULT NULL,
-    p_start_date DATE DEFAULT NULL,
-    p_end_date DATE DEFAULT NULL
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_result JSONB;
-BEGIN
-    -- Build and return JSONB result
-    SELECT jsonb_build_object(
-        'benefits', (
-            SELECT jsonb_agg(
-                jsonb_build_object(
-                    'kpiName', kpi_name,
-                    'currentValue', current_value,
-                    'lastMonthValue', last_month_value,
-                    'trendPercentage', trend_percentage,
-                    'trendDirection', trend_direction,
-                    'unit', unit,
-                    'benefitDescription', benefit_description
-                )
-            )
-            FROM portal.get_benefits_kpis(p_org_id, p_start_date, p_end_date)
-        ),
-        'paymentSavings', (
-            SELECT jsonb_agg(
-                jsonb_build_object(
-                    'kpiName', kpi_name,
-                    'potentialValue', potential_value,
-                    'accruedValue', accrued_value,
-                    'savingsPercentage', savings_percentage,
-                    'unit', unit
-                )
-            )
-            FROM portal.get_payment_savings_kpis(p_org_id, p_start_date, p_end_date)
-        ),
-        'needAttention', (
-            SELECT jsonb_agg(
-                jsonb_build_object(
-                    'kpiName', kpi_name,
-                    'currentValue', current_value,
-                    'unit', unit,
-                    'severity', severity
-                )
-            )
-            FROM portal.get_need_attention_kpis(p_org_id, p_start_date, p_end_date)
-        )
-    ) INTO v_result;
-    
-    RETURN v_result;
-END;
-$$;
-
--- ----------------------------------------------------------------------------
--- 6. Function to Store KPI Metrics
+-- 5. clamp trend function
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION portal.clamp_trend(p NUMERIC)
 RETURNS NUMERIC
@@ -653,6 +593,11 @@ BEGIN
   RETURN p;
 END;
 $f$;
+
+-- ----------------------------------------------------------------------------
+-- 6. Function to Store KPI Metrics
+-- ----------------------------------------------------------------------------
+
 
 CREATE OR REPLACE FUNCTION portal.store_kpi_metrics(
   p_org_id UUID,

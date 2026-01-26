@@ -51,24 +51,9 @@ const formatDateToMonthYear = (date: Date): string => {
 
 export function KPISection({ orgId }: KPISectionProps) {
     const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(new Date());
-    const [currentOrgId, setCurrentOrgId] = useState<string | undefined>(orgId);
     const [metrics, setMetrics] = useState<KPIMetric[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
-
-    // Get orgId from user if not provided
-    useEffect(() => {
-        const fetchOrgId = async () => {
-            if (!currentOrgId) {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user?.user_metadata?.org_id) {
-                    setCurrentOrgId(user.user_metadata.org_id);
-                }
-            }
-        };
-        fetchOrgId();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentOrgId]);
 
     /**
      * Fetches KPI metrics for the current organization and selected month
@@ -76,6 +61,9 @@ export function KPISection({ orgId }: KPISectionProps) {
      */
     const fetchKPIMetrics = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
         const calculationMonth = formatCalculationMonth(month);
+
+
+        console.log('fetchKPIMetrics', orgId, calculationMonth);
 
         try {
             const { data, error } = await supabase
@@ -107,22 +95,22 @@ export function KPISection({ orgId }: KPISectionProps) {
     // Fetch KPI metrics when orgId or selectedMonth changes
     useEffect(() => {
         const loadMetrics = async () => {
-            if (!currentOrgId || !selectedMonth) {
+            if (!orgId || !selectedMonth) {
                 setIsLoading(false);
                 return;
             }
 
             setIsLoading(true);
-            await fetchKPIMetrics(currentOrgId, selectedMonth);
+            await fetchKPIMetrics(orgId, selectedMonth);
             setIsLoading(false);
         };
 
         loadMetrics();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentOrgId, selectedMonth]);
+    }, [orgId, selectedMonth]);
 
     const handleMonthSelect = async (date: Date) => {
-        if (!currentOrgId) {
+        if (!orgId) {
             console.error('Organization ID not available');
             return;
         }

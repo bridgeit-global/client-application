@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import UnitCost from "./components/UnitCost";
 import { fetchOrganization } from "@/services/organization";
+import MapCard from "@/components/cards/map-card";
+import { fetchConnectionCosts } from "@/services/dashboard";
 export default async function Page() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { site_name } = await fetchOrganization();
+  const connectionCostsResponse = await fetchConnectionCosts();
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -16,6 +19,7 @@ export default async function Page() {
         </p>
       </div>
       <UnitCost station_type={user?.user_metadata?.station_type} />
+      <MapCard mapData={connectionCostsResponse} />
     </div>
   );
 } 

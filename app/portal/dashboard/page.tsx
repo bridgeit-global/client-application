@@ -10,10 +10,7 @@ export default async function Page() {
       throw new Error('User not authenticated');
     }
     return (
-      <div className="grid gap-6">
-        <h1 className="text-2xl font-bold">
-          Welcome {user?.user_metadata?.first_name ?? ''} {user?.user_metadata?.last_name ?? ''}
-        </h1>
+      <div className="min-h-[calc(100vh-4rem)] px-4 sm:px-6 lg:px-8">
         <KPISection orgId={user?.user_metadata?.org_id} />
       </div>
     );

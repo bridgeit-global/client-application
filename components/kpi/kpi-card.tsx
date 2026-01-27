@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { KPIMetric, TrendDirection, Severity } from '@/types/kpi-metrics-type';
 import { formatNumber, formatMinutesToTime } from '@/lib/utils/number-format';
 import {
@@ -16,6 +16,9 @@ import {
     DollarSign,
     TrendingUp as TrendingUpIcon,
     CheckCircle2,
+    Clock,
+    ArrowUpRight,
+    ArrowDownRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,14 +38,12 @@ interface MetricMetadata {
 }
 
 const kpiDisplayNames: Record<string, string> = {
-    // Need attention - make "lag" labels normal-person friendly
     'Lag Bills': 'Bills Not Fetched (This Month)',
     'Lag Recharges': 'Balances Not Updated (3+ days)',
 };
 
 const kpiDescriptions: Record<string, string> = {
-    // These are product meanings (not literal English "lag")
-    'Lag Bills': 'Latest bill was not fetched for this month’s bill date.',
+    'Lag Bills': 'Latest bill was not fetched for this month\'s bill date.',
     'Lag Recharges': 'No prepaid balance fetch received in the last 3 days.',
 };
 
@@ -54,41 +55,51 @@ const categoryIcons = {
     payment_savings: DollarSign,
 };
 
-const categoryColors = {
+const categoryStyles = {
     billing: {
-        bg: 'bg-blue-500/10',
-        border: 'border-blue-500/20',
-        icon: 'text-blue-400',
-        accent: 'text-blue-400',
-        hover: 'hover:border-blue-500/40 hover:bg-primary/10',
+        gradient: 'from-blue-500/15 via-blue-400/5 to-transparent',
+        iconBg: 'bg-gradient-to-br from-blue-500 to-blue-600',
+        iconShadow: 'shadow-lg shadow-blue-500/20',
+        border: 'border-blue-100 dark:border-blue-500/20',
+        hoverBorder: 'hover:border-blue-200 dark:hover:border-blue-500/40',
+        accent: 'text-blue-600 dark:text-blue-400',
+        glow: 'group-hover:shadow-blue-500/10',
     },
     payment: {
-        bg: 'bg-green-500/10',
-        border: 'border-green-500/20',
-        icon: 'text-green-400',
-        accent: 'text-green-400',
-        hover: 'hover:border-green-500/40 hover:bg-primary/10',
+        gradient: 'from-green-500/15 via-green-400/5 to-transparent',
+        iconBg: 'bg-gradient-to-br from-green-500 to-green-600',
+        iconShadow: 'shadow-lg shadow-green-500/20',
+        border: 'border-green-100 dark:border-green-500/20',
+        hoverBorder: 'hover:border-green-200 dark:hover:border-green-500/40',
+        accent: 'text-green-600 dark:text-green-400',
+        glow: 'group-hover:shadow-green-500/10',
     },
     benefits: {
-        bg: 'bg-purple-500/10',
-        border: 'border-purple-500/20',
-        icon: 'text-purple-400',
-        accent: 'text-purple-400',
-        hover: 'hover:border-purple-500/40 hover:bg-primary/10',
+        gradient: 'from-violet-500/15 via-purple-400/5 to-transparent',
+        iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
+        iconShadow: 'shadow-lg shadow-violet-500/20',
+        border: 'border-violet-100 dark:border-violet-500/20',
+        hoverBorder: 'hover:border-violet-200 dark:hover:border-violet-500/40',
+        accent: 'text-violet-600 dark:text-violet-400',
+        glow: 'group-hover:shadow-violet-500/10',
     },
     need_attention: {
-        bg: 'bg-orange-500/10',
-        border: 'border-orange-500/20',
-        icon: 'text-orange-400',
-        accent: 'text-orange-400',
-        hover: 'hover:border-orange-500/40 hover:bg-primary/10',
+        gradient: 'from-orange-500/15 via-amber-400/5 to-transparent',
+        iconBg: 'bg-gradient-to-br from-orange-500 to-amber-600',
+        iconShadow: 'shadow-lg shadow-orange-500/20',
+        border: 'border-orange-100 dark:border-orange-500/20',
+        hoverBorder: 'hover:border-orange-200 dark:hover:border-orange-500/40',
+        accent: 'text-orange-600 dark:text-orange-400',
+        glow: 'group-hover:shadow-orange-500/10',
     },
     payment_savings: {
-        bg: 'bg-emerald-500/10',
-        border: 'border-emerald-500/20',
-        icon: 'text-emerald-400',
-        accent: 'text-emerald-400',
-        hover: 'hover:border-emerald-500/40 hover:bg-primary/10',
+        gradient: 'from-emerald-500/15 via-teal-400/5 to-transparent',
+        iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+        iconShadow: 'shadow-lg shadow-emerald-500/20',
+        border: 'border-emerald-100 dark:border-emerald-500/20',
+        hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-500/40',
+        accent: 'text-emerald-600 dark:text-emerald-400',
+        glow: 'group-hover:shadow-emerald-500/10',
     },
 };
 
@@ -112,7 +123,7 @@ const severityColors = {
 
 export function KPICard({ metric }: KPICardProps) {
     const Icon = categoryIcons[metric.kpi_category] || Zap;
-    const colors = categoryColors[metric.kpi_category] || categoryColors.benefits;
+    const styles = categoryStyles[metric.kpi_category] || categoryStyles.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
     const displayName = kpiDisplayNames[metric.kpi_name] ?? metric.kpi_name;
     const description = kpiDescriptions[metric.kpi_name];
@@ -124,13 +135,10 @@ export function KPICard({ metric }: KPICardProps) {
         let minutes: number | null = null;
 
         if (metric.kpi_name === 'Bills Generated') {
-            // bill_fetch_per_min = current_value * 120
             minutes = metric.current_value * 120;
         } else if (metric.kpi_name === 'Balance Fetched') {
-            // balance_fetch_per_min = current_value
             minutes = metric.current_value;
         } else if (metric.kpi_name === 'Sub meter readings captured') {
-            // reading_fetch_per_min = current_value
             minutes = metric.current_value;
         }
 
@@ -155,9 +163,9 @@ export function KPICard({ metric }: KPICardProps) {
     const getTrendIcon = (direction: TrendDirection | null) => {
         switch (direction) {
             case 'UP':
-                return TrendingUp;
+                return ArrowUpRight;
             case 'DOWN':
-                return TrendingDown;
+                return ArrowDownRight;
             case 'NEW':
                 return Sparkles;
             default:
@@ -166,30 +174,28 @@ export function KPICard({ metric }: KPICardProps) {
     };
 
     const getTrendColor = (direction: TrendDirection | null, isDecreaseGood: boolean = false) => {
-        // For metrics where decrease is positive, invert the colors
         if (isDecreaseGood) {
             switch (direction) {
                 case 'UP':
-                    return 'text-red-400'; // Increase is bad
+                    return 'text-red-500 bg-red-50 dark:bg-red-500/10';
                 case 'DOWN':
-                    return 'text-green-400'; // Decrease is good
+                    return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10';
                 case 'NEW':
-                    return 'text-blue-400';
+                    return 'text-blue-500 bg-blue-50 dark:bg-blue-500/10';
                 default:
-                    return 'text-gray-400';
+                    return 'text-gray-500 bg-gray-50 dark:bg-gray-500/10';
             }
         }
 
-        // Default behavior: increase is good, decrease is bad
         switch (direction) {
             case 'UP':
-                return 'text-green-400';
+                return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10';
             case 'DOWN':
-                return 'text-red-400';
+                return 'text-red-500 bg-red-50 dark:bg-red-500/10';
             case 'NEW':
-                return 'text-blue-400';
+                return 'text-blue-500 bg-blue-50 dark:bg-blue-500/10';
             default:
-                return 'text-gray-400';
+                return 'text-gray-500 bg-gray-50 dark:bg-gray-500/10';
         }
     };
 
@@ -204,49 +210,92 @@ export function KPICard({ metric }: KPICardProps) {
     return (
         <Card
             className={cn(
-                'relative overflow-hidden border bg-card text-card-foreground transition-all duration-300',
-                colors.border,
-                colors.hover
+                'group relative overflow-hidden border bg-white dark:bg-card transition-all duration-300 ease-out',
+                'hover:shadow-xl hover:-translate-y-1',
+                styles.border,
+                styles.hoverBorder,
+                styles.glow
             )}
         >
+            {/* Gradient Background */}
+            <div
+                className={cn(
+                    'absolute inset-0 bg-gradient-to-br opacity-60 transition-opacity duration-300 group-hover:opacity-100',
+                    styles.gradient
+                )}
+            />
+
+            {/* Decorative Elements */}
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-white/40 to-transparent blur-2xl" />
+            <div className="absolute -left-4 -bottom-4 h-24 w-24 rounded-full bg-gradient-to-tr from-white/20 to-transparent blur-xl" />
+
+            {/* Good/Decrease Indicator */}
             {isDecreasePositive && metric.trend_direction === 'DOWN' && (
-                <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-green-500/20 border border-green-500/30">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
-                    <span className="text-xs font-medium text-green-400">Good</span>
+                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+                        Good
+                    </span>
                 </div>
             )}
-            {/* Decorative gradient overlay */}
-            <div className={cn('absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-20 blur-xl', colors.bg)} />
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className={cn('p-2.5 rounded-lg shrink-0', colors.bg)}>
-                        <Icon className={cn('h-5 w-5', colors.icon)} />
+
+            <CardContent className="relative p-6 space-y-4">
+                {/* Header with Icon and Title */}
+                <div className="flex items-start gap-4">
+                    <div
+                        className={cn(
+                            'p-3 rounded-xl text-white transition-transform duration-300 group-hover:scale-110',
+                            styles.iconBg,
+                            styles.iconShadow
+                        )}
+                    >
+                        <Icon className="h-5 w-5" />
                     </div>
-                    <div className="flex flex-col min-w-0 flex-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                            {metric.kpi_category.replace('_', ' ')}
-                        </p>
-                        <h3 className="text-sm font-semibold text-foreground leading-tight">
+                    <div className="flex-1 min-w-0 pt-1">
+                        <h3 className="text-sm font-medium text-muted-foreground leading-tight">
                             {displayName}
                         </h3>
                     </div>
                 </div>
-            </CardHeader>
 
-            <CardContent className="space-y-4">
                 {/* Main Value */}
-                <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-3xl font-bold text-foreground">
-                        {formatValue(metric.current_value, metric.unit)}
-                    </span>
-                    {metric.unit !== '₹' && metric.unit !== '%' && (
-                        <span className="text-sm text-muted-foreground">{metric.unit}</span>
+                <div className="flex items-end justify-between gap-4">
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold tracking-tight text-foreground">
+                            {formatValue(metric.current_value, metric.unit)}
+                        </span>
+                        {metric.unit !== '₹' && metric.unit !== '%' && (
+                            <span className="text-sm font-medium text-muted-foreground">{metric.unit}</span>
+                        )}
+                    </div>
+
+                    {/* Trend Badge */}
+                    {metric.trend_percentage !== null && metric.trend_direction !== null && (
+                        <div
+                            className={cn(
+                                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold',
+                                trendColor
+                            )}
+                        >
+                            <TrendIcon className="h-3.5 w-3.5" />
+                            <span>{Math.abs(metric.trend_percentage).toFixed(1)}%</span>
+                        </div>
                     )}
                 </div>
 
+                {/* Last Month Comparison */}
+                {metric.last_month_value !== null && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Last month</span>
+                        <span className="font-semibold text-foreground">
+                            {formatValue(metric.last_month_value, metric.unit)}
+                        </span>
+                    </div>
+                )}
+
                 {/* KPI Explanation (for non-technical users) */}
                 {description && (
-                    <div className="pt-2 border-t border-border/60 dark:border-white/10">
+                    <div className="pt-3 border-t border-border/50">
                         <div className="flex items-start gap-2">
                             <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                             <p className="text-xs text-muted-foreground leading-relaxed">
@@ -256,67 +305,49 @@ export function KPICard({ metric }: KPICardProps) {
                     </div>
                 )}
 
-                {/* Last month + Trend */}
-                {(metric.last_month_value !== null ||
-                    (metric.trend_percentage !== null && metric.trend_direction !== null)) && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                            {metric.last_month_value !== null && (
-                                <div className="flex items-center gap-2">
-                                    <span>Last month</span>
-                                    <span className="font-medium text-foreground">
-                                        {formatValue(metric.last_month_value, metric.unit)}
-                                    </span>
-                                </div>
-                            )}
-
-                            {metric.trend_percentage !== null && metric.trend_direction !== null && (
-                                <div className={cn('flex items-center gap-1.5', trendColor)}>
-                                    <TrendIcon className="h-4 w-4" />
-                                    <span className="font-medium">
-                                        {Math.abs(metric.trend_percentage).toFixed(1)}%
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-
                 {/* Time Saved for Benefits KPIs */}
                 {timeSaved && (
-                    <div className="pt-2 border-t border-border/60 dark:border-white/10">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-purple-400 shrink-0" />
-                            <span className="text-sm font-medium text-purple-400">
-                                Time saved: {timeSaved}
-                            </span>
+                    <div className="pt-3 border-t border-border/50">
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-violet-500/10 to-purple-500/5 border border-violet-500/10">
+                            <div className="p-2 rounded-lg bg-violet-500/10">
+                                <Clock className="h-4 w-4 text-violet-500" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-muted-foreground">Time saved</span>
+                                <span className="text-sm font-bold text-violet-600 dark:text-violet-400">
+                                    {timeSaved}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Payment Savings Info */}
                 {showSavingsInfo && (
-                    <div className="space-y-2 pt-2 border-t border-border/60 dark:border-white/10">
-                        {metadata.accruedValue !== undefined && (
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Accrued</span>
-                                <span className="font-semibold text-emerald-400">
-                                    {formatValue(metadata.accruedValue, metric.unit)}
-                                </span>
-                            </div>
-                        )}
-                        {metadata.potentialValue !== undefined && (
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Potential</span>
-                                <span className="font-semibold text-foreground">
-                                    {formatValue(metadata.potentialValue, metric.unit)}
-                                </span>
-                            </div>
-                        )}
+                    <div className="space-y-3 pt-3 border-t border-border/50">
+                        <div className="grid grid-cols-2 gap-3">
+                            {metadata.accruedValue !== undefined && (
+                                <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                                    <span className="text-xs text-muted-foreground block mb-1">Accrued</span>
+                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                        {formatValue(metadata.accruedValue, metric.unit)}
+                                    </span>
+                                </div>
+                            )}
+                            {metadata.potentialValue !== undefined && (
+                                <div className="p-3 rounded-xl bg-slate-500/5 border border-slate-500/10">
+                                    <span className="text-xs text-muted-foreground block mb-1">Potential</span>
+                                    <span className="text-lg font-bold text-foreground">
+                                        {formatValue(metadata.potentialValue, metric.unit)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                         {metadata.savingsPercentage !== undefined && (
-                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/60 dark:border-white/10">
-                                <TrendingUpIcon className="h-4 w-4 text-emerald-400" />
-                                <span className="text-sm font-medium text-emerald-400">
-                                    {metadata.savingsPercentage.toFixed(1)}% savings
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                <TrendingUpIcon className="h-4 w-4 text-emerald-500" />
+                                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {metadata.savingsPercentage.toFixed(1)}% savings achieved
                                 </span>
                             </div>
                         )}
@@ -325,9 +356,9 @@ export function KPICard({ metric }: KPICardProps) {
 
                 {/* Benefit Description */}
                 {metadata.benefitDescription && (
-                    <div className="pt-2 border-t border-border/60 dark:border-white/10">
-                        <div className="flex items-start gap-2">
-                            <Info className="h-4 w-4 text-purple-400 shrink-0 mt-0.5" />
+                    <div className="pt-3 border-t border-border/50">
+                        <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
+                            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                             <p className="text-xs text-muted-foreground leading-relaxed">
                                 {metadata.benefitDescription}
                             </p>

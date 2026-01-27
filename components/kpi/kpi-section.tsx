@@ -7,20 +7,31 @@ import type {
     KPIMetric,
 } from '@/types/kpi-metrics-type';
 import { KPICard } from './kpi-card';
-import { Calendar } from 'lucide-react';
 import { MonthPicker } from './month-picker';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard } from 'lucide-react';
 
 interface KPISectionProps {
     orgId?: string;
 }
 
-const categoryLabels: Record<string, string> = {
-    benefits: 'MTD Benefits',
-    need_attention: 'Need Attention',
-    payment_savings: 'Payment Savings',
+const categoryConfig: Record<string, { label: string; icon: typeof Sparkles; description: string }> = {
+    benefits: {
+        label: 'Time Savings',
+        icon: Sparkles,
+        description: 'Automation efficiency metrics',
+    },
+    need_attention: {
+        label: 'Needs Review',
+        icon: AlertTriangle,
+        description: 'Items requiring attention',
+    },
+    payment_savings: {
+        label: 'Payment Savings',
+        icon: DollarSign,
+        description: 'Financial benefits achieved',
+    },
 };
 
 const categoryOrder = ['benefits', 'payment_savings', 'need_attention'];
@@ -38,9 +49,6 @@ const formatMonth = (dateString: string): string => {
     }
 };
 
-/**
- * Formats a Date object to YYYY-MM-01 format (first day of the month)
- */
 const formatCalculationMonth = (date: Date): string => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 };
@@ -56,9 +64,6 @@ const getMonthEnd = (date: Date): Date => new Date(date.getFullYear(), date.getM
 const isSameMonth = (a: Date, b: Date): boolean =>
     a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 
-/**
- * Formats a Date object to a readable month/year string
- */
 const formatDateToMonthYear = (date: Date): string => {
     return date.toLocaleDateString('en-US', {
         month: 'long',
@@ -206,29 +211,28 @@ export function KPISection({ orgId }: KPISectionProps) {
             return;
         }
 
-        // Prevent selecting a month greater than the current month
         const currentDate = new Date();
         const currentYear = currentDate.getFullYear();
         const currentMonth = currentDate.getMonth();
         const selectedYear = date.getFullYear();
-        const selectedMonth = date.getMonth();
+        const selectedMonthNum = date.getMonth();
 
-        if (selectedYear > currentYear || (selectedYear === currentYear && selectedMonth > currentMonth)) {
-            // Don't allow selection beyond current month
+        if (selectedYear > currentYear || (selectedYear === currentYear && selectedMonthNum > currentMonth)) {
             return;
         }
 
-        // Update selected month which will trigger the fetch effect
         setSelectedMonth(date);
     };
 
     if (isLoading) {
         return (
-            <section className="my-16 flex items-center justify-center py-8 md:snap-start">
-                <div className="container mx-auto px-4 sm:px-6 lg:px-8 w-full">
-                    <div className="flex items-center justify-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <section className="flex items-center justify-center py-16 md:snap-start">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 blur-xl opacity-30 animate-pulse" />
+                        <Loader2 className="relative h-10 w-10 animate-spin text-violet-500" />
                     </div>
+                    <p className="text-sm text-muted-foreground animate-pulse">Loading metrics...</p>
                 </div>
             </section>
         );
@@ -236,15 +240,12 @@ export function KPISection({ orgId }: KPISectionProps) {
 
     const isLoadingMetrics = isLoading;
 
-    // Get the calculation month display text
-    // Prefer the month from metrics if available, otherwise use selectedMonth
     const calculationMonth = metrics && metrics.length > 0 && metrics[0]?.calculation_month
         ? formatMonth(metrics[0].calculation_month)
         : selectedMonth
             ? formatDateToMonthYear(selectedMonth)
             : 'Current Month';
 
-    // Group metrics by category (only if metrics exist)
     const groupedMetrics = metrics && metrics.length > 0
         ? metrics.reduce((acc, metric) => {
             const category = metric.kpi_category;
@@ -261,68 +262,94 @@ export function KPISection({ orgId }: KPISectionProps) {
     const nonLagNeedAttentionMetrics =
         groupedMetrics.need_attention?.filter((m) => !lagKpiNames.has(m.kpi_name)) ?? [];
 
-    // Sort categories by predefined order
     const sortedCategories = categoryOrder.filter(cat => groupedMetrics[cat]?.length > 0)
         .concat(Object.keys(groupedMetrics).filter(cat => !categoryOrder.includes(cat)));
 
     return (
-        <section className="flex items-center justify-center md:snap-start">
-            <div className="mx-auto w-full">
-                <div className="flex items-center justify-center gap-4 flex-wrap">
-
-                    <div className="flex items-center gap-2">
+        <section className="md:snap-start">
+            <div className="mx-auto w-full max-w-7xl">
+                {/* Month Picker - Sticky Header */}
+                <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+                    <div className="flex items-center justify-center py-4">
                         <MonthPicker
                             value={selectedMonth}
                             onSelect={handleMonthSelect}
                             placeholder="Select month"
-                            className="bg-background border-input text-foreground hover:bg-accent hover:text-accent-foreground dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
+                            className="bg-white dark:bg-white/5 border-border/50 text-foreground hover:bg-accent/50 hover:border-border shadow-sm"
                             disabled={isLoadingMetrics}
                             maxDate={new Date()}
                         />
                     </div>
                 </div>
 
-                {/* Show message if no metrics */}
+                {/* Empty State */}
                 {(!metrics || metrics.length === 0) && !isLoading && (
-                    <div className="text-center py-12">
-                        <p className="text-muted-foreground text-lg">
-                            No KPI metrics available for {calculationMonth}.
-                        </p>
-                        <p className="text-muted-foreground text-sm mt-2">
-                            Select a month above to view metrics.
+                    <div className="flex flex-col items-center justify-center py-20 px-4">
+                        <div className="relative mb-6">
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 blur-2xl" />
+                            <div className="relative p-6 rounded-full bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20">
+                                <LayoutDashboard className="h-12 w-12 text-violet-500" />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">
+                            No metrics for {calculationMonth}
+                        </h3>
+                        <p className="text-muted-foreground text-center max-w-md">
+                            Select a different month to view your KPI metrics and performance insights.
                         </p>
                     </div>
                 )}
 
                 {/* Category-wise Metrics */}
                 {(sortedCategories.length > 0 || lagMetrics.length > 0) && (
-                    <div className="space-y-16">
-                        {/* Lag metrics shown separately for clarity */}
-
-
-                        {sortedCategories.map((category) => {
+                    <div className="space-y-12 py-8">
+                        {sortedCategories.map((category, categoryIndex) => {
                             const categoryMetrics =
                                 category === 'need_attention'
                                     ? nonLagNeedAttentionMetrics
                                     : groupedMetrics[category];
                             if (!categoryMetrics || categoryMetrics.length === 0) return null;
 
-                            return (
-                                <div key={category} className="opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]">
-                                    <div className="mb-6 flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-2xl font-semibold text-foreground">
-                                                {categoryLabels[category] || category.replace('_', ' ')}
-                                            </h3>
+                            const config = categoryConfig[category] || {
+                                label: category.replace('_', ' '),
+                                icon: Sparkles,
+                                description: '',
+                            };
+                            const CategoryIcon = config.icon;
 
+                            return (
+                                <div
+                                    key={category}
+                                    className="opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]"
+                                    style={{ animationDelay: `${categoryIndex * 100}ms` }}
+                                >
+                                    {/* Category Header */}
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-muted/50">
+                                                <CategoryIcon className="h-4 w-4 text-muted-foreground" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-foreground">
+                                                    {config.label}
+                                                </h3>
+                                                {config.description && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {config.description}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
+                                        <div className="flex-1 h-px bg-gradient-to-r from-border to-transparent ml-4" />
                                     </div>
-                                    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-${categoryMetrics.length.toString()} gap-6`}>
+
+                                    {/* Metrics Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {categoryMetrics.map((metric, index) => (
                                             <div
                                                 key={metric.id}
-                                                className="opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
-                                                style={{ animationDelay: `${index * 50}ms` }}
+                                                className="opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
+                                                style={{ animationDelay: `${categoryIndex * 100 + index * 75}ms` }}
                                             >
                                                 <KPICard metric={metric} />
                                             </div>
@@ -331,31 +358,6 @@ export function KPISection({ orgId }: KPISectionProps) {
                                 </div>
                             );
                         })}
-                        {lagMetrics.length > 0 && (
-                            <div className="opacity-0 animate-[fadeIn_0.6s_ease-out_forwards]">
-                                <div className="mb-6 flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-2xl font-semibold text-foreground">
-                                            Delays & Overdue Items
-                                        </h3>
-
-                                    </div>
-                                </div>
-                                <div
-                                    className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-${lagMetrics.length.toString()} gap-6`}
-                                >
-                                    {lagMetrics.map((metric, index) => (
-                                        <div
-                                            key={metric.id}
-                                            className="opacity-0 animate-[fadeInUp_0.5s_ease-out_forwards]"
-                                            style={{ animationDelay: `${index * 50}ms` }}
-                                        >
-                                            <KPICard metric={metric} />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>

@@ -6,6 +6,7 @@ import CostImpactSection from '@/components/landing/cost-impact-section';
 import MetricsSection from '@/components/landing/metrics-section';
 import CTASection from '@/components/landing/cta-section';
 import MapSection from '@/components/landing/map-section';
+import FAQSection from '@/components/landing/faq-section';
 import Footer from '@/components/layout/landing/footer';
 
 // Dynamically import client components for incremental loading
@@ -53,6 +54,7 @@ export default async function Home() {
         <StepsSection />
         <CostImpactSection />
         <MetricsSection />
+        <FAQSection />
         <CTASection />
         <Footer />
       </main>

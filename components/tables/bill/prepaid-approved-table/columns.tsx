@@ -3,18 +3,19 @@ import { ddmmyy } from '@/lib/utils/date-format';
 import { formatRupees } from '@/lib/utils/number-format';
 import { ColumnDef } from '@tanstack/react-table';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
-import { PrepaidCartHeaderActions, PrepaidCartColumnActions } from '@/components/prepaid-cart-action';
+import { BatchHeaderAction, BatchRowAction } from '@/components/batch/batch-row-action';
 import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
 import { useSiteName } from '@/lib/utils/site';
+
 export const columns: ColumnDef<PrepaidRechargeTableProps>[] = [
   {
     id: 'select',
-    header: ({ table }) => <PrepaidCartHeaderActions table={table} />,
-    cell: ({ row }) => <PrepaidCartColumnActions row={row} />,
+    header: ({ table }) => <BatchHeaderAction table={table} itemType="recharge" />,
+    cell: ({ row }) => <BatchRowAction row={row} itemType="recharge" />,
     enableSorting: false,
     enableHiding: false,
     enableResizing: false,
-    size: 20
+    size: 120
   },
   {
     id: 'id',

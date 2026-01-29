@@ -2,7 +2,7 @@
  * KPI Metrics Type Definitions
  * 
  * Note: After running the migration, regenerate types using:
- * npx supabase gen types typescript --project-id <your-project-id> > types/supabase.ts
+ * pnpm exec supabase gen types typescript --project-id <your-project-id> > types/supabase.ts
  */
 
 import { Json } from './supabase';

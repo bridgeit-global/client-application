@@ -280,7 +280,7 @@ psql -h your-db-host -U postgres -d your-db-name -f supabase/migrations/20241202
 After running the migration, regenerate TypeScript types:
 
 ```bash
-npx supabase gen types typescript --project-id <your-project-id> > types/supabase.ts
+pnpm exec supabase gen types typescript --project-id <your-project-id> > types/supabase.ts
 ```
 
 The new `kpi_metrics` table and functions will be included in the generated types.

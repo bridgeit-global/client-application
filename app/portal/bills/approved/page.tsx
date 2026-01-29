@@ -20,6 +20,7 @@ export default async function Page(
         currentDueBillsData={recommendationData.currentDueBillsData || []}
         nextSevenDaysBillsData={recommendationData.nextSevenDaysBillsData || []}
       />
+      
       <ApprovedBillTable
         totalAmount={0}
         data={data}

@@ -23,6 +23,7 @@ import { createQueryString } from '@/lib/createQueryString';
 import TableColumns from '@/components/table-columns';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/constants/table';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
+import { BatchSelectionToolbar, QuickSelectButtons } from '@/components/batch/batch-selection-toolbar';
 
 type DataTableProps = {
   data: PrepaidRechargeTableProps[];
@@ -176,12 +177,38 @@ export default function PrepaidApprovedTable({
           fetchData={applyFilters}
         />
       </div>
+      
+      {/* Quick selection buttons for batch operations */}
+      <QuickSelectButtons
+        items={data}
+        selectedItems={table.getFilteredSelectedRowModel().rows.map((row: any) => row.original)}
+        onSelectItems={(items) => {
+          // Select all matching rows in the table
+          table.getRowModel().rows.forEach((row: any) => {
+            const shouldSelect = items.some(item => item.id === row.original.id);
+            row.toggleSelected(shouldSelect);
+          });
+        }}
+        onClearSelection={() => table.resetRowSelection()}
+        itemType="recharge"
+        className="mb-4"
+      />
+      
       <CustomTable
         columns={columns}
         isLoading={isLoading}
         pageSize={pageSize}
         table={table}
         totalCount={totalCount}
+      />
+      
+      {/* Selection toolbar - appears when items are selected */}
+      <BatchSelectionToolbar
+        selectedItems={table.getFilteredSelectedRowModel().rows.map((row: any) => row.original)}
+        totalItems={data}
+        onClearSelection={() => table.resetRowSelection()}
+        itemType="recharge"
+        table={table}
       />
     </div>
   );

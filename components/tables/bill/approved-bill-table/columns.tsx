@@ -11,7 +11,7 @@ import {
 import { AllBillTableProps } from '@/types/bills-type';
 import { Button } from '@/components/ui/button';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
-import { CartHeaderActions, CartColumnActions } from '@/components/cart-action';
+import { BatchHeaderAction, BatchRowAction } from '@/components/batch/batch-row-action';
 import React from 'react';
 import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
 import TodaysPayableAmountCell from '@/components/table-cells/todays-payable-amount-cell';
@@ -21,12 +21,12 @@ import { useSiteName } from '@/lib/utils/site';
 export const columns: ColumnDef<AllBillTableProps>[] = [
   {
     id: 'select',
-    header: ({ table }) => <CartHeaderActions table={table} />,
-    cell: ({ row }) => <CartColumnActions row={row} />,
+    header: ({ table }) => <BatchHeaderAction table={table} itemType="bill" />,
+    cell: ({ row }) => <BatchRowAction row={row} itemType="bill" />,
     enableSorting: false,
     enableHiding: false,
     enableResizing: false,
-    size: 20
+    size: 120
   },
   {
     id: 'id',

@@ -2,6 +2,7 @@ import { PrepaidBatchRecommendations } from '@/components/recommendations/Prepai
 import PrepaidApprovedTable from '@/components/tables/bill/prepaid-approved-table';
 import { fetchApprovedPrepaidRecharges, fetchRechargeRecommendations } from '@/services/bills';
 import { SearchParamsProps } from '@/types';
+
 export default async function Page(
   props: {
     searchParams: Promise<SearchParamsProps>;
@@ -18,11 +19,12 @@ export default async function Page(
           totalRechargesData={recommendationData.totalRechargesData || []}
           currentDueRechargesData={recommendationData.currentDueRechargesData || []}
         /> : null}
+      
       <PrepaidApprovedTable
         data={data}
         pageCount={pageCount}
         totalCount={totalCount}
       />
-    </div >
+    </div>
   );
 }

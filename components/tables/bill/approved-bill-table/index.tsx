@@ -27,6 +27,7 @@ import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/constants/table';
 import { ApprovedBillActionButton } from './filter-action';
 import DueDateLegend from '@/components/due-date-legend';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { BatchSelectionToolbar, QuickSelectButtons } from '@/components/batch/batch-selection-toolbar';
 
 type DataTableProps = {
   data: AllBillTableProps[];
@@ -275,12 +276,38 @@ export default function ApprovedBillTable({
           }}
         />
       </div>
+      
+      {/* Quick selection buttons for batch operations */}
+      <QuickSelectButtons
+        items={data}
+        selectedItems={table.getFilteredSelectedRowModel().rows.map((row: any) => row.original)}
+        onSelectItems={(items) => {
+          // Select all matching rows in the table
+          table.getRowModel().rows.forEach((row: any) => {
+            const shouldSelect = items.some(item => item.id === row.original.id);
+            row.toggleSelected(shouldSelect);
+          });
+        }}
+        onClearSelection={() => table.resetRowSelection()}
+        itemType="bill"
+        className="mb-4"
+      />
+      
       <CustomTable
         columns={columns}
         isLoading={isLoading}
         pageSize={pageSize}
         table={table}
         totalCount={totalCount}
+      />
+      
+      {/* Selection toolbar - appears when items are selected */}
+      <BatchSelectionToolbar
+        selectedItems={table.getFilteredSelectedRowModel().rows.map((row: any) => row.original)}
+        totalItems={data}
+        onClearSelection={() => table.resetRowSelection()}
+        itemType="bill"
+        table={table}
       />
     </div>
   );

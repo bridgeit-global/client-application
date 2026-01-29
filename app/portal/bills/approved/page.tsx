@@ -2,6 +2,7 @@ import { BatchRecommendations } from '@/components/recommendations/BatchRecommen
 import ApprovedBillTable from '@/components/tables/bill/approved-bill-table';
 import { fetchApprovedPostpaidBills, fetchBillRecommendations } from '@/services/bills';
 import { SearchParamsProps } from '@/types';
+import { BatchTip } from '@/components/batch/batch-workflow-guide';
 
 export default async function Page(
   props: {
@@ -20,6 +21,10 @@ export default async function Page(
         currentDueBillsData={recommendationData.currentDueBillsData || []}
         nextSevenDaysBillsData={recommendationData.nextSevenDaysBillsData || []}
       />
+      
+      {/* Show tip only when there are bills but no recommendations clicked */}
+      {data.length > 0 && <BatchTip />}
+      
       <ApprovedBillTable
         totalAmount={0}
         data={data}

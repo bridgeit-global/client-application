@@ -2,7 +2,6 @@ import { PrepaidBatchRecommendations } from '@/components/recommendations/Prepai
 import PrepaidApprovedTable from '@/components/tables/bill/prepaid-approved-table';
 import { fetchApprovedPrepaidRecharges, fetchRechargeRecommendations } from '@/services/bills';
 import { SearchParamsProps } from '@/types';
-import { BatchTip } from '@/components/batch/batch-workflow-guide';
 
 export default async function Page(
   props: {
@@ -20,9 +19,6 @@ export default async function Page(
           totalRechargesData={recommendationData.totalRechargesData || []}
           currentDueRechargesData={recommendationData.currentDueRechargesData || []}
         /> : null}
-      
-      {/* Show tip when there are recharges */}
-      {data.length > 0 && <BatchTip />}
       
       <PrepaidApprovedTable
         data={data}

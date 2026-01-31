@@ -112,7 +112,7 @@ function FooterSidebar() {
                             sideOffset={8}
                         >
                             <DropdownMenuLabel className='p-0 font-normal'>
-                                <div onClick={() => router.push('/portal/user-profile')} className='flex items-center gap-2 px-1 py-1.5 text-left text-sm hover:bg-sidebar-accent cursor-pointer'>
+                                <div className='flex items-center gap-2 px-1 py-1.5 text-left text-sm'>
                                     <Avatar className='h-8 w-8 rounded-lg'>
                                         <AvatarImage
                                             src={user?.user_metadata?.avatar_url || ''}

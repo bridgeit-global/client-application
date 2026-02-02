@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import { PaymentsProps } from '@/types/payments-type';
 import { PrepaidBalanceProps } from '@/types/prepaid-balance-type';
 import { AllBillTableProps, BillsProps } from '@/types/bills-type';
+import { PrepaidRechargeTableProps } from '@/types/connections-type';
 import { formatRupees } from './utils/number-format';
 import { ClientPaymentsProps } from '@/types/payments-type';
 
@@ -455,8 +456,10 @@ export function groupBillsByPaymentStatus(bills: AllBillTableProps[]): GroupedDa
   );
 }
 
-export const isDisabled = (row: AllBillTableProps) => {
-  return !!row.batch_id || !!row.payment_status || !!row.receipt_url;
+export const isDisabled = (row: AllBillTableProps | PrepaidRechargeTableProps): boolean => {
+  if (!!row.batch_id) return true;
+  const billRow = row as AllBillTableProps;
+  return !!(billRow.payment_status ?? billRow.receipt_url);
 };
 
 /**

@@ -3,6 +3,7 @@ import AboutSection from '@/components/landing/about-section';
 import StepsSection from '@/components/landing/steps-section';
 import FeaturesSection from '@/components/landing/features-section';
 import CostImpactSection from '@/components/landing/cost-impact-section';
+import ClientBenefitsSection from '@/components/landing/client-benefits-section';
 import MetricsSection from '@/components/landing/metrics-section';
 import CTASection from '@/components/landing/cta-section';
 import MapSection from '@/components/landing/map-section';
@@ -50,6 +51,7 @@ export default async function Home() {
         <HeroSection />
         <AboutSection />
         <FeaturesSection />
+        <ClientBenefitsSection />
         <MapSection />
         <StepsSection />
         <CostImpactSection />

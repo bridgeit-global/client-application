@@ -54,7 +54,7 @@ BridgeIT is a comprehensive utility management platform designed to streamline e
 ### Prerequisites
 
 - Node.js (v14 or higher)
-- npm or yarn
+- pnpm
 
 ### Installation
 
@@ -68,17 +68,13 @@ git clone https://github.com/yourusername/bridgeit.git
 
 ```bash
 cd bridgeit
-npm install
-# or
-yarn install
+pnpm install
 ```
 
 3. Run the development server:
 
 ```bash
-npm run dev
-# or
-yarn dev
+pnpm dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.

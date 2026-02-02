@@ -1,8 +1,7 @@
-import PageContainer from '@/components/layout/page-container';
 import { Footer } from '@/components/layout/footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SupportSidebar } from '@/components/sidebar/support-sidebar';
-import Header from '@/components/layout/header';
+import { MainWithScrollHeader } from '@/components/layout/main-with-scroll-header';
 import { UserInitializer } from '@/components/providers/user-initializer';
 
 export default function RootLayout({
@@ -15,15 +14,9 @@ export default function RootLayout({
       <UserInitializer />
       <SidebarProvider>
         <SupportSidebar />
-        <main className="w-full flex-1 flex flex-col overflow-hidden">
-          <Header />
-          <div className="flex-1 overflow-hidden min-h-0">
-            <PageContainer scrollable>
-              {children}
-            </PageContainer>
-          </div>
-          <Footer />
-        </main>
+        <MainWithScrollHeader footer={<Footer />}>
+          {children}
+        </MainWithScrollHeader>
       </SidebarProvider>
     </div>
   );

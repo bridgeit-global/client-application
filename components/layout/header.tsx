@@ -14,14 +14,28 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Button } from '@/components/ui/button'
+import { LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { useBillerBoardStore } from '@/lib/store/biller-board-store'
 
 function Header() {
     const { user } = useUserStore();
     const { isBatchRelevantPage, contextLabel } = useBatchContext();
     const { items } = useBatchCartStore();
+    const router = useRouter();
+    const supabase = createClient();
+    const { setBillers } = useBillerBoardStore();
 
     // Show cart if on a batch-relevant page OR if there are items in the cart
     const shouldShowCart = isBatchRelevantPage || items.length > 0;
+
+    const handleLogout = async () => {
+        setBillers([]);
+        await supabase.auth.signOut();
+        router.push('/');
+    };
 
     return (
         <header className={cn(
@@ -64,15 +78,13 @@ function Header() {
                     </div>
                 </div>
 
-                {/* Right Section - Cart (shown only on batch-relevant pages or when cart has items) */}
-                {user?.user_metadata?.role !== 'operator' && shouldShowCart ? (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <div className={cn(
-                                    "flex items-center space-x-3",
-                                    "transition-all duration-200 ease-in-out"
-                                )}>
+                {/* Right Section - Cart and Logout */}
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                    {/* Cart (shown only on batch-relevant pages or when cart has items) */}
+                    {user?.user_metadata?.role !== 'operator' && shouldShowCart ? (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
                                     <div className={cn(
                                         "flex items-center justify-center",
                                         "w-10 h-10 sm:w-11 sm:h-11",
@@ -86,23 +98,50 @@ function Header() {
                                     )}>
                                         <Cart />
                                     </div>
-                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-xs">
+                                    <p className="font-medium">{contextLabel}</p>
+                                    {items.length > 0 ? (
+                                        <p className="text-xs text-muted-foreground">
+                                            {items.length} item{items.length !== 1 ? 's' : ''} in cart
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground">
+                                            Select bills or recharges to create a batch
+                                        </p>
+                                    )}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : null}
+                    
+                    {/* Logout Button */}
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleLogout}
+                                    className={cn(
+                                        "w-10 h-10 sm:w-11 sm:h-11",
+                                        "rounded-lg bg-gradient-to-br from-destructive/10 to-destructive/5",
+                                        "border border-destructive/20",
+                                        "hover:from-destructive/20 hover:to-destructive/10",
+                                        "hover:text-destructive",
+                                        "transition-all duration-200 ease-in-out",
+                                        "shadow-sm hover:shadow-md"
+                                    )}
+                                >
+                                    <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+                                </Button>
                             </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs">
-                                <p className="font-medium">{contextLabel}</p>
-                                {items.length > 0 ? (
-                                    <p className="text-xs text-muted-foreground">
-                                        {items.length} item{items.length !== 1 ? 's' : ''} in cart
-                                    </p>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        Select bills or recharges to create a batch
-                                    </p>
-                                )}
+                            <TooltipContent side="bottom">
+                                <p>Log out</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                ) : null}
+                </div>
             </div>
 
             {/* Subtle gradient overlay for visual appeal */}

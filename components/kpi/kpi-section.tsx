@@ -345,15 +345,19 @@ export function KPISection({ orgId }: KPISectionProps) {
 
                                     {/* Metrics Grid */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {categoryMetrics.map((metric, index) => (
-                                            <div
-                                                key={metric.id}
-                                                className="opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
-                                                style={{ animationDelay: `${categoryIndex * 100 + index * 75}ms` }}
-                                            >
-                                                <KPICard metric={metric} />
-                                            </div>
-                                        ))}
+                                        {categoryMetrics.map((metric, index) => {
+                                            const today = new Date();
+                                            const isCurrentMonth = selectedMonth && isSameMonth(selectedMonth, today);
+                                            return (
+                                                <div
+                                                    key={metric.id}
+                                                    className="opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
+                                                    style={{ animationDelay: `${categoryIndex * 100 + index * 75}ms` }}
+                                                >
+                                                    <KPICard metric={metric} isCurrentMonth={isCurrentMonth || false} />
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );

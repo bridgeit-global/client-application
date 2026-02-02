@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 
 interface KPICardProps {
     metric: KPIMetric;
+    isCurrentMonth?: boolean;
 }
 
 interface MetricMetadata {
@@ -121,12 +122,15 @@ const severityColors = {
     },
 };
 
-export function KPICard({ metric }: KPICardProps) {
+export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const styles = categoryStyles[metric.kpi_category] || categoryStyles.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
     const displayName = kpiDisplayNames[metric.kpi_name] ?? metric.kpi_name;
     const description = kpiDescriptions[metric.kpi_name];
+    
+    // Hide comparison for benefits category (Time Savings) in current month
+    const shouldShowComparison = !(metric.kpi_category === 'benefits' && isCurrentMonth);
 
     // Calculate time saved for benefits KPIs
     const getTimeSaved = (): string | null => {
@@ -270,7 +274,7 @@ export function KPICard({ metric }: KPICardProps) {
                     </div>
 
                     {/* Trend Badge */}
-                    {metric.trend_percentage !== null && metric.trend_direction !== null && (
+                    {shouldShowComparison && metric.trend_percentage !== null && metric.trend_direction !== null && (
                         <div
                             className={cn(
                                 'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold',

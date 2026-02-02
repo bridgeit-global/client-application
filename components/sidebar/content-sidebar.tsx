@@ -27,6 +27,64 @@ import { NavItem } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 
+const buildAccountsItems = (
+    items: NavItem[],
+    options: { includeUsers: boolean; includeApiClients: boolean }
+): NavItem[] => {
+    return items.map((item) => {
+        if (item.url !== '/portal/accounts') {
+            return item;
+        }
+
+        const existingItems = item.items ?? [];
+        const byUrl = new Map<string, NavItem>();
+        
+        // Build map and filter out duplicates
+        const uniqueItems: NavItem[] = [];
+        for (const entry of existingItems) {
+            if (!byUrl.has(entry.url)) {
+                byUrl.set(entry.url, entry);
+                uniqueItems.push(entry);
+            }
+        }
+
+        // Add User Management if it doesn't exist and should be included
+        if (options.includeUsers && !byUrl.has('/portal/user')) {
+            const userItem: NavItem = {
+                title: 'User Management',
+                url: '/portal/user',
+                icon: 'user',
+                isCollapsible: false,
+            };
+            uniqueItems.unshift(userItem);
+            byUrl.set('/portal/user', userItem);
+        }
+
+        // Add API Clients if it doesn't exist and should be included
+        // Insert after Profile if Profile exists
+        if (options.includeApiClients && !byUrl.has('/portal/accounts/api-clients')) {
+            const profileIndex = uniqueItems.findIndex(item => item.url === '/portal/user-profile');
+            const apiClientsItem: NavItem = {
+                title: 'API',
+                url: '/portal/accounts/api-clients',
+                icon: 'extraction',
+                isCollapsible: false,
+            };
+            if (profileIndex >= 0) {
+                uniqueItems.splice(profileIndex + 1, 0, apiClientsItem);
+            } else {
+                uniqueItems.push(apiClientsItem);
+            }
+            byUrl.set('/portal/accounts/api-clients', apiClientsItem);
+        }
+
+        return {
+            ...item,
+            items: uniqueItems,
+        };
+    });
+};
+
 function ContentSidebar({ items }: { items: NavItem[] }) {
     const supabase = createClient();
     const [sidebarItems, setSidebarItems] = useState<NavItem[]>(items);
@@ -44,29 +102,23 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
         // For operator users, show only meter-reading navigation
         if (user?.user_metadata.role === 'operator') {
             const operatorNavItems = items.filter(item =>
-                item.url === '/portal/meter-reading' || item.url === '/portal/meter-reading-list'
+                item.url === '/portal/meter-reading' ||
+                item.url === '/portal/meter-reading-list' ||
+                item.url === '/portal/accounts'
             );
-            setSidebarItems(operatorNavItems);
+            setSidebarItems(buildAccountsItems(operatorNavItems, { includeUsers: false, includeApiClients: false }));
         } else if (user?.user_metadata.role === 'admin') {
             // For admin users, show all items except meter-reading pages (which are operator-only)
             const adminItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems([
-                ...adminItems,
-                {
-                    title: 'User',
-                    url: '/portal/user',
-                    icon: 'user',
-                    isCollapsible: false,
-                }
-            ]);
+            setSidebarItems(buildAccountsItems(adminItems, { includeUsers: true, includeApiClients: true }));
         } else {
             // For regular users, show all items except meter-reading pages (which are operator-only)
             const regularUserItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(regularUserItems);
+            setSidebarItems(buildAccountsItems(regularUserItems, { includeUsers: false, includeApiClients: false }));
         }
     }
 

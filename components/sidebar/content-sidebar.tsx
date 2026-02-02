@@ -37,46 +37,50 @@ const buildAccountsItems = (
         }
 
         const existingItems = item.items ?? [];
-        const byUrl = new Map(existingItems.map((entry) => [entry.url, entry]));
+        const byUrl = new Map<string, NavItem>();
+        
+        // Build map and filter out duplicates
+        const uniqueItems: NavItem[] = [];
+        for (const entry of existingItems) {
+            if (!byUrl.has(entry.url)) {
+                byUrl.set(entry.url, entry);
+                uniqueItems.push(entry);
+            }
+        }
 
-        const reportIssueItem: NavItem = byUrl.get('/portal/report-issue') ?? {
-            title: 'Report Issue',
-            url: '/portal/report-issue',
-            icon: 'warning',
-            isCollapsible: false,
-        };
+        // Add User Management if it doesn't exist and should be included
+        if (options.includeUsers && !byUrl.has('/portal/user')) {
+            const userItem: NavItem = {
+                title: 'User Management',
+                url: '/portal/user',
+                icon: 'user',
+                isCollapsible: false,
+            };
+            uniqueItems.unshift(userItem);
+            byUrl.set('/portal/user', userItem);
+        }
 
-        const profileItem: NavItem = byUrl.get('/portal/user-profile') ?? {
-            title: 'Profile',
-            url: '/portal/user-profile',
-            icon: 'profile',
-            isCollapsible: false,
-        };
-
-        const userItem: NavItem = byUrl.get('/portal/user') ?? {
-            title: 'User',
-            url: '/portal/user',
-            icon: 'user',
-            isCollapsible: false,
-        };
-
-        const apiClientsItem: NavItem = byUrl.get('/portal/accounts/api-clients') ?? {
-            title: 'API Clients',
-            url: '/portal/accounts/api-clients',
-            icon: 'extraction',
-            isCollapsible: false,
-        };
-
-        const nextItems: NavItem[] = [
-            reportIssueItem,
-            ...(options.includeUsers ? [userItem] : []),
-            profileItem,
-            ...(options.includeApiClients ? [apiClientsItem] : []),
-        ];
+        // Add API Clients if it doesn't exist and should be included
+        // Insert after Profile if Profile exists
+        if (options.includeApiClients && !byUrl.has('/portal/accounts/api-clients')) {
+            const profileIndex = uniqueItems.findIndex(item => item.url === '/portal/user-profile');
+            const apiClientsItem: NavItem = {
+                title: 'API',
+                url: '/portal/accounts/api-clients',
+                icon: 'extraction',
+                isCollapsible: false,
+            };
+            if (profileIndex >= 0) {
+                uniqueItems.splice(profileIndex + 1, 0, apiClientsItem);
+            } else {
+                uniqueItems.push(apiClientsItem);
+            }
+            byUrl.set('/portal/accounts/api-clients', apiClientsItem);
+        }
 
         return {
             ...item,
-            items: nextItems,
+            items: uniqueItems,
         };
     });
 };

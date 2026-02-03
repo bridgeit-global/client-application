@@ -33,7 +33,7 @@ import { CHART_COLORS } from '@/constants/colors';
 
 type FinancialData = {
     bill_month: string;
-    station_type: string | null;
+    site_type: string | null;
     total_bill_amount: number;
     total_billed_unit: number;
     bill_count: number;
@@ -107,7 +107,7 @@ function FilterAction({
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="station_type">{site_name} Type</Label>
+                            <Label htmlFor="site_type">{site_name} Type</Label>
                             <StationTypeSelector
                                 value={Array.isArray(filterBody?.type) ? filterBody.type : filterBody?.type?.split(',') || []}
                                 onChange={(types) => onChangeSelectHandle("type", types)} />
@@ -206,18 +206,18 @@ export default function FinancialMonthChart({ data }: Props) {
         };
 
         const result = data.reduce((acc: ChartData[], curr) => {
-            if (!curr || !curr.station_type) return acc; // Skip null/undefined data or null station types
+            if (!curr || !curr.site_type) return acc; // Skip null/undefined data or null site types
 
             const month = formatMonth(curr.bill_month);
             const existingMonth = acc.find(item => item.month === month);
             const value = getValue(curr, metric);
 
             if (existingMonth) {
-                existingMonth[curr.station_type] = value;
+                existingMonth[curr.site_type] = value;
             } else {
                 const monthData = {
                     month,
-                    [curr.station_type]: value,
+                    [curr.site_type]: value,
                 };
                 acc.push(monthData);
             }

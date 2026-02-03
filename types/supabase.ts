@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   portal: {
     Tables: {
       additional_charges: {
@@ -112,9 +117,40 @@ export type Database = {
           },
         ]
       }
+      api_clients: {
+        Row: {
+          client_secret: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          org_id: string
+          role: string | null
+          scopes: string[] | null
+        }
+        Insert: {
+          client_secret: string
+          created_at?: string | null
+          id: string
+          is_active?: boolean | null
+          org_id: string
+          role?: string | null
+          scopes?: string[] | null
+        }
+        Update: {
+          client_secret?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_id?: string
+          role?: string | null
+          scopes?: string[] | null
+        }
+        Relationships: []
+      }
       batches: {
         Row: {
           batch_advice_url: string | null
+          batch_amount: number
           batch_create_url: string | null
           batch_id: string
           batch_name: string | null
@@ -131,6 +167,7 @@ export type Database = {
         }
         Insert: {
           batch_advice_url?: string | null
+          batch_amount?: number
           batch_create_url?: string | null
           batch_id: string
           batch_name?: string | null
@@ -147,6 +184,7 @@ export type Database = {
         }
         Update: {
           batch_advice_url?: string | null
+          batch_amount?: number
           batch_create_url?: string | null
           batch_id?: string
           batch_name?: string | null
@@ -371,7 +409,6 @@ export type Database = {
       }
       bills: {
         Row: {
-          alternative_unit_cost: number | null
           approved_amount: number | null
           batch_id: string | null
           bill_amount: number
@@ -395,18 +432,22 @@ export type Database = {
           end_date: string | null
           id: string
           is_active: boolean
+          is_deleted: boolean | null
           is_overload: boolean | null
           is_valid: boolean | null
           next_bill_date: string | null
           paid_status: string | null
           payment_status: boolean
           penalty_amount: number
+          projected_units: number | null
           rebate_accrued: number | null
           rebate_potential: number | null
           receipt_content_type: string | null
           receipt_url: string | null
+          sanction_load: number | null
+          sanction_type: string | null
           start_date: string | null
-          station_type: Database["portal"]["Enums"]["station_type"] | null
+          site_type: string | null
           swap_cost: number | null
           swap_count: number | null
           unit_cost: number | null
@@ -414,7 +455,6 @@ export type Database = {
           validation_reason: Json | null
         }
         Insert: {
-          alternative_unit_cost?: number | null
           approved_amount?: number | null
           batch_id?: string | null
           bill_amount: number
@@ -438,18 +478,22 @@ export type Database = {
           end_date?: string | null
           id: string
           is_active?: boolean
+          is_deleted?: boolean | null
           is_overload?: boolean | null
           is_valid?: boolean | null
           next_bill_date?: string | null
           paid_status?: string | null
           payment_status?: boolean
           penalty_amount?: number
+          projected_units?: number | null
           rebate_accrued?: number | null
           rebate_potential?: number | null
           receipt_content_type?: string | null
           receipt_url?: string | null
+          sanction_load?: number | null
+          sanction_type?: string | null
           start_date?: string | null
-          station_type?: Database["portal"]["Enums"]["station_type"] | null
+          site_type?: string | null
           swap_cost?: number | null
           swap_count?: number | null
           unit_cost?: number | null
@@ -457,7 +501,6 @@ export type Database = {
           validation_reason?: Json | null
         }
         Update: {
-          alternative_unit_cost?: number | null
           approved_amount?: number | null
           batch_id?: string | null
           bill_amount?: number
@@ -481,18 +524,22 @@ export type Database = {
           end_date?: string | null
           id?: string
           is_active?: boolean
+          is_deleted?: boolean | null
           is_overload?: boolean | null
           is_valid?: boolean | null
           next_bill_date?: string | null
           paid_status?: string | null
           payment_status?: boolean
           penalty_amount?: number
+          projected_units?: number | null
           rebate_accrued?: number | null
           rebate_potential?: number | null
           receipt_content_type?: string | null
           receipt_url?: string | null
+          sanction_load?: number | null
+          sanction_type?: string | null
           start_date?: string | null
-          station_type?: Database["portal"]["Enums"]["station_type"] | null
+          site_type?: string | null
           swap_cost?: number | null
           swap_count?: number | null
           unit_cost?: number | null
@@ -1019,28 +1066,34 @@ export type Database = {
           account_number: string
           biller_id: string
           created_at: string
+          description: string | null
           dlq_type: string
           message_data: Json
           message_id: string
           reason: string | null
+          status: string | null
         }
         Insert: {
           account_number: string
           biller_id: string
           created_at?: string
+          description?: string | null
           dlq_type: string
           message_data: Json
           message_id: string
           reason?: string | null
+          status?: string | null
         }
         Update: {
           account_number?: string
           biller_id?: string
           created_at?: string
+          description?: string | null
           dlq_type?: string
           message_data?: Json
           message_id?: string
           reason?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -1150,6 +1203,62 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      kpi_metrics: {
+        Row: {
+          calculation_month: string
+          created_at: string | null
+          current_value: number
+          id: string
+          kpi_category: string
+          kpi_name: string
+          last_month_value: number | null
+          metadata: Json | null
+          org_id: string
+          trend_direction: string | null
+          trend_percentage: number | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_month: string
+          created_at?: string | null
+          current_value: number
+          id?: string
+          kpi_category: string
+          kpi_name: string
+          last_month_value?: number | null
+          metadata?: Json | null
+          org_id: string
+          trend_direction?: string | null
+          trend_percentage?: number | null
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_month?: string
+          created_at?: string | null
+          current_value?: number
+          id?: string
+          kpi_category?: string
+          kpi_name?: string
+          last_month_value?: number | null
+          metadata?: Json | null
+          org_id?: string
+          trend_direction?: string | null
+          trend_percentage?: number | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_metrics_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       master: {
         Row: {
@@ -1271,6 +1380,7 @@ export type Database = {
           name: string
           pan: string | null
           site_name: string
+          webhook_config: Json | null
         }
         Insert: {
           batch_threshold_amount?: number
@@ -1285,6 +1395,7 @@ export type Database = {
           name: string
           pan?: string | null
           site_name?: string
+          webhook_config?: Json | null
         }
         Update: {
           batch_threshold_amount?: number
@@ -1299,6 +1410,7 @@ export type Database = {
           name?: string
           pan?: string | null
           site_name?: string
+          webhook_config?: Json | null
         }
         Relationships: []
       }
@@ -1366,7 +1478,7 @@ export type Database = {
           created_by: string | null
           id: string
           reference_id: string | null
-          station_type: Database["portal"]["Enums"]["station_type"] | null
+          site_type: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -1380,7 +1492,7 @@ export type Database = {
           created_by?: string | null
           id: string
           reference_id?: string | null
-          station_type?: Database["portal"]["Enums"]["station_type"] | null
+          site_type?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1394,7 +1506,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           reference_id?: string | null
-          station_type?: Database["portal"]["Enums"]["station_type"] | null
+          site_type?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1708,7 +1820,7 @@ export type Database = {
           longitude: number | null
           name: string | null
           org_id: string
-          type: Database["portal"]["Enums"]["station_type"] | null
+          type: string
           updated_at: string
           zone_id: string | null
         }
@@ -1721,7 +1833,7 @@ export type Database = {
           longitude?: number | null
           name?: string | null
           org_id: string
-          type?: Database["portal"]["Enums"]["station_type"] | null
+          type: string
           updated_at?: string
           zone_id?: string | null
         }
@@ -1734,7 +1846,7 @@ export type Database = {
           longitude?: number | null
           name?: string | null
           org_id?: string
-          type?: Database["portal"]["Enums"]["station_type"] | null
+          type?: string
           updated_at?: string
           zone_id?: string | null
         }
@@ -1765,15 +1877,7 @@ export type Database = {
           updated_at?: string | null
           zoneid?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sites_swap_counts_history_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       submeter_readings: {
         Row: {
@@ -2003,6 +2107,7 @@ export type Database = {
       }
     }
     Functions: {
+      compute_bill_swap_count: { Args: { p_bill_id: string }; Returns: number }
       get_active_connections_by_board: {
         Args: never
         Returns: {
@@ -2021,17 +2126,30 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_benefits_kpis: {
+        Args: { p_end_date?: string; p_org_id: string; p_start_date?: string }
+        Returns: {
+          benefit_description: string
+          current_value: number
+          kpi_name: string
+          last_month_value: number
+          trend_direction: string
+          trend_percentage: number
+          unit: string
+        }[]
+      }
       get_bill_summary_last_12_months: {
-        Args: { p_biller_id: string; p_site_id: string; p_station_type: string }
+        Args: { p_biller_id: string; p_site_id: string; p_site_type: string }
         Returns: {
           average_rate: number
           bill_count: number
           bill_month: string
-          station_type: string
+          site_type: string
           total_bill_amount: number
           total_billed_unit: number
         }[]
       }
+      get_bill_swap_count: { Args: { p_bill_id: string }; Returns: number }
       get_connection_paytype_summary: {
         Args: never
         Returns: {
@@ -2071,6 +2189,32 @@ export type Database = {
         }[]
       }
       get_day_suffix: { Args: { day: number }; Returns: string }
+      get_need_attention_kpis: {
+        Args: { p_end_date?: string; p_org_id: string; p_start_date?: string }
+        Returns: {
+          current_value: number
+          kpi_name: string
+          severity: string
+          unit: string
+        }[]
+      }
+      get_paid_bill_summary: {
+        Args: never
+        Returns: {
+          id: string
+          status: string
+        }[]
+      }
+      get_payment_savings_kpis: {
+        Args: { p_end_date?: string; p_org_id: string; p_start_date?: string }
+        Returns: {
+          accrued_value: number
+          kpi_name: string
+          potential_value: number
+          savings_percentage: number
+          unit: string
+        }[]
+      }
       get_request_user_org_id: { Args: never; Returns: string }
       get_site_type_summary: {
         Args: never
@@ -2095,7 +2239,7 @@ export type Database = {
         Returns: {
           financial_year: string
           rate_per_unit: number
-          station_type: string
+          site_type: string
           total_amount: number
           total_bills: number
           total_unit: number
@@ -2120,6 +2264,19 @@ export type Database = {
           total_approved: number
         }[]
       }
+      recalc_active_bill: {
+        Args: { p_connection_id: string }
+        Returns: undefined
+      }
+      refresh_report_tables: { Args: never; Returns: undefined }
+      store_kpi_metrics: {
+        Args: { p_calculation_month?: string; p_org_id: string }
+        Returns: undefined
+      }
+      store_kpi_metrics_for_year: {
+        Args: { p_org_id: string; p_year: number }
+        Returns: undefined
+      }
       update_approved_bills:
         | { Args: { bill_ids: string[] }; Returns: undefined }
         | {
@@ -2132,7 +2289,7 @@ export type Database = {
       update_dashboard_support_data: { Args: never; Returns: undefined }
     }
     Enums: {
-      station_type: "COCO" | "POCO" | "COPO" | "POPO"
+      site_type: "COCO" | "POCO" | "COPO" | "POPO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2140,6 +2297,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      auth_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          server_id: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          server_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          server_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_auth_logs_server_id"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_servers"
+            referencedColumns: ["server_id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           content: string
@@ -2236,6 +2440,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_refund_count: {
+        Row: {
+          count: number | null
+        }
+        Insert: {
+          count?: number | null
+        }
+        Update: {
+          count?: number | null
+        }
+        Relationships: []
+      }
+      third_party_servers: {
+        Row: {
+          allowed_scopes: string[] | null
+          created_at: string
+          is_active: boolean | null
+          metadata: Json | null
+          public_key: string | null
+          server_id: string
+          server_name: string
+          shared_secret: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_scopes?: string[] | null
+          created_at?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          public_key?: string | null
+          server_id: string
+          server_name: string
+          shared_secret: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_scopes?: string[] | null
+          created_at?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          public_key?: string | null
+          server_id?: string
+          server_name?: string
+          shared_secret?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_requests: {
         Row: {
           company_name: string
@@ -2289,10 +2541,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_auth_logs: {
+        Args: { days_to_keep?: number }
+        Returns: number
+      }
     }
     Enums: {
-      station_type: "COCO" | "POCO" | "COPO" | "POPO" | "Warehouse" | "Trial"
+      site_type: "COCO" | "POCO" | "COPO" | "POPO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2420,13 +2675,12 @@ export type CompositeTypes<
 export const Constants = {
   portal: {
     Enums: {
-      station_type: ["COCO", "POCO", "COPO", "POPO"],
+      site_type: ["COCO", "POCO", "COPO", "POPO"],
     },
   },
   public: {
     Enums: {
-      station_type: ["COCO", "POCO", "COPO", "POPO", "Warehouse", "Trial"],
+      site_type: ["COCO", "POCO", "COPO", "POPO"],
     },
   },
 } as const
-

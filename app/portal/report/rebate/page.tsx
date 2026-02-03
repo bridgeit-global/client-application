@@ -15,7 +15,7 @@ export default async function Page() {
           Analyze the rebate of the {site_name}
         </p>
       </div>
-      <Rebate station_type={user?.user_metadata?.station_type} />
+      <Rebate site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 } 

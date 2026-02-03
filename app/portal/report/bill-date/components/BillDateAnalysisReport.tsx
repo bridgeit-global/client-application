@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BillDateVsFetchDate from './BillDateVsFetchDate';
 import BillDateVsDueDate from './BillDateVsDueDate';
 
-export function BillDateAnalysisReport({ station_type }: { station_type: string }) {
+export function BillDateAnalysisReport({ site_type }: { site_type: string }) {
   return (
     <Tabs defaultValue="generation" className="w-full">
       <TabsList>
@@ -10,10 +10,10 @@ export function BillDateAnalysisReport({ station_type }: { station_type: string 
         <TabsTrigger value="due-date">Bill Date vs Due Date</TabsTrigger>
       </TabsList>
       <TabsContent value="generation">
-        <BillDateVsFetchDate station_type={station_type} />
+        <BillDateVsFetchDate site_type={site_type} />
       </TabsContent>
       <TabsContent value="due-date">
-        <BillDateVsDueDate station_type={station_type} />
+        <BillDateVsDueDate site_type={site_type} />
       </TabsContent>
     </Tabs>
   );

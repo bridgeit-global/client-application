@@ -109,14 +109,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return null;
 };
 
-export default function LPSC({ station_type }: { station_type: string }) {
+export default function LPSC({ site_type }: { site_type: string }) {
     const router = useRouter();
     const [monthlyData, setMonthlyData] = useState<MonthlyLPSCData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterBody, setFilterBody] = useState<FilterBody>({
         period: '3',
-        type: station_type
+        type: site_type
     });
     const supabase = createClient();
     // Second effect to fetch delay data when filterBody changes
@@ -176,7 +176,7 @@ export default function LPSC({ station_type }: { station_type: string }) {
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('station_type', filterBody.type.split(','));
+                query = query.in('site_type', filterBody.type.split(','));
             }
             if (filterBody.biller_id) {
                 query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

@@ -92,14 +92,14 @@ const CustomTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-export default function PaymentOnTime({ station_type }: { station_type: string }) {
+export default function PaymentOnTime({ site_type }: { site_type: string }) {
     const router = useRouter();
     const [paymentStatusData, setPaymentStatusData] = useState<PaymentStatusData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterBody, setFilterBody] = useState<FilterBody>({
         period: '3',
-        type: station_type
+        type: site_type
     });
     const supabase = createClient();
     const [totalBills, setTotalBills] = useState(0);
@@ -119,7 +119,7 @@ export default function PaymentOnTime({ station_type }: { station_type: string }
             let query = supabase
                 .from('bills')
                 .select(
-                    `bill_date,station_type,paid_status,connections!inner(*,sites!inner(zone_id,type),biller_list!inner(*))`,
+                    `bill_date,site_type,paid_status,connections!inner(*,sites!inner(zone_id,type),biller_list!inner(*))`,
                     {
                         count: 'estimated'
                     }
@@ -154,7 +154,7 @@ export default function PaymentOnTime({ station_type }: { station_type: string }
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('station_type', filterBody.type.split(','));
+                query = query.in('site_type', filterBody.type.split(','));
             }
             if (filterBody.biller_id) {
                 query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

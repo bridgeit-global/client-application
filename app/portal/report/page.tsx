@@ -16,7 +16,7 @@ export default async function Page() {
           Analyze the bill of the {site_name}
         </p>
       </div>
-      <AllOverBill station_type={user?.user_metadata?.station_type} />
+      <AllOverBill site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 }

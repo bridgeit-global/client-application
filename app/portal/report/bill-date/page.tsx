@@ -13,7 +13,7 @@ export default async function Page() {
           Analyze the time differences between bill dates, fetch dates, and due dates
         </p>
       </div>
-      <BillDateAnalysisReport station_type={user?.user_metadata?.station_type} />
+      <BillDateAnalysisReport site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 } 

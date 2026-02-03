@@ -245,7 +245,7 @@ export const fetchBillHistoryReport = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (is_arrear) {
@@ -340,7 +340,7 @@ export const fetchBillHistoryReport = cache(
 
       const modifiedData = (data || []).map((site) => ({
         [`${site_name}_id`]: site.connections?.site_id || '',
-        [`${site_name}_type`]: site.station_type,
+        [`${site_name}_type`]: site.site_type,
         [`${site_name}_status`]: site.connections?.is_active ? 'Active' : 'Inactive',
         account_number: String(site.connections?.account_number || ''),
         biller_board: site.connections?.biller_list?.board_name || '',
@@ -428,7 +428,7 @@ export const fetchPaymentHistoryReport = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (biller_id) {
@@ -467,7 +467,7 @@ export const fetchPaymentHistoryReport = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,

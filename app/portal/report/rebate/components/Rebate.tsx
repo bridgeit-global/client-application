@@ -124,13 +124,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function Rebate({ station_type }: { station_type: string }) {
+export default function Rebate({ site_type }: { site_type: string }) {
   const [monthlyData, setMonthlyData] = useState<MonthlyLPSCData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterBody, setFilterBody] = useState<FilterBody>({
     period: '3',
-    type: station_type
+    type: site_type
   });
   const router = useRouter();
   const supabase = createClient();
@@ -155,7 +155,7 @@ export default function Rebate({ station_type }: { station_type: string }) {
           rebate_accrued,
           bill_date,
           due_date,
-          station_type,
+          site_type,
           connections!inner(
             id,
             account_number,
@@ -199,7 +199,7 @@ export default function Rebate({ station_type }: { station_type: string }) {
         query = query.eq('connections.sites.zone_id', filterBody.zone_id);
       }
       if (filterBody.type) {
-        query = query.in('station_type', filterBody.type.split(','));
+        query = query.in('site_type', filterBody.type.split(','));
       }
       if (filterBody.biller_id) {
         query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

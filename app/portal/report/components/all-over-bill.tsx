@@ -82,13 +82,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
 };
 
-export default function AllOverBill({ station_type }: { station_type: string }) {
+export default function AllOverBill({ site_type }: { site_type: string }) {
     const [BillData, setBillData] = useState<BillData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterBody, setFilterBody] = useState<FilterBody>({
         period: '3',
-        type: station_type
+        type: site_type
     });
     const supabase = createClient();
     const router = useRouter();
@@ -111,7 +111,7 @@ export default function AllOverBill({ station_type }: { station_type: string }) 
                 .select(`
                     bill_date,
                     connection_id,
-                    station_type,
+                    site_type,
                     connections!inner(
                         account_number,
                         biller_list!inner(
@@ -155,7 +155,7 @@ export default function AllOverBill({ station_type }: { station_type: string }) 
 
             if (filterBody.type) {
                 const types = filterBody.type.split(',');
-                query = query.in('station_type', types);
+                query = query.in('site_type', types);
             }
 
             if (filterBody.biller_id) {

@@ -61,9 +61,9 @@ async function SiteOverview() {
 
   try {
     const [
-      { data: station_type, error: station_error },
+      { data: site_type_summary, error: site_type_error },
       { data: payment_type, error: payment_error },
-      { data: raw_station_type_map, error: station_map_error },
+      { data: raw_site_type_map, error: site_map_error },
       { data: raw_paytype_map, error: paytype_map_error },
       { data: zoneData, error: zone_error },
       { data: billerBoardWiseData, error: biller_board_wise_error }
@@ -90,9 +90,9 @@ async function SiteOverview() {
 
     // Check for any Supabase errors
     const errors = [
-      { error: station_error, name: `${site_name} Type Summary` },
+      { error: site_type_error, name: `${site_name} Type Summary` },
       { error: payment_error, name: 'Payment Type Summary' },
-      { error: station_map_error, name: `${site_name} Map Data` },
+      { error: site_map_error, name: `${site_name} Map Data` },
       { error: paytype_map_error, name: 'Payment Type Map Data' },
       { error: zone_error, name: 'Zone Data' },
       { error: biller_board_wise_error, name: 'Biller Board Wise Data' }
@@ -104,13 +104,13 @@ async function SiteOverview() {
     }
 
     // Check for missing data
-    if (!station_type || !payment_type || !raw_station_type_map || !raw_paytype_map || !zoneData || !billerBoardWiseData) {
+    if (!site_type_summary || !payment_type || !raw_site_type_map || !raw_paytype_map || !zoneData || !billerBoardWiseData) {
       throw new Error('Some required data is missing. Please try again later.');
     }
 
-    const station_type_map = (raw_station_type_map as StationMapItem[]).map((item) => ({
+    const site_type_map = (raw_site_type_map as StationMapItem[]).map((item) => ({
       id: item.id,
-      station_type: item.type,
+      site_type: item.type,
       zone_id: item.zone_id,
       latitude: item.latitude,
       longitude: item.longitude
@@ -125,9 +125,9 @@ async function SiteOverview() {
     }));
 
 
-    const totalActiveStation = station_type.reduce((acc: number, curr: SummaryType) => acc + (curr.active_count || 0), 0);
-    const totalInactiveStation = station_type.reduce((acc: number, curr: SummaryType) => acc + (curr.inactive_count || 0), 0);
-    const totalTotalStation = station_type.reduce((acc: number, curr: SummaryType) => acc + (curr.total_count || 0), 0);
+    const totalActiveStation = site_type_summary.reduce((acc: number, curr: SummaryType) => acc + (curr.active_count || 0), 0);
+    const totalInactiveStation = site_type_summary.reduce((acc: number, curr: SummaryType) => acc + (curr.inactive_count || 0), 0);
+    const totalTotalStation = site_type_summary.reduce((acc: number, curr: SummaryType) => acc + (curr.total_count || 0), 0);
 
     const totalConnections = payment_type.reduce((acc: number, curr: SummaryType) => acc + (curr.total_count || 0), 0);
     const totalActiveConnections = payment_type.reduce((acc: number, curr: SummaryType) => acc + (curr.active_count || 0), 0);
@@ -196,7 +196,7 @@ async function SiteOverview() {
         </div>
 
         <UnifiedMap
-          stationsData={station_type_map}
+          stationsData={site_type_map}
           paymentsData={paytype_map}
           title={`${site_name}  Types Distribution`}
         />
@@ -209,8 +209,8 @@ async function SiteOverview() {
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900">{site_name} Types</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {station_type.map((station: SummaryType) => {
-              const totalStations = station_type.reduce((acc: number, curr: SummaryType) => acc + (curr.total_count || 0), 0);
+            {site_type_summary.map((station: SummaryType) => {
+              const totalStations = site_type_summary.reduce((acc: number, curr: SummaryType) => acc + (curr.total_count || 0), 0);
               const percentage = totalStations > 0 ? ((station.total_count / totalStations) * 100).toFixed(1) : '0.0';
               return (
                 <Card key={station.type} className="bg-white hover:bg-yellow-50">

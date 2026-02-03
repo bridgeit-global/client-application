@@ -187,7 +187,7 @@ export const fetchPostpaidPaid = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (biller_id) {
@@ -241,7 +241,7 @@ export const fetchPostpaidPaid = cache(
         );
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,
@@ -341,7 +341,7 @@ export const fetchPaymentEdit = async (
 
   if (type) {
     const value = processValues(type);
-    query = query.in('station_type', value);
+    query = query.in('site_type', value);
   }
 
   if (options?.is_export) {
@@ -360,7 +360,7 @@ export const fetchPaymentEdit = async (
       return {
         id: site.id,
         [`${site_name}_id`]: site.connections.site_id,
-        [`${site_name}_type`]: site.station_type,
+        [`${site_name}_type`]: site.site_type,
         account_number: String(site.connections.account_number),
         biller_board: site.connections.biller_list.board_name,
         state: site.connections.biller_list.state,
@@ -565,7 +565,7 @@ export const fetchBillPayments = async (
 
   if (type) {
     const value = processValues(type);
-    query = query.in('bills.station_type', value);
+    query = query.in('bills.site_type', value);
     query = query.in('prepaid_recharge.connections.sites.type', value);
   }
 
@@ -590,7 +590,7 @@ export const fetchBillPayments = async (
       return {
         id: site.id,
         [`${site_name}_id`]: site.bills.connections.site_id,
-        [`${site_name}_type`]: site.bills.station_type,
+        [`${site_name}_type`]: site.bills.site_type,
         account_number: String(site.bills.connections.account_number),
         biller_board: site.bills.connections.biller_list.board_name,
         state: site.bills.connections.biller_list.state,
@@ -952,7 +952,7 @@ export const fetchBatchPayment = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,

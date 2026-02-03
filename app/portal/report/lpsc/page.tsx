@@ -15,7 +15,7 @@ export default async function Page() {
           Analyze the Late Payment Surcharge of the {site_name}
         </p>
       </div>
-      <LPSC station_type={user?.user_metadata?.station_type} />
+      <LPSC site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 } 

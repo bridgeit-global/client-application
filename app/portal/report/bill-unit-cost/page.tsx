@@ -18,7 +18,7 @@ export default async function Page() {
           Analyze the bill unit cost of the {site_name}
         </p>
       </div>
-      <UnitCost station_type={user?.user_metadata?.station_type} />
+      <UnitCost site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
       <MapCard mapData={connectionCostsResponse} />
     </div>
   );

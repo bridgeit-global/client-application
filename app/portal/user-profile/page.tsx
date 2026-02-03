@@ -47,7 +47,7 @@ export default function UserProfilePage() {
         last_name: '',
         email: '',
         phone: '',
-        station_type: '',
+        site_type: '',
     });
     const [open, setOpen] = useState(false);
     const supabase = createClient();
@@ -79,7 +79,7 @@ export default function UserProfilePage() {
                         last_name: supabaseUser.user_metadata?.last_name || '',
                         email: supabaseUser.email || '',
                         phone: supabaseUser.phone || '',
-                        station_type: supabaseUser.user_metadata?.station_type || '',
+                        site_type: (supabaseUser.user_metadata?.site_type ?? supabaseUser.user_metadata?.station_type) || '',
                     });
                 }
             } catch (error) {
@@ -138,24 +138,24 @@ export default function UserProfilePage() {
         }));
     };
 
-    const handleStationTypeChange = (value: string) => {
+    const handleSiteTypeChange = (value: string) => {
         setFormData(prev => {
-            const currentTypes: string[] = prev.station_type ? prev.station_type.split(',') : [];
+            const currentTypes: string[] = prev.site_type ? prev.site_type.split(',') : [];
             const newTypes = currentTypes.includes(value)
                 ? currentTypes.filter(type => type !== value)
                 : [...currentTypes, value];
 
             return {
                 ...prev,
-                station_type: newTypes.join(',')
+                site_type: newTypes.join(',')
             };
         });
     };
 
-    const removeStationType = (value: string) => {
+    const removeSiteType = (value: string) => {
         setFormData(prev => ({
             ...prev,
-            station_type: prev.station_type.split(',').filter((type: string) => type !== value).join(',')
+            site_type: prev.site_type.split(',').filter((type: string) => type !== value).join(',')
         }));
     };
 
@@ -164,9 +164,9 @@ export default function UserProfilePage() {
             clearError(); // Clear any previous errors
 
             if (section === 'station') {
-                // Update user metadata (station_type) using Edge Function
+                // Update user metadata (site_type) using Edge Function
                 const updatedUser = await updateUserMetadata({
-                    station_type: formData.station_type,
+                    site_type: formData.site_type,
                 });
                 setUser(updatedUser);
             } else {
@@ -174,7 +174,7 @@ export default function UserProfilePage() {
                 const updatedUser = await updateUserMetadata({
                     first_name: formData.first_name,
                     last_name: formData.last_name,
-                    station_type: formData.station_type
+                    site_type: formData.site_type
                 });
                 setUser(updatedUser);
             }
@@ -344,20 +344,20 @@ export default function UserProfilePage() {
 
                                 <div className="flex flex-col gap-3">
                                     <div className="flex flex-wrap gap-2">
-                                        {formData.station_type ? (
-                                            formData.station_type.split(',').filter(Boolean).map((type: string) => {
-                                                const stationType = SITE_TYPES.find(st => st.value === type);
+                                        {formData.site_type ? (
+                                            formData.site_type.split(',').filter(Boolean).map((type: string) => {
+                                                const siteTypeLabel = SITE_TYPES.find(st => st.value === type);
                                                 return (
                                                     <div key={type}>
                                                         <Badge
                                                             variant="secondary"
                                                             className="flex items-center gap-1 px-3 py-1"
                                                         >
-                                                            {stationType?.label}
+                                                            {siteTypeLabel?.label}
                                                             {isEditing.station && (
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => removeStationType(type)}
+                                                                    onClick={() => removeSiteType(type)}
                                                                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-white/20"
                                                                 >
                                                                     <X className="h-3 w-3" />
@@ -398,12 +398,12 @@ export default function UserProfilePage() {
                                                             <CommandItem
                                                                 key={type.value}
                                                                 value={type.value}
-                                                                onSelect={() => handleStationTypeChange(type.value)}
+                                                                onSelect={() => handleSiteTypeChange(type.value)}
                                                             >
                                                                 <Check
                                                                     className={cn(
                                                                         "mr-2 h-4 w-4",
-                                                                        formData.station_type.split(',').includes(type.value) ? "opacity-100" : "opacity-0"
+                                                                        formData.site_type.split(',').includes(type.value) ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
                                                                 {type.label}

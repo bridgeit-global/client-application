@@ -35,8 +35,8 @@ export function PostpaidPaymentFilterAction({
       return;
     }
     const { data: { user } } = await supabase.auth.getUser();
-    if (user?.user_metadata?.station_type) {
-      setFilterBody({ ...filterBody, type: user?.user_metadata?.station_type } as any);
+    if (user?.user_metadata?.site_type ?? user?.user_metadata?.station_type) {
+      setFilterBody({ ...filterBody, type: (user?.user_metadata?.site_type ?? user?.user_metadata?.station_type) } as any);
     }
   }
   useEffect(() => {
@@ -99,7 +99,7 @@ export function PostpaidPaymentFilterAction({
 
             {/* station type */}
             <div className="space-y-1.5">
-              <Label htmlFor="station_type">{site_name} Type</Label>
+              <Label htmlFor="site_type">{site_name} Type</Label>
               <StationTypeSelector
                 value={Array.isArray(filterBody?.type) ? filterBody.type : filterBody?.type?.split(',') || []}
                 onChange={(types) => onChangeSelectHandle("type", types)} />
@@ -178,8 +178,8 @@ export function PrepaidPaymentFilterAction({
       return;
     }
     const { data: { user } } = await supabase.auth.getUser();
-    if (user?.user_metadata?.station_type) {
-      setFilterBody({ ...filterBody, type: user?.user_metadata?.station_type } as any);
+    if (user?.user_metadata?.site_type ?? user?.user_metadata?.station_type) {
+      setFilterBody({ ...filterBody, type: (user?.user_metadata?.site_type ?? user?.user_metadata?.station_type) } as any);
     }
   }
   useEffect(() => {
@@ -242,7 +242,7 @@ export function PrepaidPaymentFilterAction({
 
             {/* station type */}
             <div className="space-y-1.5">
-              <Label htmlFor="station_type">{site_name} Type</Label>
+              <Label htmlFor="site_type">{site_name} Type</Label>
               <StationTypeSelector
                 value={Array.isArray(filterBody?.type) ? filterBody.type : filterBody?.type?.split(',') || []}
                 onChange={(types) => onChangeSelectHandle("type", types)} />

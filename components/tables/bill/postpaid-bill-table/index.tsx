@@ -31,8 +31,8 @@ export default function PostpaidBillTable({
       return;
     }
     const { data: { user } } = await supabase.auth.getUser();
-    if (user?.user_metadata?.station_type) {
-      setFilterBody({ ...filterBody, type: user?.user_metadata?.station_type } as any);
+    if (user?.user_metadata?.site_type ?? user?.user_metadata?.station_type) {
+      setFilterBody({ ...filterBody, type: (user?.user_metadata?.site_type ?? user?.user_metadata?.station_type) } as any);
     }
   }
   useEffect(() => {

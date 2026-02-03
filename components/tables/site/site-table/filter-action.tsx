@@ -107,7 +107,7 @@ export default function FilterAction({
             </div>
             {/* station type */}
             <div className="space-y-1.5">
-              <Label htmlFor="station_type">{site_name} Type</Label>
+              <Label htmlFor="site_type">{site_name} Type</Label>
               <StationTypeSelector
                 value={Array.isArray(filterBody?.type) ? filterBody.type : filterBody?.type?.split(',') || []}
                 onChange={(types) => onChangeSelectHandle("type", types)} />

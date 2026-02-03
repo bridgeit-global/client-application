@@ -16,7 +16,7 @@ export default async function Page() {
           Analyze the bill type of the {site_name}
         </p>
       </div>
-      <BillType station_type={user?.user_metadata?.station_type} />
+      <BillType site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 } 

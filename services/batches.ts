@@ -81,7 +81,7 @@ export const fetchBillsInBatches = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (created_at_start && created_at_end) {
@@ -105,7 +105,7 @@ export const fetchBillsInBatches = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,
@@ -208,7 +208,7 @@ export const fetchRechargesInBatches = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (recharge_date_start && recharge_date_end) {

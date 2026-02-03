@@ -307,7 +307,7 @@ export const fetchNewBills = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
 
@@ -359,7 +359,7 @@ export const fetchNewBills = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,
@@ -502,7 +502,7 @@ export const fetchApprovedPostpaidBills = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (biller_id) {
@@ -553,7 +553,7 @@ export const fetchApprovedPostpaidBills = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,
@@ -637,7 +637,7 @@ export const fetchPostpaidAllBills = cache(async (searchParams: SearchParamsProp
 
   if (type) {
     const value = processValues(type);
-    query = query.in('station_type', value);
+    query = query.in('site_type', value);
   }
 
   const { data, count, error } = await query;
@@ -735,7 +735,7 @@ export const fetchAllBills = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (options?.is_export) {
@@ -754,7 +754,7 @@ export const fetchAllBills = cache(
         return {
           id: site.id,
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,
@@ -935,7 +935,7 @@ export const fetchLowBalanceConnections = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('station_type', value);
+      query = query.in('site_type', value);
     }
 
     if (biller_id) {
@@ -969,7 +969,7 @@ export const fetchLowBalanceConnections = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.account_number),
           biller_board: site.biller_list.board_name,
           state: site.biller_list.state,
@@ -1090,7 +1090,7 @@ export const fetchApprovedPrepaidRecharges = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.station_type,
+          [`${site_name}_type`]: site.site_type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,

@@ -92,14 +92,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
 };
 
-export default function BillDateVsDueDate({ station_type }: { station_type: string }) {
+export default function BillDateVsDueDate({ site_type }: { site_type: string }) {
     const router = useRouter();
     const [delayData, setDelayData] = useState<DelayData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterBody, setFilterBody] = useState<FilterBody>({
         period: '3',
-        type: station_type
+        type: site_type
     });
     const supabase = createClient();
 
@@ -122,7 +122,7 @@ export default function BillDateVsDueDate({ station_type }: { station_type: stri
                     bill_date,
                     due_date,
                     connection_id,
-                    station_type,
+                    site_type,
                     connections!inner(
                         account_number,
                         biller_list!inner(
@@ -164,7 +164,7 @@ export default function BillDateVsDueDate({ station_type }: { station_type: stri
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('station_type', filterBody.type.split(','));
+                query = query.in('site_type', filterBody.type.split(','));
             }
             if (filterBody.biller_id) {
                 query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

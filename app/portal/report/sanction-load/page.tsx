@@ -15,7 +15,7 @@ export default async function Page() {
           Analyze the sanction load of the {site_name}
         </p>
       </div>
-      <SanctionLoad station_type={user?.user_metadata?.station_type} />
+      <SanctionLoad site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 } 

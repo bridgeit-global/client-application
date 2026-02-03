@@ -91,7 +91,7 @@ const PAYMENT_COLORS: Record<string, string> = {
 export interface MapLocation {
     id?: string;
     site_id?: string;
-    station_type?: string;
+    site_type?: string;
     zone_id?: string;
     paytype?: number;
     latitude: number;
@@ -155,7 +155,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                     chartCreator: (props: any) => createStationTypeDonutChart(props, types),
                     clusterProperties: types.reduce((acc, type) => ({
                         ...acc,
-                        [`${type}_count`]: ['+', ['case', ['==', ['get', 'station_type'], type], 1, 0]]
+                        [`${type}_count`]: ['+', ['case', ['==', ['get', 'site_type'], type], 1, 0]]
                     }), {})
                 };
             default:
@@ -183,7 +183,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
             features: data.map((location: MapLocation) => {
                 const color = type === 'payments'
                     ? (config?.colors as Record<string, string>)[PAY_TYPE[location.paytype || 0]] || ''
-                    : station_colors[location.station_type || ''];
+                    : station_colors[location.site_type || ''];
 
                 return {
                     type: 'Feature',
@@ -409,7 +409,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                                 <div class="p-2">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <p class="font-medium">${properties.station_type || 'Unknown'} ${site_name}</p>
+                                            <p class="font-medium">${properties.site_type || 'Unknown'} ${site_name}</p>
                                             <p class="font-medium">${site_name} ID: ${properties.id || 'Unknown'}</p>
                                             <p class="font-medium">Zone: ${properties.zone_id || 'N/A'}</p>
                                             <a href="#" id="link-${properties.id}" style="color: #2563eb; text-decoration: underline; font-weight: 500; margin-top: 8px; display: block;">

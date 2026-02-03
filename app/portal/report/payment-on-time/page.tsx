@@ -15,7 +15,7 @@ export default async function Page() {
           Analyze the payment on time of the {site_name}
         </p>
       </div>
-      <PaymentOnTime station_type={user?.user_metadata?.station_type} />
+      <PaymentOnTime site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
     </div>
   );
 } 

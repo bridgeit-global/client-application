@@ -15,7 +15,7 @@ export default async function Page() {
                     Analyze the consumption of the {site_name}
                 </p>
             </div>
-            <Consumption station_type={user?.user_metadata?.station_type} />
+            <Consumption site_type={user?.user_metadata?.site_type ?? user?.user_metadata?.station_type} />
         </div>
     );
 } 

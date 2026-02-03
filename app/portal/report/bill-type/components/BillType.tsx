@@ -95,14 +95,14 @@ const CustomTooltip = ({ active, payload }: any) => {
     );
 };
 
-export default function BillType({ station_type }: { station_type: string }) {
+export default function BillType({ site_type }: { site_type: string }) {
     const router = useRouter();
     const [billTypeData, setBillTypeData] = useState<BillTypeData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [filterBody, setFilterBody] = useState<FilterBody>({
         period: '3',
-        type: station_type
+        type: site_type
     });
     const supabase = createClient();
     // Second effect to fetch delay data when filterBody changes
@@ -120,7 +120,7 @@ export default function BillType({ station_type }: { station_type: string }) {
                 .select(`
                     bill_type,
                     connection_id,
-                    station_type,
+                    site_type,
                     connections!inner(
                         account_number,
                         biller_list!inner(
@@ -164,7 +164,7 @@ export default function BillType({ station_type }: { station_type: string }) {
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('station_type', filterBody.type.split(','));
+                query = query.in('site_type', filterBody.type.split(','));
             }
 
             if (filterBody.biller_id) {

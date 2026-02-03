@@ -18,7 +18,7 @@ import { CHART_COLORS } from "@/constants/colors";
 
 type FinancialData = {
     financial_year: string;
-    station_type: string;
+    site_type: string;
     total_amount: number;
     total_unit: number;
     total_bills: number;
@@ -43,8 +43,8 @@ export default function FinancialYearChart({ data }: Props) {
     const processDataForMetric = (metric: MetricType): ChartData[] => {
         if (metric === 'rate_per_unit') {
             const amountData = data.reduce((acc: ChartData[], curr) => {
-                // Skip entries with null station_type
-                if (!curr.station_type) {
+                // Skip entries with null site_type
+                if (!curr.site_type) {
                     return acc;
                 }
 
@@ -54,16 +54,16 @@ export default function FinancialYearChart({ data }: Props) {
                 const rate = units > 0 ? amount / units : 0;
 
                 if (existingYear) {
-                    existingYear[curr.station_type] = rate;
+                    existingYear[curr.site_type] = rate;
                     // Store amounts and units for total calculation
-                    existingYear[`${curr.station_type}_amount`] = amount;
-                    existingYear[`${curr.station_type}_units`] = units;
+                    existingYear[`${curr.site_type}_amount`] = amount;
+                    existingYear[`${curr.site_type}_units`] = units;
                 } else {
                     const newYear: ChartData = {
                         financial_year: curr.financial_year,
-                        [curr.station_type]: rate,
-                        [`${curr.station_type}_amount`]: amount,
-                        [`${curr.station_type}_units`]: units,
+                        [curr.site_type]: rate,
+                        [`${curr.site_type}_amount`]: amount,
+                        [`${curr.site_type}_units`]: units,
                         Total: rate
                     };
                     acc.push(newYear);
@@ -97,8 +97,8 @@ export default function FinancialYearChart({ data }: Props) {
         }
 
         const result = data.reduce((acc: ChartData[], curr) => {
-            // Skip entries with null station_type
-            if (!curr.station_type) {
+            // Skip entries with null site_type
+            if (!curr.site_type) {
                 return acc;
             }
 
@@ -106,11 +106,11 @@ export default function FinancialYearChart({ data }: Props) {
             const value = metric === 'total_bills' ? curr[metric] : curr[metric];
 
             if (existingYear) {
-                existingYear[curr.station_type] = value;
+                existingYear[curr.site_type] = value;
             } else {
                 acc.push({
                     financial_year: curr.financial_year,
-                    [curr.station_type]: value,
+                    [curr.site_type]: value,
                 });
             }
             return acc;

@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { LoadingButton } from '../buttons/loading-button';
 import { Skeleton } from '../ui/skeleton';
+import { Turnstile } from '@marsidev/react-turnstile';
 import Link from 'next/link';
 
 const supabase = createClient();
@@ -24,6 +25,7 @@ export default function UserAuthForm({ users }: { users: any }) {
   const [isLoader, setIsLoader] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | undefined>(undefined);
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,12 +39,22 @@ export default function UserAuthForm({ users }: { users: any }) {
       return;
     }
 
+    if (!captchaToken) {
+      toast({
+        title: 'Captcha verification required',
+        description: 'Please complete the captcha verification',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsLoader(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          captchaToken,
         },
       });
 
@@ -164,10 +176,28 @@ export default function UserAuthForm({ users }: { users: any }) {
                   required
                 />
               </div>
+              <Turnstile
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''}
+                onSuccess={(token) => {
+                  setCaptchaToken(token);
+                }}
+                onError={() => {
+                  setCaptchaToken(undefined);
+                  toast({
+                    title: 'Captcha verification failed',
+                    description: 'Please try again',
+                    variant: 'destructive'
+                  });
+                }}
+                onExpire={() => {
+                  setCaptchaToken(undefined);
+                }}
+              />
               <LoadingButton
                 loading={isLoader}
                 type="submit"
-                className="w-full bg-primary font-medium py-2.5 md:py-3 rounded-lg border-2 border-gray-300 hover:bg-primary/90 transition-colors text-sm md:text-base"
+                disabled={!captchaToken || isLoader}
+                className="w-full bg-primary font-medium py-2.5 md:py-3 rounded-lg border-2 border-gray-300 hover:bg-primary/90 transition-colors text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Send magic link
               </LoadingButton>
@@ -250,6 +280,7 @@ export default function UserAuthForm({ users }: { users: any }) {
               onClick={() => {
                 setMagicLinkSent(false);
                 setEmail('');
+                setCaptchaToken(undefined);
               }}
               variant="outline"
               className="w-full py-2.5 md:py-3 transition-colors text-sm md:text-base border-2 border-gray-300 text-gray-900 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"

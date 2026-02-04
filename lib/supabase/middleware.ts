@@ -55,7 +55,9 @@ export async function updateSession(request: NextRequest) {
   const url = request.nextUrl.clone();
   const isOperator = user?.user_metadata?.role === 'operator';
 
-  if (isLoginRoute && (user?.email || (isOperator && user?.phone_confirmed_at))) {
+  // If user is already logged in with email, redirect to appropriate dashboard
+  // Email is mandatory for all users (including operators)
+  if (isLoginRoute && user?.email) {
     url.pathname = isOperator ? '/portal/meter-reading-list' : '/portal/dashboard';
     url.search = '';
     return addSecurityHeaders(NextResponse.redirect(url));
@@ -66,23 +68,19 @@ export async function updateSession(request: NextRequest) {
     return addSecurityHeaders(NextResponse.next());
   }
 
-  // If the user is not logged in, redirect to /login
-  // For operators, email is optional so we check for user existence and phone confirmation
-  const shouldRedirectToLogin = isProtectedRoute && (!user || (!user.email && !isOperator) || (isOperator && !user.phone_confirmed_at));
+  // If the user is not logged in or doesn't have an email, redirect to /login
+  // Email is mandatory for all users (including operators)
+  const shouldRedirectToLogin = isProtectedRoute && (!user || !user.email);
 
   if (shouldRedirectToLogin) {
     if (path !== '/login') {
       url.pathname = '/login';
-      // For operators with unconfirmed phone, add error parameter
-      if (isOperator && !user?.phone_confirmed_at) {
-        url.searchParams.set('error', 'phone_not_verified');
-      }
       return addSecurityHeaders(NextResponse.redirect(url));
     }
     return addSecurityHeaders(NextResponse.next()); // Avoid infinite redirect loop
   }
-  // If the user is logged in (either with email or as an authenticated operator)
-  if (user?.email || (isOperator && user?.phone_confirmed_at)) {
+  // If the user is logged in with email, allow access to protected routes
+  if (user?.email) {
     if (isProtectedRoute) {
       // Handle role-specific redirects for protected routes
 

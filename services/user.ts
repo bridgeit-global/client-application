@@ -22,7 +22,7 @@ export const fetchAllUsers = cache(
             .from('users')
             .select(`*`, { count: 'estimated' })
             .not('email_confirmed_at', 'is', null)
-            .not('phone_confirmed_at', 'is', null)
+            // Phone is optional, so we don't require phone_confirmed_at
         
         // If org_id is provided, filter by it (assuming the view or RLS handles this)
         // Note: user_view may not have org_id column, so RLS should handle filtering

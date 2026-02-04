@@ -8,9 +8,9 @@ export async function GET(request: NextRequest) {
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
 
-  // Handle OAuth errors
+  // Handle OAuth/magic link errors
   if (error) {
-    console.error('OAuth error:', error, errorDescription);
+    console.error('Auth error:', error, errorDescription);
     const loginUrl = new URL('/login', requestUrl.origin);
     loginUrl.searchParams.set('error', 'oauth_error');
     loginUrl.searchParams.set('error_description', errorDescription || error);
@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
 
     // Exchange the code for a session
+    // This works for both OAuth (Google SSO) and magic link (email) flows
+    // Supabase magic links redirect with a 'code' parameter that can be exchanged the same way
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeError) {
@@ -37,8 +39,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (!data.user) {
-      console.error('No user data after OAuth exchange');
+      console.error('No user data after auth exchange');
       return NextResponse.redirect(new URL('/login', requestUrl.origin).toString());
+    }
+
+    // Ensure user has an email (required for access)
+    if (!data.user.email) {
+      console.error('User authenticated but has no email');
+      const loginUrl = new URL('/login', requestUrl.origin);
+      loginUrl.searchParams.set('error', 'no_email');
+      loginUrl.searchParams.set('error_description', 'Your account must have an email address to access the application.');
+      return NextResponse.redirect(loginUrl.toString());
     }
 
     // Check if user has an organization
@@ -47,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     // If user doesn't have an org_id and is not an operator, redirect to no-organization page
     if (!userOrgId && !isOperator) {
-      console.log('Google SSO user without organization, redirecting to no-organization page');
+      console.log('User without organization, redirecting to no-organization page');
       return NextResponse.redirect(new URL('/no-organization', requestUrl.origin).toString());
     }
 

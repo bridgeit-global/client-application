@@ -30,7 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
-import { createPublicClient } from '@/lib/supabase/client';
+import { createPublicClient, createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/landing/header';
 import Footer from '@/components/layout/landing/footer';
@@ -84,6 +84,7 @@ function SignUpContent() {
   const turnstileRef = useRef<TurnstileInstance>(null);
   const router = useRouter();
   const supabasePublic = createPublicClient();
+  const supabase = createClient();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -204,8 +205,18 @@ function SignUpContent() {
 
           // if (!response.ok) throw new Error('Failed to send email notification');
 
-          // Redirect to home page on success
-          router.push('/');
+          // Check if user is authenticated and has an organization
+          const { data: { user } } = await supabase.auth.getUser();
+          const userOrgId = user?.user_metadata?.org_id;
+          const isOperator = user?.user_metadata?.role === 'operator';
+
+          // If user is authenticated but doesn't have org_id and is not an operator, redirect to no-organization page
+          if (user && !userOrgId && !isOperator) {
+            router.push('/no-organization');
+          } else {
+            // Redirect to home page on success
+            router.push('/');
+          }
         } catch (error) {
           console.error('Error sending email:', error);
           alert('There was an error submitting your request. Please try again.');

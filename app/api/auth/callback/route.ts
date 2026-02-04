@@ -45,15 +45,10 @@ export async function GET(request: NextRequest) {
     const userOrgId = data.user.user_metadata?.org_id;
     const isOperator = data.user.user_metadata?.role === 'operator';
 
-    // If user doesn't have an org_id, redirect to signup to create organization
-    if (!userOrgId) {
-      console.log('New Google SSO user without organization, redirecting to signup');
-      const signupUrl = new URL('/signup', requestUrl.origin);
-      // Pass email as query param to pre-fill signup form
-      if (data.user.email) {
-        signupUrl.searchParams.set('email', data.user.email);
-      }
-      return NextResponse.redirect(signupUrl.toString());
+    // If user doesn't have an org_id and is not an operator, redirect to no-organization page
+    if (!userOrgId && !isOperator) {
+      console.log('Google SSO user without organization, redirecting to no-organization page');
+      return NextResponse.redirect(new URL('/no-organization', requestUrl.origin).toString());
     }
 
     // User has org_id, check if they need to complete profile

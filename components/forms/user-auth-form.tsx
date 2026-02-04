@@ -188,8 +188,15 @@ export default function PhoneOtpForm({ users }: { users: any }) {
     let userOrgId = data.user?.user_metadata?.org_id;
     if(!userOrgId) {
       
-      const { data, error } = await supabasePublicClient.from('user_requests').select('*').eq('phone', phone).single();
+      const { data: userRequestData, error } = await supabasePublicClient.from('user_requests').select('*').eq('phone', phone).single();
       if(error) {
+        // If no user_request found and user doesn't have org_id, redirect to no-organization page
+        const isOperator = data.user?.user_metadata?.role === 'operator';
+        if (!isOperator) {
+          setIsLoader(false);
+          router.push('/no-organization');
+          return;
+        }
         toast({
           title: 'Error',
           description: error.message,
@@ -198,32 +205,27 @@ export default function PhoneOtpForm({ users }: { users: any }) {
         setIsLoader(false);
         return;
       }
-      console.log(data)
+      console.log(userRequestData)
       await supabase.auth.updateUser({
         data: {
-          first_name: data.first_name,
-          last_name: data.last_name,
-          role: data.role,
-          org_id: data.org_id
+          first_name: userRequestData.first_name,
+          last_name: userRequestData.last_name,
+          role: userRequestData.role,
+          org_id: userRequestData.org_id
         }
       })
-      userOrgId = data.org_id;
-      setFirstName(data.first_name)
-      setLastName(data.last_name)
-      setEmail(data.email)
-      setRole(data.role)
+      userOrgId = userRequestData.org_id;
+      setFirstName(userRequestData.first_name)
+      setLastName(userRequestData.last_name)
+      setEmail(userRequestData.email)
+      setRole(userRequestData.role)
     }
     const isOperator = data.user?.user_metadata?.role === 'operator';
 
-    // If no org_id, redirect to signup for account creation
-    if (!userOrgId) {
-      toast({
-        title: 'Account Setup Required',
-        description: 'Please complete your account setup',
-        variant: 'default'
-      });
-      // router.push(`/existing?phone=${phoneNumber}`);
+    // If no org_id and not an operator, redirect to no-organization page
+    if (!userOrgId && !isOperator) {
       setIsLoader(false);
+      router.push('/no-organization');
       return;
     }
 

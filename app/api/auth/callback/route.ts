@@ -8,6 +8,14 @@ export async function GET(request: NextRequest) {
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
 
+  // Debug: confirm callback is hit (magic link / OAuth)
+  console.log('🔍 Auth callback hit:', {
+    url: requestUrl.toString(),
+    hasCode: !!code,
+    error,
+    origin: requestUrl.origin
+  });
+
   // Handle OAuth/magic link errors
   if (error) {
     console.error('Auth error:', error, errorDescription);

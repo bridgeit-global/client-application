@@ -12,8 +12,6 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard } from 'lucide-react';
 import { StationTypeSelector } from '../input/station-type-selector';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { ZoneIdSelector } from '../input/zone-id-selector';
 
 interface KPISectionProps {

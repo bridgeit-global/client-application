@@ -81,7 +81,7 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
     const [selectedSiteTypes, setSelectedSiteTypes] = useState<string[]>([]);
-    const [selectedZoneId, setSelectedZoneId] = useState<string>();
+    const [selectedZoneId, setSelectedZoneId] = useState<string[]>([]);
     const getStartDateAndEndDate = (month: Date): { startDate: string, endDate: string } => {
         const today = new Date();
         const startDate = formatDateYYYYMMDD(getMonthStart(month));
@@ -103,21 +103,21 @@ export function KPISection({ orgId }: KPISectionProps) {
                 p_start_date: startDate,
                 p_end_date: endDate,
                 p_site_type_key: selectedSiteTypes.join(','),
-                p_zone_id: selectedZoneId || null,
+                p_zone_id: selectedZoneId.join(','),
             }),
             supabase.rpc('get_payment_savings_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
                 p_site_type_key: selectedSiteTypes.join(','),
-                p_zone_id: selectedZoneId || null,
+                p_zone_id: selectedZoneId.join(','),
             }),
             supabase.rpc('get_need_attention_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
                 p_site_type_key: selectedSiteTypes.join(','),
-                p_zone_id: selectedZoneId || null,
+                p_zone_id: selectedZoneId.join(','),
             }),
         ]);
 
@@ -298,21 +298,8 @@ export function KPISection({ orgId }: KPISectionProps) {
                         />
                     </div>
                     <div className="flex items-center justify-center py-4 gap-4">
-                        <div className="flex items-center gap-2">
-                            <ZoneIdSelector onChange={(zoneId) => setSelectedZoneId(zoneId.join(','))} />
-                            {/* <Label className="text-sm font-medium w-20" htmlFor="zone_id">Zone ID:</Label>
-                            <Input
-                                className="w-full rounded-full"
-                                id="zone_id"
-                                value={selectedZoneId}
-                                onChange={(e) => setSelectedZoneId(e.target.value)}
-                                placeholder="Enter Zone ID"
-                            /> */}
-                        </div>
-                        <StationTypeSelector
-                            value={selectedSiteTypes}
-                            onChange={(types) => setSelectedSiteTypes(types)} />
-
+                        <ZoneIdSelector value={selectedZoneId} onChange={(zoneId) => setSelectedZoneId(zoneId)} />
+                        <StationTypeSelector value={selectedSiteTypes} onChange={(types) => setSelectedSiteTypes(types)} />
                     </div>
                 </div>
 
@@ -394,7 +381,7 @@ export function KPISection({ orgId }: KPISectionProps) {
                                                         {...getStartDateAndEndDate(selectedMonth ?? new Date())}
                                                         orgId={orgId}
                                                         siteTypeKey={selectedSiteTypes.length > 0 ? selectedSiteTypes.join(',') : undefined}
-                                                        zoneId={selectedZoneId ?? null}
+                                                        zoneId={selectedZoneId.length > 0 ? selectedZoneId.join(',') : undefined}
                                                     />
                                                 </div>
                                             );

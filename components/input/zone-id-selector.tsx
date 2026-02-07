@@ -6,12 +6,14 @@ import { useZoneId } from '@/hooks/use-zone-id';
 interface ZoneIdSelectorProps {
     label?: string;
     placeholder?: string;
+    value?: string[];
     onChange: (value: string[]) => void;
 }
 
 export function ZoneIdSelector({
     label,
     placeholder = 'Select Zone ID',
+    value = [],
     onChange,
 }: ZoneIdSelectorProps) {
     const zoneIds = useZoneId();
@@ -24,6 +26,15 @@ export function ZoneIdSelector({
         label: e.label,
         value: e.value
     }));
+
+    // Map value (string[]) to Option[] so the selector shows selected zones after re-render/remount
+    const selectedOptions: Option[] = value
+        .filter((id) => id?.trim() !== '')
+        .map((id) => {
+            const found = zoneIds.find((z) => z.value === id);
+            return found ? { label: found.label, value: found.value } : { label: id, value: id };
+        })
+        .filter((opt, idx, arr) => arr.findIndex((o) => o.value === opt.value) === idx);
 
     const handleSearch = (searchTerm: string) => {
         return zoneIds
@@ -43,6 +54,7 @@ export function ZoneIdSelector({
                     label: placeholder
                 }}
                 maxSelected={5}
+                value={selectedOptions}
                 onChange={handleSelectChange}
                 defaultOptions={defaultList}
                 onSearchSync={handleSearch}

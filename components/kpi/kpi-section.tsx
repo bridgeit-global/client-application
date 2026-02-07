@@ -386,7 +386,14 @@ export function KPISection({ orgId }: KPISectionProps) {
                                                     className="opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
                                                     style={{ animationDelay: `${categoryIndex * 100 + index * 75}ms` }}
                                                 >
-                                                    <KPICard metric={metric} isCurrentMonth={isCurrentMonth || false} {...getStartDateAndEndDate(selectedMonth ?? new Date())} />
+                                                    <KPICard
+                                                        metric={metric}
+                                                        isCurrentMonth={isCurrentMonth || false}
+                                                        {...getStartDateAndEndDate(selectedMonth ?? new Date())}
+                                                        orgId={orgId}
+                                                        siteTypeKey={selectedSiteTypes.length > 0 ? selectedSiteTypes.join(',') : undefined}
+                                                        zoneId={selectedZoneId ?? null}
+                                                    />
                                                 </div>
                                             );
                                         })}

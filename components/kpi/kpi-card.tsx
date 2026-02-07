@@ -22,12 +22,17 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { SURCHARGE_OPTIONS } from '@/constants/surcharge-options';
 
 interface KPICardProps {
     metric: KPIMetric;
     isCurrentMonth?: boolean;
     startDate: string;
     endDate: string;
+    /** Params used for the KPI RPC calls (for links, drill-downs, etc.) */
+    orgId?: string;
+    siteTypeKey?: string;
+    zoneId?: string | null;
 }
 
 interface MetricMetadata {
@@ -125,7 +130,7 @@ const severityColors = {
     },
 };
 
-export function KPICard({ metric, isCurrentMonth = false, startDate, endDate }: KPICardProps) {
+export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, orgId, siteTypeKey, zoneId }: KPICardProps) {
     const router = useRouter();
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const styles = categoryStyles[metric.kpi_category] || categoryStyles.benefits;
@@ -216,22 +221,29 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate }: 
     const showSavingsInfo = isPaymentSavings && (metadata.accruedValue !== undefined || metadata.potentialValue !== undefined);
 
     const handleViewKPI = () => {
-        if (metric.kpi_name === 'Bills Not Fetched (This Month)') {
-            router.push(`/portal/report/bill?bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`);
-        } else if (metric.kpi_name === 'Balances Not Updated (3+ days)') {
-            router.push(`/portal/report/recharge?recharge_fetch_start=${startDate}&recharge_fetch_end=${endDate}`);
-        } else if (metric.kpi_name === 'Sub meter readings captured') {
-            router.push(`/portal/report/sub-meter-readings?sub_meter_readings_start=${startDate}&sub_meter_readings_end=${endDate}`);
+        let route = `/portal/report/bill?bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`;
+        if (siteTypeKey) {
+            route += `&type=${siteTypeKey}`;
         }
-        else if (metric.kpi_name === 'Rate per Unit') {
-            router.push(`/portal/report/rate-per-unit?rate_per_unit_start=${startDate}&rate_per_unit_end=${endDate}`);
+        if (zoneId) {
+            route += `&zoneId=${zoneId}`;
         }
-        else if (metric.kpi_name === 'Total Units') {
-            router.push(`/portal/report/total-units?total_units_start=${startDate}&total_units_end=${endDate}`);
+        if (metric.kpi_name === 'Abnormal Bills') {
+            route += `&bill_type=Abnormal`;
         }
-        else if (metric.kpi_name === 'Bills Generated') {
-            router.push(`/portal/report/bills-generated?bills_generated_start=${startDate}&bills_generated_end=${endDate}`);
+        if (metric.kpi_name === 'Arrears') {
+            route += `&is_arrear=true`;
         }
+        if (metric.kpi_name === 'Penalties') {
+            route += `&penalty=${SURCHARGE_OPTIONS.map(option => option.value).join(',')}`;
+        }
+
+        if (metric.kpi_name === 'Timely Payment' || metric.kpi_name === 'Prompt Payment' || metric.kpi_name === 'Surcharges') {
+            route += `&paid_status=on_time`;
+        }
+
+
+        router.push(route);
     };
 
     return (

@@ -16,8 +16,8 @@ export function ZoneIdSelector({
 }: ZoneIdSelectorProps) {
     const zoneIds = useZoneId();
 
-    const handleSelectChange = (selectedOptions: any) => {
-        onChange(selectedOptions.map((option: any) => option?.value));
+    const handleSelectChange = (selectedOptions: Option[]) => {
+        onChange(selectedOptions.map((option: Option) => option?.value));
     };
 
     const defaultList: Option[] = zoneIds.map((e) => ({

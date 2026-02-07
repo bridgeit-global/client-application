@@ -253,9 +253,15 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
                 'hover:shadow-xl hover:-translate-y-1',
                 styles.border,
                 styles.hoverBorder,
-                styles.glow
+                styles.glow,
+                (metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured') ? '' : 'cursor-pointer'
             )}
-            onClick={handleViewKPI}
+            onClick={() => {
+                if (metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured') {
+                    return;
+                }
+                handleViewKPI();
+            }}
             title="View KPI"
         >
             {/* Gradient Background */}

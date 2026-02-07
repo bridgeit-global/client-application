@@ -10,7 +10,7 @@ interface ZoneIdSelectorProps {
 }
 
 export function ZoneIdSelector({
-    label = 'Zone ID',
+    label,
     placeholder = 'Select Zone ID',
     onChange,
 }: ZoneIdSelectorProps) {
@@ -36,8 +36,9 @@ export function ZoneIdSelector({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor="zone_id">{label}</Label>
+            {label && <Label htmlFor="zone_id">{label}</Label>}
             <MultipleSelector
+                className="w-full rounded-full"
                 commandProps={{
                     label: placeholder
                 }}

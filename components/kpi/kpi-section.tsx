@@ -14,6 +14,7 @@ import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard } from 'l
 import { StationTypeSelector } from '../input/station-type-selector';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { ZoneIdSelector } from '../input/zone-id-selector';
 
 interface KPISectionProps {
     orgId?: string;
@@ -298,14 +299,15 @@ export function KPISection({ orgId }: KPISectionProps) {
                     </div>
                     <div className="flex items-center justify-center py-4 gap-4">
                         <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium w-20" htmlFor="zone_id">Zone ID:</Label>
+                            <ZoneIdSelector onChange={(zoneId) => setSelectedZoneId(zoneId.join(','))} />
+                            {/* <Label className="text-sm font-medium w-20" htmlFor="zone_id">Zone ID:</Label>
                             <Input
                                 className="w-full rounded-full"
                                 id="zone_id"
                                 value={selectedZoneId}
                                 onChange={(e) => setSelectedZoneId(e.target.value)}
                                 placeholder="Enter Zone ID"
-                            />
+                            /> */}
                         </div>
                         <StationTypeSelector
                             value={selectedSiteTypes}

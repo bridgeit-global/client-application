@@ -21,10 +21,13 @@ import {
     ArrowDownRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface KPICardProps {
     metric: KPIMetric;
     isCurrentMonth?: boolean;
+    startDate: string;
+    endDate: string;
 }
 
 interface MetricMetadata {
@@ -122,13 +125,14 @@ const severityColors = {
     },
 };
 
-export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
+export function KPICard({ metric, isCurrentMonth = false, startDate, endDate }: KPICardProps) {
+    const router = useRouter();
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const styles = categoryStyles[metric.kpi_category] || categoryStyles.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
     const displayName = kpiDisplayNames[metric.kpi_name] ?? metric.kpi_name;
     const description = kpiDescriptions[metric.kpi_name];
-    
+
     // Hide comparison for benefits category (Time Savings) in current month
     const shouldShowComparison = !(metric.kpi_category === 'benefits' && isCurrentMonth);
 
@@ -211,6 +215,25 @@ export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
     const isPaymentSavings = metric.kpi_category === 'payment_savings';
     const showSavingsInfo = isPaymentSavings && (metadata.accruedValue !== undefined || metadata.potentialValue !== undefined);
 
+    const handleViewKPI = () => {
+        if (metric.kpi_name === 'Bills Not Fetched (This Month)') {
+            router.push(`/portal/report/bill?bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`);
+        } else if (metric.kpi_name === 'Balances Not Updated (3+ days)') {
+            router.push(`/portal/report/recharge?recharge_fetch_start=${startDate}&recharge_fetch_end=${endDate}`);
+        } else if (metric.kpi_name === 'Sub meter readings captured') {
+            router.push(`/portal/report/sub-meter-readings?sub_meter_readings_start=${startDate}&sub_meter_readings_end=${endDate}`);
+        }
+        else if (metric.kpi_name === 'Rate per Unit') {
+            router.push(`/portal/report/rate-per-unit?rate_per_unit_start=${startDate}&rate_per_unit_end=${endDate}`);
+        }
+        else if (metric.kpi_name === 'Total Units') {
+            router.push(`/portal/report/total-units?total_units_start=${startDate}&total_units_end=${endDate}`);
+        }
+        else if (metric.kpi_name === 'Bills Generated') {
+            router.push(`/portal/report/bills-generated?bills_generated_start=${startDate}&bills_generated_end=${endDate}`);
+        }
+    };
+
     return (
         <Card
             className={cn(
@@ -220,6 +243,8 @@ export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
                 styles.hoverBorder,
                 styles.glow
             )}
+            onClick={handleViewKPI}
+            title="View KPI"
         >
             {/* Gradient Background */}
             <div

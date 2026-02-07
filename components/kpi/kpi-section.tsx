@@ -77,13 +77,19 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 
-    const buildKPIMetricsFromFunctions = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
+
+    const getStartDateAndEndDate = (month: Date): { startDate: string, endDate: string } => {
         const today = new Date();
-        const calculationMonth = formatCalculationMonth(month);
         const startDate = formatDateYYYYMMDD(getMonthStart(month));
         const endDate = formatDateYYYYMMDD(
             isSameMonth(month, today) ? today : getMonthEnd(month)
         );
+        return { startDate, endDate };
+    };
+
+    const buildKPIMetricsFromFunctions = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
+        const calculationMonth = formatCalculationMonth(month);
+        const { startDate, endDate } = getStartDateAndEndDate(month);
         const nowIso = new Date().toISOString();
 
         const [benefitsRes, paymentSavingsRes, needAttentionRes] = await Promise.all([
@@ -354,7 +360,7 @@ export function KPISection({ orgId }: KPISectionProps) {
                                                     className="opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
                                                     style={{ animationDelay: `${categoryIndex * 100 + index * 75}ms` }}
                                                 >
-                                                    <KPICard metric={metric} isCurrentMonth={isCurrentMonth || false} />
+                                                    <KPICard metric={metric} isCurrentMonth={isCurrentMonth || false} {...getStartDateAndEndDate(selectedMonth ?? new Date())} />
                                                 </div>
                                             );
                                         })}

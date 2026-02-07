@@ -178,6 +178,8 @@ export const fetchBillHistoryReport = cache(
       due_date_end,
       bill_date_start,
       bill_date_end,
+      bill_fetch_start,
+      bill_fetch_end,
       site_id,
       biller_id,
       is_arrear,
@@ -281,6 +283,12 @@ export const fetchBillHistoryReport = cache(
       query = query
         .gte('due_date', due_date_start)
         .lte('due_date', due_date_end);
+    }
+
+    if (bill_fetch_start && bill_fetch_end) {
+      query = query
+        .gte('created_at', bill_fetch_start)
+        .lte('created_at', bill_fetch_end);
     }
 
     if (bill_date_start && bill_date_end) {

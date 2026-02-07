@@ -12,6 +12,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard } from 'lucide-react';
 import { StationTypeSelector } from '../input/station-type-selector';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
 interface KPISectionProps {
     orgId?: string;
@@ -78,7 +80,7 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
     const [selectedSiteTypes, setSelectedSiteTypes] = useState<string[]>([]);
-
+    const [selectedZoneId, setSelectedZoneId] = useState<string>();
     const getStartDateAndEndDate = (month: Date): { startDate: string, endDate: string } => {
         const today = new Date();
         const startDate = formatDateYYYYMMDD(getMonthStart(month));
@@ -100,18 +102,21 @@ export function KPISection({ orgId }: KPISectionProps) {
                 p_start_date: startDate,
                 p_end_date: endDate,
                 p_site_type_key: selectedSiteTypes.join(','),
+                p_zone_id: selectedZoneId || null,
             }),
             supabase.rpc('get_payment_savings_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
                 p_site_type_key: selectedSiteTypes.join(','),
+                p_zone_id: selectedZoneId || null,
             }),
             supabase.rpc('get_need_attention_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
                 p_site_type_key: selectedSiteTypes.join(','),
+                p_zone_id: selectedZoneId || null,
             }),
         ]);
 
@@ -214,7 +219,7 @@ export function KPISection({ orgId }: KPISectionProps) {
 
         loadMetrics();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [orgId, selectedMonth, selectedSiteTypes]);
+    }, [orgId, selectedMonth, selectedSiteTypes, selectedZoneId]);
 
     const handleMonthSelect = async (date: Date) => {
         if (!orgId) {
@@ -291,10 +296,21 @@ export function KPISection({ orgId }: KPISectionProps) {
                             maxDate={new Date()}
                         />
                     </div>
-                    <div className="flex items-center justify-center py-4">
+                    <div className="flex items-center justify-center py-4 gap-4">
+                        <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium w-20" htmlFor="zone_id">Zone ID:</Label>
+                            <Input
+                                className="w-full rounded-full"
+                                id="zone_id"
+                                value={selectedZoneId}
+                                onChange={(e) => setSelectedZoneId(e.target.value)}
+                                placeholder="Enter Zone ID"
+                            />
+                        </div>
                         <StationTypeSelector
                             value={selectedSiteTypes}
                             onChange={(types) => setSelectedSiteTypes(types)} />
+
                     </div>
                 </div>
 

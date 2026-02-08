@@ -181,6 +181,8 @@ export const fetchBillHistoryReport = cache(
       bill_date_end,
       bill_fetch_start,
       bill_fetch_end,
+      discount_date_start,
+      discount_date_end,
       site_id,
       biller_id,
       is_arrear,
@@ -283,6 +285,12 @@ export const fetchBillHistoryReport = cache(
     if (zone_id) {
       const value = zone_id.split(',');
       query = query.in('connections.sites.zone_id', value);
+    }
+
+    if (discount_date_start && discount_date_end) {
+      query = query
+        .gte('discount_date', discount_date_start)
+        .lte('discount_date', discount_date_end);
     }
 
     if (due_date_start && due_date_end) {

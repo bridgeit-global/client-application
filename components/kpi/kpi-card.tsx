@@ -221,7 +221,25 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
     const showSavingsInfo = isPaymentSavings && (metadata.accruedValue !== undefined || metadata.potentialValue !== undefined);
 
     const handleViewKPI = () => {
-        let route = `/portal/report/bill?bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`;
+
+
+        let route = `/portal/report/bill`;
+        if (metric.kpi_category === 'payment_savings') {
+            route += `?`;
+            if (metric.kpi_name === 'Timely Payment') {
+                route += `discount_date_start=${startDate}&discount_date_end=${endDate}&paid_status=on_time`;
+            } else if (metric.kpi_name === 'Prompt Payment') {
+                route += `due_date_start=${startDate}&due_date_end=${endDate}&paid_status=on_time`;
+            } else if (metric.kpi_name === 'Surcharges') {
+                route += `due_date_start=${startDate}&due_date_end=${endDate}&penalty=${SURCHARGE_OPTIONS.map(option => option.value).join(',')}`;
+            }
+        } else {
+            route += `?`;
+            if (startDate && endDate) {
+                route += `bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`;
+            }
+        }
+
         if (siteTypeKey) {
             route += `&type=${siteTypeKey}`;
         }
@@ -236,10 +254,6 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
         }
         if (metric.kpi_name === 'Penalties') {
             route += `&penalty=${SURCHARGE_OPTIONS.map(option => option.value).join(',')}`;
-        }
-
-        if (metric.kpi_name === 'Timely Payment' || metric.kpi_name === 'Prompt Payment' || metric.kpi_name === 'Surcharges') {
-            route += `&paid_status=on_time`;
         }
 
 

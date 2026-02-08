@@ -71,7 +71,7 @@ export const fetchPrepaidPaid = cache(
     }
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('connections.sites.type', value);
     }
 
@@ -186,7 +186,7 @@ export const fetchPostpaidPaid = cache(
     }
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('site_type', value);
     }
 
@@ -321,7 +321,7 @@ export const fetchPaymentEdit = async (
     .eq('connections.is_deleted', false);
 
   query = query
-  .order('bill_date', { ascending: false })
+    .order('bill_date', { ascending: false })
     .order('payment_status', { ascending: true });
 
   if (biller_id) {
@@ -340,7 +340,7 @@ export const fetchPaymentEdit = async (
   }
 
   if (type) {
-    const value = processValues(type);
+    const value = type.split(',');
     query = query.in('site_type', value);
   }
 
@@ -442,7 +442,7 @@ export const fetchRechargePaymentEdit = async (
   }
 
   if (type) {
-    const value = processValues(type);
+    const value = type.split(',');
     query = query.in('connections.sites.type', value);
   }
 
@@ -564,7 +564,7 @@ export const fetchBillPayments = async (
   }
 
   if (type) {
-    const value = processValues(type);
+    const value = type.split(',');
     query = query.in('bills.site_type', value);
     query = query.in('prepaid_recharge.connections.sites.type', value);
   }

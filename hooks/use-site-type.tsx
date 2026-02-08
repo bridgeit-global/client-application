@@ -3,7 +3,7 @@ import { SITE_TYPES } from "@/constants/site";
 import { useEffect, useState } from "react";
 
 export const useSiteType = () => {
-    const [siteType, setSiteType] = useState<any[]>(SITE_TYPES);
+    const [siteType, setSiteType] = useState<any[]>([]);
     useEffect(() => {
         const getSiteType = async () => {
             const supabase = await createClient();

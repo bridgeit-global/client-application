@@ -62,7 +62,7 @@ export const fetchSingleBill = async (
 ): Promise<SingleResult<SingleBillProps>> => {
   // Initialize the Supabase client
   const supabase = await createClient();
-  
+
   // Validate the ID parameter
   if (!searchParams.id) {
     return {
@@ -77,7 +77,7 @@ export const fetchSingleBill = async (
   }
 
   console.log('Fetching bill with ID:', searchParams.id);
-  
+
   // First try the full query with all relationships
   let { data, error } = await supabase
     .from('bills')
@@ -90,7 +90,7 @@ export const fetchSingleBill = async (
   // If the full query fails with PGRST116, try a simpler query with just the bill and essential relationships
   if (error && error.code === 'PGRST116') {
     console.log('Full query failed, trying simplified query for bill ID:', searchParams.id);
-    
+
     const { data: simpleData, error: simpleError } = await supabase
       .from('bills')
       .select(
@@ -98,7 +98,7 @@ export const fetchSingleBill = async (
       )
       .eq('id', searchParams.id)
       .single();
-    
+
     if (simpleError) {
       console.error('Error fetching single bill (simplified query):', simpleError);
       return {
@@ -108,19 +108,19 @@ export const fetchSingleBill = async (
         error: simpleError
       };
     }
-    
+
     data = simpleData;
     error = null;
   }
 
   if (error) {
     console.error('Error fetching single bill:', error);
-    
+
     // Handle specific error cases
     if (error.code === 'PGRST116') {
       console.log(`Bill with ID ${searchParams.id} not found`);
     }
-    
+
     return {
       data: null,
       totalCount: 0,
@@ -817,7 +817,7 @@ export const fetchPrepaidAllBills = cache(async (searchParams: SearchParamsProps
       .eq('connections.paytype', 0);
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       rechargeQuery = rechargeQuery.in('connections.sites.type', value);
     }
 

@@ -226,9 +226,9 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
         let route = `/portal/report/bill`;
         if (metric.kpi_category === 'payment_savings') {
             route += `?`;
-            if (metric.kpi_name === 'Timely Payment') {
+            if (metric.kpi_name === 'Prompt Payment') {
                 route += `discount_date_start=${startDate}&discount_date_end=${endDate}&paid_status=on_time`;
-            } else if (metric.kpi_name === 'Prompt Payment') {
+            } else if (metric.kpi_name === 'Timely Payment') {
                 route += `due_date_start=${startDate}&due_date_end=${endDate}&paid_status=on_time`;
             } else if (metric.kpi_name === 'Surcharges') {
                 route += `due_date_start=${startDate}&due_date_end=${endDate}&penalty=${SURCHARGE_OPTIONS.map(option => option.value).join(',')}`;

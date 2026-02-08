@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import Header from '@/components/layout/header'
 import { useScrollHeader } from '@/components/providers/scroll-provider'
+import { cn } from '@/lib/utils'
 
 const DEFAULT_HEADER_HEIGHT = 56
 
@@ -26,7 +27,10 @@ export function HeaderWithCollapse() {
 
   return (
     <div
-      className="shrink-0 overflow-hidden transition-[height] duration-300 ease-in-out"
+      className={cn(
+        "shrink-0 transition-[height] duration-300 ease-in-out",
+        headerVisible ? "overflow-visible" : "overflow-hidden"
+      )}
       style={{ height: headerVisible ? headerHeight : 0 }}
     >
       <div ref={wrapperRef}>

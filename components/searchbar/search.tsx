@@ -221,50 +221,42 @@ export default function SearchBar() {
         </div>
       )}
 
-      {/* Search Results */}
+      {/* Search Results - solid panel so content behind doesn't show through */}
       {results.length > 0 && (
         <div className={cn(
           "absolute left-0 w-full mt-2",
-          "border border-border rounded-xl shadow-lg",
-          "bg-background/95 backdrop-blur-sm",
-          "z-50 max-h-[80vh] overflow-y-auto",
+          "rounded-xl border-2 border-border",
+          "bg-popover shadow-2xl ring-4 ring-black/5 dark:ring-white/5",
+          "z-[100] max-h-[80vh] overflow-y-auto",
           "animate-in slide-in-from-top-2 duration-200"
         )}>
-          <div className="p-2">
-            {results.map((item, index) => (
+          <div className="p-2.5">
+            {results.map((item) => (
               <div
                 key={item.id}
                 onClick={() => handleResultClick(item)}
                 className={cn(
-                  "border border-border rounded-lg p-3 mb-2",
-                  "hover:bg-muted/50 transition-all duration-200",
-                  "cursor-pointer group",
-                  "hover:shadow-md hover:border-primary/30"
+                  "rounded-lg border border-border p-3 mb-2 last:mb-0",
+                  "bg-card hover:bg-muted/80 hover:border-primary/40",
+                  "cursor-pointer transition-all duration-200",
+                  "hover:shadow-sm"
                 )}
               >
-                <div className="flex space-x-2">
-                  {/* Table Name Badge */}
-                  <div className="flex items-center justify-between">
-                    <span className={cn(
-                      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                      "bg-primary/10 text-primary border border-primary/20"
-                    )}>
-                      {item.table_name}
-                    </span>
-                  </div>
-
-                    {/* Content Preview */}
-                    {item.content && (
-                      <p className={cn(
-                        "text-xs sm:text-sm text-muted-foreground",
-                        "line-clamp-2 leading-relaxed"
-                      )}>
-                        {item.title == 'site_id'
-                          ? `${item.content}`
-                          : item.content.split('_')[1]
-                        }
-                      </p>
-                    )}
+                <div className="flex flex-col gap-1.5">
+                  <span className={cn(
+                    "inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                    "bg-primary/20 text-primary border border-primary/30"
+                  )}>
+                    {item.table_name}
+                  </span>
+                  {item.content && (
+                    <p className="text-sm font-medium text-foreground leading-snug">
+                      {item.title == 'site_id'
+                        ? item.content
+                        : item.content.split('_')[1]
+                      }
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

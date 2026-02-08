@@ -80,7 +80,7 @@ export const fetchRegistrationReport = cache(
     }
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('sites.type', value);
     }
 
@@ -208,11 +208,11 @@ export const fetchBillHistoryReport = cache(
         `*,
         additional_charges(*),
         adherence_charges(*),
-        connections!inner(*,biller_list!inner(*))`,
+        connections!inner(*,biller_list!inner(*),sites!inner(*))`,
         {
           count: 'estimated'
-        }
-      ).eq('is_valid', true)
+        })
+      .eq('is_valid', true)
       .eq('is_deleted', false)
 
     if (sort) {
@@ -246,8 +246,8 @@ export const fetchBillHistoryReport = cache(
     }
 
     if (type) {
-      const value = processValues(type);
-      query = query.in('site_type', value);
+      const value = type.split(',');
+      query = query.in('connections.sites.site_type_key', value);
     }
 
     if (is_arrear) {
@@ -288,7 +288,7 @@ export const fetchBillHistoryReport = cache(
     if (bill_fetch_start && bill_fetch_end) {
       query = query
         .gte('created_at', bill_fetch_start)
-        .lte('created_at', bill_fetch_end);
+        .lte('created_at', bill_fetch_end + ' 23:59:59');
     }
 
     if (bill_date_start && bill_date_end) {
@@ -348,7 +348,7 @@ export const fetchBillHistoryReport = cache(
 
       const modifiedData = (data || []).map((site) => ({
         [`${site_name}_id`]: site.connections?.site_id || '',
-        [`${site_name}_type`]: site.site_type,
+        [`${site_name}_type`]: site.connections?.sites?.type || '',
         [`${site_name}_status`]: site.connections?.is_active ? 'Active' : 'Inactive',
         account_number: String(site.connections?.account_number || ''),
         biller_board: site.connections?.biller_list?.board_name || '',
@@ -563,7 +563,7 @@ export const fetchRechargeReport = cache(
     }
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('connections.sites.type', value);
     }
 

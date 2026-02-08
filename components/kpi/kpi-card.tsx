@@ -226,7 +226,7 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
             route += `&type=${siteTypeKey}`;
         }
         if (zoneId) {
-            route += `&zoneId=${zoneId}`;
+            route += `&zone_id=${zoneId}`;
         }
         if (metric.kpi_name === 'Abnormal Bills') {
             route += `&bill_type=Abnormal`;

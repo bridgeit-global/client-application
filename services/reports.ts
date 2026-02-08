@@ -173,6 +173,7 @@ export const fetchBillHistoryReport = cache(
     const {
       page = 1,
       limit = 10,
+      zone_id,
       account_number,
       due_date_start,
       due_date_end,
@@ -277,6 +278,11 @@ export const fetchBillHistoryReport = cache(
     if (account_number) {
       const value = processValues(account_number);
       query = query.in('connections.account_number', value);
+    }
+
+    if (zone_id) {
+      const value = zone_id.split(',');
+      query = query.in('connections.sites.zone_id', value);
     }
 
     if (due_date_start && due_date_end) {

@@ -29,7 +29,7 @@ import { useEffect, useState } from 'react';
 
 const buildAccountsItems = (
     items: NavItem[],
-    options: { includeUsers: boolean; includeApiClients: boolean }
+    options: { includeUsers: boolean; includeApiClients: boolean; includeSiteZoneConfig: boolean }
 ): NavItem[] => {
     return items.map((item) => {
         if (item.url !== '/portal/accounts') {
@@ -78,6 +78,22 @@ const buildAccountsItems = (
             byUrl.set('/portal/accounts/api-clients', apiClientsItem);
         }
 
+        if (options.includeSiteZoneConfig && !byUrl.has('/portal/accounts/site-zone-config')) {
+            const profileIndex = uniqueItems.findIndex(item => item.url === '/portal/user-profile');
+            const siteZoneConfigItem: NavItem = {
+                title: 'Site & zone config',
+                url: '/portal/accounts/site-zone-config',
+                icon: 'settings',
+                isCollapsible: false,
+            };
+            if (profileIndex >= 0) {
+                uniqueItems.splice(profileIndex + 1, 0, siteZoneConfigItem);
+            } else {
+                uniqueItems.push(siteZoneConfigItem);
+            }
+            byUrl.set('/portal/accounts/site-zone-config', siteZoneConfigItem);
+        }
+
         return {
             ...item,
             items: uniqueItems,
@@ -106,19 +122,19 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
                 item.url === '/portal/meter-reading-list' ||
                 item.url === '/portal/accounts'
             );
-            setSidebarItems(buildAccountsItems(operatorNavItems, { includeUsers: false, includeApiClients: false }));
+            setSidebarItems(buildAccountsItems(operatorNavItems, { includeUsers: false, includeApiClients: false, includeSiteZoneConfig: false }));
         } else if (user?.user_metadata.role === 'admin') {
             // For admin users, show all items except meter-reading pages (which are operator-only)
             const adminItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(adminItems, { includeUsers: true, includeApiClients: true }));
+            setSidebarItems(buildAccountsItems(adminItems, { includeUsers: true, includeApiClients: true, includeSiteZoneConfig: true }));
         } else {
             // For regular users, show all items except meter-reading pages (which are operator-only)
             const regularUserItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(regularUserItems, { includeUsers: false, includeApiClients: false }));
+            setSidebarItems(buildAccountsItems(regularUserItems, { includeUsers: false, includeApiClients: false, includeSiteZoneConfig: false }));
         }
     }
 

@@ -28,6 +28,12 @@ const accountLinks = [
         href: '/portal/accounts/api-clients',
         adminOnly: true,
     },
+    {
+        title: 'Site types & zone IDs',
+        description: 'Configure site types and zone IDs for your organization (admin only).',
+        href: '/portal/accounts/site-zone-config',
+        adminOnly: true,
+    },
 ];
 
 export default async function AccountsPage() {

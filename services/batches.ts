@@ -207,7 +207,7 @@ export const fetchRechargesInBatches = cache(
     }
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('site_type', value);
     }
 

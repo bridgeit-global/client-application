@@ -158,7 +158,7 @@ export const fetchAllConnections = cache(
       .match({ is_deleted: false, paytype: options?.pay_type });
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('sites.type', value);
     }
 
@@ -287,7 +287,7 @@ export const fetchPrepaidConnections = cache(
       .match({ is_deleted: false, paytype: options?.pay_type });
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('sites.type', value);
     }
 
@@ -415,7 +415,7 @@ export const fetchAllSites = cache(
     }
 
     if (type) {
-      const value = processValues(type);
+      const value = type.split(',');
       query = query.in('type', value);
     }
 

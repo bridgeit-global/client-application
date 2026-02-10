@@ -11,6 +11,8 @@ import { MonthPicker } from './month-picker';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard } from 'lucide-react';
+import { StationTypeSelector } from '../input/station-type-selector';
+import { ZoneIdSelector } from '../input/zone-id-selector';
 
 interface KPISectionProps {
     orgId?: string;
@@ -76,31 +78,44 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [metrics, setMetrics] = useState<KPIMetric[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
-
-    const buildKPIMetricsFromFunctions = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
+    const [selectedSiteTypes, setSelectedSiteTypes] = useState<string[]>([]);
+    const [selectedZoneId, setSelectedZoneId] = useState<string[]>([]);
+    const getStartDateAndEndDate = (month: Date): { startDate: string, endDate: string } => {
         const today = new Date();
-        const calculationMonth = formatCalculationMonth(month);
         const startDate = formatDateYYYYMMDD(getMonthStart(month));
         const endDate = formatDateYYYYMMDD(
             isSameMonth(month, today) ? today : getMonthEnd(month)
         );
+        return { startDate, endDate };
+    };
+
+    const buildKPIMetricsFromFunctions = async (orgId: string, month: Date): Promise<KPIMetric[] | null> => {
+        const calculationMonth = formatCalculationMonth(month);
+        const { startDate, endDate } = getStartDateAndEndDate(month);
         const nowIso = new Date().toISOString();
 
+        console.log('selectedSiteTypes', selectedSiteTypes)
         const [benefitsRes, paymentSavingsRes, needAttentionRes] = await Promise.all([
             supabase.rpc('get_benefits_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
+                p_site_type_key: selectedSiteTypes.join(','),
+                p_zone_id: selectedZoneId.join(','),
             }),
             supabase.rpc('get_payment_savings_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
+                p_site_type_key: selectedSiteTypes.join(','),
+                p_zone_id: selectedZoneId.join(','),
             }),
             supabase.rpc('get_need_attention_kpis', {
                 p_org_id: orgId,
                 p_start_date: startDate,
                 p_end_date: endDate,
+                p_site_type_key: selectedSiteTypes.join(','),
+                p_zone_id: selectedZoneId.join(','),
             }),
         ]);
 
@@ -203,7 +218,7 @@ export function KPISection({ orgId }: KPISectionProps) {
 
         loadMetrics();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [orgId, selectedMonth]);
+    }, [orgId, selectedMonth, selectedSiteTypes, selectedZoneId]);
 
     const handleMonthSelect = async (date: Date) => {
         if (!orgId) {
@@ -280,6 +295,10 @@ export function KPISection({ orgId }: KPISectionProps) {
                             maxDate={new Date()}
                         />
                     </div>
+                    <div className="flex items-center justify-center py-4 gap-4">
+                        <ZoneIdSelector value={selectedZoneId} onChange={(zoneId) => setSelectedZoneId(zoneId)} />
+                        <StationTypeSelector value={selectedSiteTypes} onChange={(types) => setSelectedSiteTypes(types)} />
+                    </div>
                 </div>
 
                 {/* Empty State */}
@@ -354,7 +373,14 @@ export function KPISection({ orgId }: KPISectionProps) {
                                                     className="opacity-0 animate-[fadeInUp_0.4s_ease-out_forwards]"
                                                     style={{ animationDelay: `${categoryIndex * 100 + index * 75}ms` }}
                                                 >
-                                                    <KPICard metric={metric} isCurrentMonth={isCurrentMonth || false} />
+                                                    <KPICard
+                                                        metric={metric}
+                                                        isCurrentMonth={isCurrentMonth || false}
+                                                        {...getStartDateAndEndDate(selectedMonth ?? new Date())}
+                                                        orgId={orgId}
+                                                        siteTypeKey={selectedSiteTypes.length > 0 ? selectedSiteTypes.join(',') : undefined}
+                                                        zoneId={selectedZoneId.length > 0 ? selectedZoneId.join(',') : undefined}
+                                                    />
                                                 </div>
                                             );
                                         })}

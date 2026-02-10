@@ -345,6 +345,40 @@ export default function FilterAction({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bill_fetch_end">Fetch Date Range</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="bill_fetch_start"
+                    type="date"
+                    value={filterBody.bill_fetch_start}
+                    onChange={onChangeHandle}
+                  />
+                  <Input
+                    id="bill_fetch_end"
+                    type="date"
+                    value={filterBody.bill_fetch_end}
+                    onChange={onChangeHandle}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="discount_date_start">Discount Date Range</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="discount_date_start"
+                    type="date"
+                    value={filterBody.discount_date_start}
+                    onChange={onChangeHandle}
+                  />
+                  <Input
+                    id="discount_date_end"
+                    type="date"
+                    value={filterBody.discount_date_end}
+                    onChange={onChangeHandle}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 mt-4 sticky bottom-0 py-4 bg-background border-t">

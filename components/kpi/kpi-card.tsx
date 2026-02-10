@@ -21,10 +21,18 @@ import {
     ArrowDownRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { SURCHARGE_OPTIONS } from '@/constants/surcharge-options';
 
 interface KPICardProps {
     metric: KPIMetric;
     isCurrentMonth?: boolean;
+    startDate: string;
+    endDate: string;
+    /** Params used for the KPI RPC calls (for links, drill-downs, etc.) */
+    orgId?: string;
+    siteTypeKey?: string;
+    zoneId?: string | null;
 }
 
 interface MetricMetadata {
@@ -122,13 +130,14 @@ const severityColors = {
     },
 };
 
-export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
+export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, orgId, siteTypeKey, zoneId }: KPICardProps) {
+    const router = useRouter();
     const Icon = categoryIcons[metric.kpi_category] || Zap;
     const styles = categoryStyles[metric.kpi_category] || categoryStyles.benefits;
     const metadata = (metric.metadata as MetricMetadata | null) || {};
     const displayName = kpiDisplayNames[metric.kpi_name] ?? metric.kpi_name;
     const description = kpiDescriptions[metric.kpi_name];
-    
+
     // Hide comparison for benefits category (Time Savings) in current month
     const shouldShowComparison = !(metric.kpi_category === 'benefits' && isCurrentMonth);
 
@@ -211,6 +220,46 @@ export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
     const isPaymentSavings = metric.kpi_category === 'payment_savings';
     const showSavingsInfo = isPaymentSavings && (metadata.accruedValue !== undefined || metadata.potentialValue !== undefined);
 
+    const handleViewKPI = () => {
+
+
+        let route = `/portal/report/bill`;
+        if (metric.kpi_category === 'payment_savings') {
+            route += `?`;
+            if (metric.kpi_name === 'Prompt Payment') {
+                route += `discount_date_start=${startDate}&discount_date_end=${endDate}&paid_status=on_time`;
+            } else if (metric.kpi_name === 'Timely Payment') {
+                route += `due_date_start=${startDate}&due_date_end=${endDate}&paid_status=on_time`;
+            } else if (metric.kpi_name === 'Surcharges') {
+                route += `due_date_start=${startDate}&due_date_end=${endDate}&penalty=${SURCHARGE_OPTIONS.map(option => option.value).join(',')}`;
+            }
+        } else {
+            route += `?`;
+            if (startDate && endDate) {
+                route += `bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`;
+            }
+        }
+
+        if (siteTypeKey) {
+            route += `&type=${siteTypeKey}`;
+        }
+        if (zoneId) {
+            route += `&zone_id=${zoneId}`;
+        }
+        if (metric.kpi_name === 'Abnormal Bills') {
+            route += `&bill_type=Abnormal`;
+        }
+        if (metric.kpi_name === 'Arrears') {
+            route += `&is_arrear=true`;
+        }
+        if (metric.kpi_name === 'Penalties') {
+            route += `&penalty=${SURCHARGE_OPTIONS.map(option => option.value).join(',')}`;
+        }
+
+
+        router.push(route);
+    };
+
     return (
         <Card
             className={cn(
@@ -218,8 +267,16 @@ export function KPICard({ metric, isCurrentMonth = false }: KPICardProps) {
                 'hover:shadow-xl hover:-translate-y-1',
                 styles.border,
                 styles.hoverBorder,
-                styles.glow
+                styles.glow,
+                (metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured') ? '' : 'cursor-pointer'
             )}
+            onClick={() => {
+                if (metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured') {
+                    return;
+                }
+                handleViewKPI();
+            }}
+            title="View KPI"
         >
             {/* Gradient Background */}
             <div

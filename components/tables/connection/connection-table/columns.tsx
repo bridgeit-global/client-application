@@ -11,9 +11,25 @@ import StatusBadge from '@/components/badges/status-badge';
 import { LowBalanceBadge } from '@/components/badges/low-balance-badge';
 import { useSiteName } from '@/lib/utils/site';
 import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
+import { FileText } from 'lucide-react';
+
 const getBillLatestBill = (bills: BillsProps[]): any => {
   return bills.filter((b) => b.is_active == true && b.is_valid == true)[0]
 };
+
+/** Get document key and content type from connection_details (pdf_key or html_key) */
+function getDocumentKeyAndType(connectionDetails: unknown): { key: string; contentType: 'pdf' | 'html' } | null {
+  if (!connectionDetails || typeof connectionDetails !== 'object') return null;
+  const details = connectionDetails as Record<string, unknown>;
+  if (typeof details.pdf_key === 'string' && details.pdf_key) {
+    return { key: details.pdf_key, contentType: 'pdf' };
+  }
+  if (typeof details.html_key === 'string' && details.html_key) {
+    return { key: details.html_key, contentType: 'html' };
+  }
+  return null;
+}
 
 export const subMeterColumns: ColumnDef<ConnectionTableProps>[] = [
   {
@@ -227,4 +243,84 @@ export const prepaidColumns: ColumnDef<ConnectionTableProps>[] = [
     header: 'Status',
     cell: ({ row }) => <CellAction data={row.original} />
   }
+];
+
+/**
+ * Simplified columns for inactive consumers (pre-activation): account number, biller board, site id, document (pdf/html via presigned URL), and registration date.
+ */
+export const inactiveConsumerColumns: ColumnDef<ConnectionTableProps>[] = [
+  {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableResizing: false,
+    size: 40,
+  },
+  {
+    accessorKey: 'account_number',
+    header: 'Account Number',
+    cell: ({ row }) => (
+      <span className="font-mono text-sm tabular-nums">{row.original.account_number ?? '—'}</span>
+    ),
+    size: 140,
+  },
+  {
+    id: 'biller_board',
+    header: 'Biller Board',
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground truncate max-w-[200px] block" title={row.original.biller_list?.board_name}>
+        {row.original.biller_list?.board_name ?? '—'}
+      </span>
+    ),
+    size: 220,
+  },
+  {
+    id: 'site_id',
+    header: () => useSiteName(),
+    cell: ({ row }) => (
+      <span className="text-sm font-medium">{row.original.site_id ?? '—'}</span>
+    ),
+    size: 120,
+  },
+  {
+    id: 'document',
+    header: 'Document',
+    cell: ({ row }) => {
+      const doc = getDocumentKeyAndType(row.original.connection_details);
+      if (!doc) {
+        return <span className="text-xs text-muted-foreground">—</span>;
+      }
+      return (
+        <DocumentViewerModalWithPresigned
+          fileKey={doc.key}
+          contentType={doc.contentType}
+          icon={<FileText className="h-4 w-4" />}
+          label={doc.contentType === 'pdf' ? 'View PDF' : 'View HTML'}
+        />
+      );
+    },
+    size: 120,
+  },
+  {
+    accessorKey: 'created_at',
+    header: 'Registration Date',
+    cell: ({ row }) => row.original.created_at && ddmmyy(row.original.created_at)
+  },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => <CellAction data={row.original} />
+  },
 ];

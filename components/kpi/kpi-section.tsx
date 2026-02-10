@@ -295,9 +295,28 @@ export function KPISection({ orgId }: KPISectionProps) {
                             maxDate={new Date()}
                         />
                     </div>
-                    <div className="flex items-center justify-center py-4 gap-4">
-                        <ZoneIdSelector value={selectedZoneId} onChange={(zoneId) => setSelectedZoneId(zoneId)} />
-                        <StationTypeSelector value={selectedSiteTypes} onChange={(types) => setSelectedSiteTypes(types)} />
+                    <div className="flex flex-col items-center gap-3 py-4">
+                        <p className="text-sm text-muted-foreground text-center">
+                            Filter metrics by zone and station type. Leave unselected to include all.
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-xs font-medium text-muted-foreground">Zone ID</span>
+                                <ZoneIdSelector
+                                    value={selectedZoneId}
+                                    onChange={(zoneId) => setSelectedZoneId(zoneId)}
+                                    className="min-w-[10rem] min-h-9 rounded-md border border-input bg-background shadow-sm"
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-xs font-medium text-muted-foreground">Station type</span>
+                                <StationTypeSelector
+                                    value={selectedSiteTypes}
+                                    onChange={(types) => setSelectedSiteTypes(types)}
+                                    className="min-w-[10rem] h-9 rounded-md border border-input bg-background shadow-sm"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 

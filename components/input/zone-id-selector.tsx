@@ -2,12 +2,14 @@
 import { Label } from '@/components/ui/label';
 import MultipleSelector, { Option } from '@/components/ui/multiple-selector';
 import { useZoneId } from '@/hooks/use-zone-id';
+import { cn } from '@/lib/utils';
 
 interface ZoneIdSelectorProps {
     label?: string;
     placeholder?: string;
     value?: string[];
     onChange: (value: string[]) => void;
+    className?: string;
 }
 
 export function ZoneIdSelector({
@@ -15,6 +17,7 @@ export function ZoneIdSelector({
     placeholder = 'Select Zone ID',
     value = [],
     onChange,
+    className,
 }: ZoneIdSelectorProps) {
     const zoneIds = useZoneId();
 
@@ -49,7 +52,7 @@ export function ZoneIdSelector({
         <div className="space-y-2">
             {label && <Label htmlFor="zone_id">{label}</Label>}
             <MultipleSelector
-                className="w-full rounded-full"
+                className={cn('min-w-[10rem] min-h-9 rounded-md border border-input', className)}
                 commandProps={{
                     label: placeholder
                 }}

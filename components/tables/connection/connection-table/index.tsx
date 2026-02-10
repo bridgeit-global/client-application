@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { FilterX, Plus } from 'lucide-react';
-import { subMeterColumns, prepaidColumns, postpaidColumns } from './columns';
+import { subMeterColumns, prepaidColumns, inactiveConsumerColumns } from './columns';
 import FilterAction from './filter-action';
 import { SiteActionButton } from './cell-action';
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
@@ -10,7 +10,9 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
   PaginationState,
+  SortingState,
   useReactTable
 } from '@tanstack/react-table';
 import { getFilterDataLength, defaultColumnSizing } from '@/lib/utils/table';
@@ -37,13 +39,13 @@ interface DataTableProps {
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/constants/table';
 
 const getDefaultVisibleColumns = (payType: string) => {
+  if (payType === 'postpaid') {
+    return ['select', 'account_number', 'biller_board', 'site_id', 'document', 'created_at', 'actions'];
+  }
   const baseColumns = ['id', 'account_number', 'site_id', 'tariff', 'security_deposit', 'bill', 'due_date', 'due_date_rebate', 'connection_date', 'created_at', 'actions', 'current_balance', 'recharge_status'];
-  
   if (payType === 'submeter') {
-    // Add operator columns for submeter
     return ['id', 'tariff', 'operator_name', 'operator_mobile_number', 'created_at', 'actions'];
   }
-  
   return baseColumns;
 };
 
@@ -52,7 +54,7 @@ export function ConnectionTable({
   payType,
   pageCount,
   totalCount,
-  active_count
+  active_count,
 }: DataTableProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -60,6 +62,21 @@ export function ConnectionTable({
   const params = Object.fromEntries(searchParams.entries());
   const [filterBody, setFilterBody] = useState(params);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Initialize sorting from URL params or default for postpaid
+  const [sorting, setSorting] = useState<SortingState>(() => {
+    if (payType === 'postpaid') {
+      // Default to created_at desc for postpaid
+      if (params.sort && params.order) {
+        return [{ id: params.sort, desc: params.order === 'desc' }];
+      }
+      return [{ id: 'created_at', desc: true }];
+    }
+    if (params.sort && params.order) {
+      return [{ id: params.sort, desc: params.order === 'desc' }];
+    }
+    return [];
+  });
 
   // Search params
   const page = params?.page || DEFAULT_PAGE;
@@ -78,15 +95,27 @@ export function ConnectionTable({
   useEffect(() => {
     setIsLoading(true);
     const currentHash = window.location.hash;
+    const queryParams: Record<string, string> = {
+      ...filterBody,
+      page: String(pageIndex + 1),
+      limit: String(pageSize)
+    };
+
+    // Add sorting params if sorting is set
+    if (sorting.length > 0) {
+      queryParams.sort = sorting[0].id;
+      queryParams.order = sorting[0].desc ? 'desc' : 'asc';
+    } else if (payType === 'postpaid') {
+      // Default sorting for postpaid
+      queryParams.sort = 'created_at';
+      queryParams.order = 'desc';
+    }
+
     router.push(
-      `${pathname}?${createQueryString(searchParams, {
-        ...filterBody,
-        page: String(pageIndex + 1),
-        limit: String(pageSize)
-      })}${currentHash}`,
+      `${pathname}?${createQueryString(searchParams, queryParams)}${currentHash}`,
       { scroll: false }
     );
-  }, [pageIndex, pageSize, filterBody, router, pathname, createQueryString]);
+  }, [pageIndex, pageSize, filterBody, sorting, router, pathname, createQueryString, payType]);
 
   useEffect(() => {
     // Set loading to false when data arrives, regardless of whether it's empty or not
@@ -101,14 +130,28 @@ export function ConnectionTable({
     return () => clearTimeout(timer);
   }, [filterBody, pageIndex, pageSize]);
 
+  const columns =
+    payType === 'submeter'
+      ? subMeterColumns
+      : payType === 'postpaid'
+        ? inactiveConsumerColumns
+        : prepaidColumns;
+
   const table = useReactTable({
     data: data,
-    columns: payType === 'submeter' ? subMeterColumns : payType === 'postpaid' ? postpaidColumns : prepaidColumns,
+    columns,
     pageCount: pageCount ?? -1,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     state: {
-      pagination: { pageIndex, pageSize }
+      pagination: { pageIndex, pageSize },
+      sorting
+    },
+    onSortingChange: (updater) => {
+      setIsLoading(true);
+      const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
+      setSorting(newSorting);
     },
     onPaginationChange: (updater) => {
       setIsLoading(true);
@@ -117,6 +160,7 @@ export function ConnectionTable({
     getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     manualFiltering: true,
+    manualSorting: true,
     defaultColumn: defaultColumnSizing,
     columnResizeMode: 'onChange',
   });
@@ -193,7 +237,7 @@ export function ConnectionTable({
       <CustomTable
         defaultVisibleColumns={getDefaultVisibleColumns(payType)}
         isLoading={isLoading}
-        columns={payType === 'submeter' ? subMeterColumns : payType === 'postpaid' ? postpaidColumns : prepaidColumns}
+        columns={columns}
         pageSize={pageSize}
         table={table}
         totalCount={totalCount}

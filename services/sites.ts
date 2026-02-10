@@ -138,7 +138,9 @@ export const fetchAllConnections = cache(
       site_id,
       biller_id,
       status,
-      type
+      type,
+      sort,
+      order
     } = searchParams;
 
     const pageLimit = Number(limit);
@@ -163,16 +165,17 @@ export const fetchAllConnections = cache(
     }
 
 
-    if (status) {
+    if (status !== undefined && status !== '') {
       if (status === '0') {
         query = query.eq('is_active', false);
       } else if (status === '1') {
         query = query.eq('is_active', true);
       }
-    } else {
-      // Default to active connections only for submeter
+    } else if (status === undefined) {
+      // Default to active only when status not provided (e.g. submeter)
       query = query.eq('is_active', true);
     }
+    // status === '' means "all" — no is_active filter
 
     if (biller_id) {
       const value = processValues(biller_id);
@@ -193,6 +196,14 @@ export const fetchAllConnections = cache(
       query = query
         .gte('created_at', created_at_start)
         .lte('created_at', created_at_end);
+    }
+
+    // Apply sorting - default to created_at desc for postpaid (inactive view)
+    if (sort) {
+      query = query.order(sort, { ascending: order === 'asc' });
+    } else if (options?.pay_type === 1) {
+      // Default sorting for postpaid: created_at descending
+      query = query.order('created_at', { ascending: false });
     }
 
     if (options?.is_export) {

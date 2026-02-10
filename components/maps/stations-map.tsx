@@ -249,7 +249,7 @@ export default function StationsMap({ mapData }: { mapData: MapLocation[] }) {
                             <h3 className="font-medium mb-2">{site_name} Types</h3>
                             <div className="space-y-2">
                                 {SITE_TYPES.map((type, index) => (
-                                    <div key={type} className="flex items-center gap-2">
+                                    <div key={type.value} className="flex items-center gap-2">
                                         <div
                                             className="w-3 h-3 rounded-full"
                                             style={{ backgroundColor: CHART_COLORS[index] }}

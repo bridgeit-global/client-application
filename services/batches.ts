@@ -208,7 +208,7 @@ export const fetchRechargesInBatches = cache(
 
     if (type) {
       const value = type.split(',');
-      query = query.in('site_type', value);
+      query = query.in('connections.sites.type', value);
     }
 
     if (recharge_date_start && recharge_date_end) {

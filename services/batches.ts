@@ -44,7 +44,7 @@ export const fetchBillsInBatches = cache(
     let query = supabase
       .from('bills')
       .select(
-        '*,batches!inner(*),connections!inner(*,paytype,biller_list!inner(*),bills!inner(bill_amount,is_valid,is_active,approved_amount))',
+        '*,batches!inner(*),connections!inner(*,paytype,sites!inner(type),biller_list!inner(*),bills!inner(bill_amount,is_valid,is_active,approved_amount))',
         {
           count: 'estimated'
         }
@@ -81,7 +81,7 @@ export const fetchBillsInBatches = cache(
 
     if (type) {
       const value = processValues(type);
-      query = query.in('site_type', value);
+      query = query.in('connections.sites.type', value);
     }
 
     if (created_at_start && created_at_end) {
@@ -105,7 +105,7 @@ export const fetchBillsInBatches = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.site_type,
+          [`${site_name}_type`]: site.connections.sites?.type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,

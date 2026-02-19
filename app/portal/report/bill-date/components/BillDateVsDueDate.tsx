@@ -122,7 +122,6 @@ export default function BillDateVsDueDate({ site_type }: { site_type: string }) 
                     bill_date,
                     due_date,
                     connection_id,
-                    site_type,
                     connections!inner(
                         account_number,
                         biller_list!inner(
@@ -164,7 +163,7 @@ export default function BillDateVsDueDate({ site_type }: { site_type: string }) 
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('site_type', filterBody.type.split(','));
+                query = query.in('connections.sites.type', filterBody.type.split(','));
             }
             if (filterBody.biller_id) {
                 query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

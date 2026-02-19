@@ -165,7 +165,7 @@ export const fetchPostpaidPaid = cache(
     let query = supabase
       .from('bills')
       .select(
-        '*, meter_readings(meter_no,end_date,end_reading,start_date,start_reading,type,multiplication_factor),connections!inner(*,biller_list!inner(*),payments(*))',
+        '*, meter_readings(meter_no,end_date,end_reading,start_date,start_reading,type,multiplication_factor),connections!inner(*,sites!inner(type),biller_list!inner(*),payments(*))',
         {
           count: 'estimated'
         }
@@ -187,7 +187,7 @@ export const fetchPostpaidPaid = cache(
 
     if (type) {
       const value = type.split(',');
-      query = query.in('site_type', value);
+      query = query.in('connections.sites.type', value);
     }
 
     if (biller_id) {
@@ -241,7 +241,7 @@ export const fetchPostpaidPaid = cache(
         );
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.site_type,
+          [`${site_name}_type`]: site.connections.sites?.type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,
@@ -310,7 +310,7 @@ export const fetchPaymentEdit = async (
 
   let query = supabase
     .from('bills')
-    .select('*,connections!inner(*,biller_list!inner(*))', {
+    .select('*,connections!inner(*,sites!inner(type),biller_list!inner(*))', {
       count: 'estimated'
     })
     .match({
@@ -341,7 +341,7 @@ export const fetchPaymentEdit = async (
 
   if (type) {
     const value = type.split(',');
-    query = query.in('site_type', value);
+    query = query.in('connections.sites.type', value);
   }
 
   if (options?.is_export) {
@@ -360,7 +360,7 @@ export const fetchPaymentEdit = async (
       return {
         id: site.id,
         [`${site_name}_id`]: site.connections.site_id,
-        [`${site_name}_type`]: site.site_type,
+        [`${site_name}_type`]: site.connections.sites?.type,
         account_number: String(site.connections.account_number),
         biller_board: site.connections.biller_list.board_name,
         state: site.connections.biller_list.state,
@@ -521,7 +521,7 @@ export const fetchBillPayments = async (
     .from('client_payments')
     .select(`*,
       batches(*),
-      bills(*,connections!inner(*,biller_list!inner(*)),biller_payment_transactions(*),refund_payment_transactions(*)),
+      bills(*,connections!inner(*,sites!inner(type),biller_list!inner(*)),biller_payment_transactions(*),refund_payment_transactions(*)),
       prepaid_recharge(*,connections!inner(*,sites!inner(*),biller_list!inner(*)),biller_payment_transactions(*),refund_payment_transactions(*))
     `, {
       count: 'estimated'
@@ -565,7 +565,7 @@ export const fetchBillPayments = async (
 
   if (type) {
     const value = type.split(',');
-    query = query.in('bills.site_type', value);
+    query = query.in('bills.connections.sites.type', value);
     query = query.in('prepaid_recharge.connections.sites.type', value);
   }
 
@@ -590,7 +590,7 @@ export const fetchBillPayments = async (
       return {
         id: site.id,
         [`${site_name}_id`]: site.bills.connections.site_id,
-        [`${site_name}_type`]: site.bills.site_type,
+        [`${site_name}_type`]: site.bills?.connections?.sites?.type,
         account_number: String(site.bills.connections.account_number),
         biller_board: site.bills.connections.biller_list.board_name,
         state: site.bills.connections.biller_list.state,
@@ -952,7 +952,7 @@ export const fetchBatchPayment = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.site_type,
+          [`${site_name}_type`]: site.connections?.sites?.type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,

@@ -111,7 +111,6 @@ export default function AllOverBill({ site_type }: { site_type: string }) {
                 .select(`
                     bill_date,
                     connection_id,
-                    site_type,
                     connections!inner(
                         account_number,
                         biller_list!inner(
@@ -155,7 +154,7 @@ export default function AllOverBill({ site_type }: { site_type: string }) {
 
             if (filterBody.type) {
                 const types = filterBody.type.split(',');
-                query = query.in('site_type', types);
+                query = query.in('connections.sites.type', types);
             }
 
             if (filterBody.biller_id) {

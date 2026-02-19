@@ -155,7 +155,6 @@ export default function Rebate({ site_type }: { site_type: string }) {
           rebate_accrued,
           bill_date,
           due_date,
-          site_type,
           connections!inner(
             id,
             account_number,
@@ -199,7 +198,7 @@ export default function Rebate({ site_type }: { site_type: string }) {
         query = query.eq('connections.sites.zone_id', filterBody.zone_id);
       }
       if (filterBody.type) {
-        query = query.in('site_type', filterBody.type.split(','));
+        query = query.in('connections.sites.type', filterBody.type.split(','));
       }
       if (filterBody.biller_id) {
         query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

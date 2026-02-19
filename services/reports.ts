@@ -250,7 +250,7 @@ export const fetchBillHistoryReport = cache(
 
     if (type) {
       const value = type.split(',');
-      query = query.in('connections.sites.site_type_key', value);
+      query = query.in('connections.sites.type', value);
     }
 
     if (is_arrear) {

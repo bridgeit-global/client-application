@@ -120,7 +120,6 @@ export default function BillType({ site_type }: { site_type: string }) {
                 .select(`
                     bill_type,
                     connection_id,
-                    site_type,
                     connections!inner(
                         account_number,
                         biller_list!inner(
@@ -164,7 +163,7 @@ export default function BillType({ site_type }: { site_type: string }) {
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('site_type', filterBody.type.split(','));
+                query = query.in('connections.sites.type', filterBody.type.split(','));
             }
 
             if (filterBody.biller_id) {

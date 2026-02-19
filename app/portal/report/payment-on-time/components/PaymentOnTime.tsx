@@ -119,7 +119,7 @@ export default function PaymentOnTime({ site_type }: { site_type: string }) {
             let query = supabase
                 .from('bills')
                 .select(
-                    `bill_date,site_type,paid_status,connections!inner(*,sites!inner(zone_id,type),biller_list!inner(*))`,
+                    `bill_date,paid_status,connections!inner(*,sites!inner(zone_id,type),biller_list!inner(*))`,
                     {
                         count: 'estimated'
                     }
@@ -154,7 +154,7 @@ export default function PaymentOnTime({ site_type }: { site_type: string }) {
                 query = query.eq('connections.sites.zone_id', filterBody.zone_id);
             }
             if (filterBody.type) {
-                query = query.in('site_type', filterBody.type.split(','));
+                query = query.in('connections.sites.type', filterBody.type.split(','));
             }
             if (filterBody.biller_id) {
                 query = query.in('connections.biller_list.alias', filterBody.biller_id.split(','));

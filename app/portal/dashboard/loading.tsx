@@ -5,8 +5,8 @@ export default function Loading() {
     <div className="min-h-[calc(100vh-4rem)] px-4 sm:px-6 lg:px-8">
       <section className="md:snap-start">
         <div className="mx-auto w-full max-w-7xl">
-          {/* Sticky header - Month picker + filters (matches KPISection) */}
-          <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+          {/* Month picker + filters (matches KPISection) */}
+          <div className="bg-background/80 border-b border-border/50">
             <div className="flex items-center justify-center py-4">
               <Skeleton className="h-10 w-64 rounded-md" />
             </div>

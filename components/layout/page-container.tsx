@@ -1,9 +1,6 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
-import { useScrollHeader } from '@/components/providers/scroll-provider'
-
-const SCROLL_THRESHOLD = 10
+import React, { useRef } from 'react'
 
 export default function PageContainer({
   children,
@@ -13,32 +10,6 @@ export default function PageContainer({
   scrollable?: boolean
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { setHeaderVisible } = useScrollHeader()
-  const lastScrollTop = useRef(0)
-
-  useEffect(() => {
-    if (!scrollable || !scrollRef.current) return
-    const el = scrollRef.current
-
-    const onScroll = () => {
-      const scrollTop = el.scrollTop
-      if (scrollTop <= 0) {
-        setHeaderVisible(true)
-        lastScrollTop.current = scrollTop
-        return
-      }
-      if (Math.abs(scrollTop - lastScrollTop.current) < SCROLL_THRESHOLD) return
-      if (scrollTop > lastScrollTop.current) {
-        setHeaderVisible(false)
-      } else {
-        setHeaderVisible(true)
-      }
-      lastScrollTop.current = scrollTop
-    }
-
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [scrollable, setHeaderVisible])
 
   return (
     <>

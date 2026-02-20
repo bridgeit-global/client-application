@@ -283,8 +283,8 @@ export function KPISection({ orgId }: KPISectionProps) {
     return (
         <section className="md:snap-start">
             <div className="mx-auto w-full max-w-7xl">
-                {/* Month Picker - Sticky Header */}
-                <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+                {/* Month Picker + Filters */}
+                <div className="bg-background/80 border-b border-border/50">
                     <div className="flex items-center justify-center py-4">
                         <MonthPicker
                             value={selectedMonth}

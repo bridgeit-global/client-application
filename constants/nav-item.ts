@@ -161,6 +161,13 @@ export const getNavItems = (site_name: string): NavItem[] => {
             shortcut: ['r', 'r'],
             items: [
                 {
+                    title: 'AI Analyst',
+                    url: '/portal/report/ai',
+                    icon: 'report',
+                    isCollapsible: false,
+                    shortcut: ['a', 'i'],
+                },
+                {
                     title: 'Registration',
                     url: '/portal/report/registration',
                     icon: 'registration',

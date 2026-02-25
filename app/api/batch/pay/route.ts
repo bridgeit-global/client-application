@@ -35,6 +35,17 @@ export async function POST(req: NextRequest) {
         const totalBillAmount = bill_data?.reduce((acc, curr) => acc + curr.approved_amount, 0);
         const totalRechargeAmount = recharge_data?.reduce((acc, curr) => acc + curr.recharge_amount, 0);
         const totalAmount = totalBillAmount + totalRechargeAmount;
+        console.log({
+            batch_id: batchId,
+            transaction_reference: transactionReference,
+            amount: amount || totalAmount,
+            transaction_date: transactionDate || new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+            payment_method: paymentMode,
+            payment_status: 'pending',
+            transaction_pay_type: transaction_pay_type,
+            payment_remarks: remarks || null,
+            created_by: user?.id || null
+        })
         // Insert into payment_gateway_transactions
         const { error: txnError } = await supabase.from('payment_gateway_transactions').insert({
             batch_id: batchId,

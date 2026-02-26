@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   portal: {
     Tables: {
@@ -26,7 +46,6 @@ export type Database = {
           rebate_subsidy: number
           round_off_amount: number
           updated_at: string
-          wheeling_charges: number
         }
         Insert: {
           additional_security_deposit?: number
@@ -39,7 +58,6 @@ export type Database = {
           rebate_subsidy?: number
           round_off_amount?: number
           updated_at?: string
-          wheeling_charges?: number
         }
         Update: {
           additional_security_deposit?: number
@@ -52,7 +70,6 @@ export type Database = {
           rebate_subsidy?: number
           round_off_amount?: number
           updated_at?: string
-          wheeling_charges?: number
         }
         Relationships: [
           {
@@ -69,7 +86,6 @@ export type Database = {
           capacitor_surcharge: number
           created_at: string
           id: string
-          low_pf_surcharge: number
           lpsc: number
           misuse_surcharge: number
           power_factor_incentive: number
@@ -83,7 +99,6 @@ export type Database = {
           capacitor_surcharge?: number
           created_at?: string
           id: string
-          low_pf_surcharge?: number
           lpsc?: number
           misuse_surcharge?: number
           power_factor_incentive?: number
@@ -97,7 +112,6 @@ export type Database = {
           capacitor_surcharge?: number
           created_at?: string
           id?: string
-          low_pf_surcharge?: number
           lpsc?: number
           misuse_surcharge?: number
           power_factor_incentive?: number
@@ -116,6 +130,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_analyst_feedback: {
+        Row: {
+          assistant_text: string | null
+          created_at: string | null
+          id: string
+          message_id: string
+          org_id: string
+          rating: string
+          user_id: string
+          user_query: string | null
+        }
+        Insert: {
+          assistant_text?: string | null
+          created_at?: string | null
+          id?: string
+          message_id: string
+          org_id: string
+          rating: string
+          user_id: string
+          user_query?: string | null
+        }
+        Update: {
+          assistant_text?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string
+          org_id?: string
+          rating?: string
+          user_id?: string
+          user_query?: string | null
+        }
+        Relationships: []
       }
       api_clients: {
         Row: {
@@ -144,6 +191,24 @@ export type Database = {
           org_id?: string
           role?: string | null
           scopes?: string[] | null
+        }
+        Relationships: []
+      }
+      api_rate_limits: {
+        Row: {
+          identifier: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          identifier: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          identifier?: string
+          request_count?: number
+          window_start?: string
         }
         Relationships: []
       }
@@ -409,6 +474,7 @@ export type Database = {
       }
       bills: {
         Row: {
+          alternative_unit_cost: number | null
           approved_amount: number | null
           batch_id: string | null
           bill_amount: number
@@ -444,10 +510,8 @@ export type Database = {
           rebate_potential: number | null
           receipt_content_type: string | null
           receipt_url: string | null
-          sanction_load: number | null
-          sanction_type: string | null
           start_date: string | null
-          site_type: string | null
+          station_type: Database["portal"]["Enums"]["station_type"] | null
           swap_cost: number | null
           swap_count: number | null
           unit_cost: number | null
@@ -455,6 +519,7 @@ export type Database = {
           validation_reason: Json | null
         }
         Insert: {
+          alternative_unit_cost?: number | null
           approved_amount?: number | null
           batch_id?: string | null
           bill_amount: number
@@ -490,10 +555,8 @@ export type Database = {
           rebate_potential?: number | null
           receipt_content_type?: string | null
           receipt_url?: string | null
-          sanction_load?: number | null
-          sanction_type?: string | null
           start_date?: string | null
-          site_type?: string | null
+          station_type?: Database["portal"]["Enums"]["station_type"] | null
           swap_cost?: number | null
           swap_count?: number | null
           unit_cost?: number | null
@@ -501,6 +564,7 @@ export type Database = {
           validation_reason?: Json | null
         }
         Update: {
+          alternative_unit_cost?: number | null
           approved_amount?: number | null
           batch_id?: string | null
           bill_amount?: number
@@ -536,10 +600,8 @@ export type Database = {
           rebate_potential?: number | null
           receipt_content_type?: string | null
           receipt_url?: string | null
-          sanction_load?: number | null
-          sanction_type?: string | null
           start_date?: string | null
-          site_type?: string | null
+          station_type?: Database["portal"]["Enums"]["station_type"] | null
           swap_cost?: number | null
           swap_count?: number | null
           unit_cost?: number | null
@@ -918,6 +980,7 @@ export type Database = {
           minimum_charges: number
           surcharge: number
           updated_at: string
+          wheeling_charges: number
         }
         Insert: {
           created_at?: string
@@ -929,6 +992,7 @@ export type Database = {
           minimum_charges?: number
           surcharge?: number
           updated_at?: string
+          wheeling_charges?: number
         }
         Update: {
           created_at?: string
@@ -940,6 +1004,7 @@ export type Database = {
           minimum_charges?: number
           surcharge?: number
           updated_at?: string
+          wheeling_charges?: number
         }
         Relationships: [
           {
@@ -1066,34 +1131,28 @@ export type Database = {
           account_number: string
           biller_id: string
           created_at: string
-          description: string | null
           dlq_type: string
           message_data: Json
           message_id: string
           reason: string | null
-          status: string | null
         }
         Insert: {
           account_number: string
           biller_id: string
           created_at?: string
-          description?: string | null
           dlq_type: string
           message_data: Json
           message_id: string
           reason?: string | null
-          status?: string | null
         }
         Update: {
           account_number?: string
           biller_id?: string
           created_at?: string
-          description?: string | null
           dlq_type?: string
           message_data?: Json
           message_id?: string
           reason?: string | null
-          status?: string | null
         }
         Relationships: [
           {
@@ -1336,6 +1395,7 @@ export type Database = {
           created_at: string
           name: string | null
           org_id: string
+          site_type_value: string | null
           type: string
           updated_at: string | null
           value: string
@@ -1344,6 +1404,7 @@ export type Database = {
           created_at?: string
           name?: string | null
           org_id: string
+          site_type_value?: string | null
           type: string
           updated_at?: string | null
           value: string
@@ -1352,6 +1413,7 @@ export type Database = {
           created_at?: string
           name?: string | null
           org_id?: string
+          site_type_value?: string | null
           type?: string
           updated_at?: string | null
           value?: string
@@ -1478,7 +1540,7 @@ export type Database = {
           created_by: string | null
           id: string
           reference_id: string | null
-          site_type: string | null
+          station_type: Database["portal"]["Enums"]["station_type"] | null
           updated_at: string
           updated_by: string | null
         }
@@ -1492,7 +1554,7 @@ export type Database = {
           created_by?: string | null
           id: string
           reference_id?: string | null
-          site_type?: string | null
+          station_type?: Database["portal"]["Enums"]["station_type"] | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1506,7 +1568,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           reference_id?: string | null
-          site_type?: string | null
+          station_type?: Database["portal"]["Enums"]["station_type"] | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1820,7 +1882,8 @@ export type Database = {
           longitude: number | null
           name: string | null
           org_id: string
-          type: string
+          site_type_key: string | null
+          type: string | null
           updated_at: string
           zone_id: string | null
         }
@@ -1833,7 +1896,8 @@ export type Database = {
           longitude?: number | null
           name?: string | null
           org_id: string
-          type: string
+          site_type_key?: string | null
+          type?: string | null
           updated_at?: string
           zone_id?: string | null
         }
@@ -1846,11 +1910,20 @@ export type Database = {
           longitude?: number | null
           name?: string | null
           org_id?: string
-          type?: string
+          site_type_key?: string | null
+          type?: string | null
           updated_at?: string
           zone_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sites_org_site_type_fk"
+            columns: ["org_id", "site_type_key"]
+            isOneToOne: false
+            referencedRelation: "org_master"
+            referencedColumns: ["org_id", "site_type_value"]
+          },
+        ]
       }
       sites_swap_counts_history: {
         Row: {
@@ -1877,7 +1950,15 @@ export type Database = {
           updated_at?: string | null
           zoneid?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sites_swap_counts_history_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submeter_readings: {
         Row: {
@@ -2088,7 +2169,6 @@ export type Database = {
           bill_count: number | null
           biller_id: string | null
           capacitor_surcharge: number | null
-          low_pf_surcharge: number | null
           lpsc: number | null
           misuse_surcharge: number | null
           power_factor_penalty: number | null
@@ -2107,189 +2187,269 @@ export type Database = {
       }
     }
     Functions: {
-      compute_bill_swap_count: { Args: { p_bill_id: string }; Returns: number }
-      get_active_connections_by_board: {
-        Args: never
+      check_rate_limit: {
+        Args: {
+          p_identifier: string
+          p_limit: number
+          p_window_seconds: number
+        }
         Returns: {
-          active_count: number
-          board_name: string
+          allowed: boolean
+          request_count: number
+          window_start: string
+        }[]
+      }
+      compute_bill_swap_count: {
+        Args: {
+          p_bill_id: string
+        }
+        Returns: number
+      }
+      fn_analyst_query: {
+        Args: {
+          p_sql: string
+          p_org_id: string
+        }
+        Returns: Json
+      }
+      get_active_connections_by_board: {
+        Args: Record<PropertyKey, never>
+        Returns: {
           state: string
+          board_name: string
+          active_count: number
         }[]
       }
       get_all_users_with_email: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
-          created_at: string
-          email: string
           id: string
+          email: string
           role: string
+          created_at: string
           updated_at: string
         }[]
       }
       get_benefits_kpis: {
-        Args: { p_end_date?: string; p_org_id: string; p_start_date?: string }
+        Args: {
+          p_org_id: string
+          p_start_date?: string
+          p_end_date?: string
+          p_site_type_key?: string
+          p_zone_id?: string
+        }
         Returns: {
-          benefit_description: string
-          current_value: number
           kpi_name: string
+          current_value: number
           last_month_value: number
-          trend_direction: string
           trend_percentage: number
+          trend_direction: string
           unit: string
+          benefit_description: string
         }[]
       }
       get_bill_summary_last_12_months: {
-        Args: { p_biller_id: string; p_site_id: string; p_site_type: string }
+        Args: {
+          p_site_id: string
+          p_station_type: string
+          p_biller_id: string
+        }
         Returns: {
-          average_rate: number
-          bill_count: number
           bill_month: string
-          site_type: string
+          station_type: string
           total_bill_amount: number
           total_billed_unit: number
+          bill_count: number
+          average_rate: number
         }[]
       }
-      get_bill_swap_count: { Args: { p_bill_id: string }; Returns: number }
       get_connection_paytype_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
+          paytype: number
           active_count: number
           inactive_count: number
-          paytype: number
           total_count: number
         }[]
       }
       get_connection_summary_by_biller: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
-          avg_billed_demand: number
-          avg_sanction_load: number
           biller_id: string
-          total_billed_demand: number
           total_connections: number
           total_sanction_load: number
+          total_billed_demand: number
+          avg_sanction_load: number
+          avg_billed_demand: number
         }[]
       }
       get_connection_type_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
-          active_count: number
           connection_type: string
+          active_count: number
           inactive_count: number
           total_count: number
         }[]
       }
       get_connections_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
+          total_connections: number
           active_connections: number
           avg_sanction_load: number
-          total_connections: number
           total_sanction_load: number
         }[]
       }
-      get_day_suffix: { Args: { day: number }; Returns: string }
-      get_need_attention_kpis: {
-        Args: { p_end_date?: string; p_org_id: string; p_start_date?: string }
-        Returns: {
-          current_value: number
-          kpi_name: string
-          severity: string
-          unit: string
-        }[]
+      get_day_suffix: {
+        Args: {
+          day: number
+        }
+        Returns: string
       }
-      get_paid_bill_summary: {
-        Args: never
+      get_need_attention_kpis: {
+        Args: {
+          p_org_id: string
+          p_start_date?: string
+          p_end_date?: string
+          p_site_type_key?: string
+          p_zone_id?: string
+        }
         Returns: {
-          id: string
-          status: string
+          kpi_name: string
+          current_value: number
+          unit: string
+          severity: string
         }[]
       }
       get_payment_savings_kpis: {
-        Args: { p_end_date?: string; p_org_id: string; p_start_date?: string }
+        Args: {
+          p_org_id: string
+          p_start_date?: string
+          p_end_date?: string
+          p_site_type_key?: string
+          p_zone_id?: string
+        }
         Returns: {
-          accrued_value: number
           kpi_name: string
           potential_value: number
+          accrued_value: number
           savings_percentage: number
           unit: string
         }[]
       }
-      get_request_user_org_id: { Args: never; Returns: string }
+      get_request_user_org_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_site_type_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
+          type: string
           active_count: number
           inactive_count: number
           total_count: number
-          type: string
         }[]
       }
       get_wallet_balances: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
-          balance: number
           count: number
           credits: number
           debits: number
+          balance: number
         }[]
       }
       get_yearly_billing_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           financial_year: string
-          rate_per_unit: number
-          site_type: string
+          station_type: string
           total_amount: number
-          total_bills: number
           total_unit: number
+          total_bills: number
+          rate_per_unit: number
         }[]
       }
       get_zone_site_summary: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
+          zone_id: string
           active_count: number
           inactive_count: number
           total_count: number
-          zone_id: string
         }[]
       }
-      group_bills_by_biller: { Args: never; Returns: undefined }
-      group_bills_by_weeks: { Args: never; Returns: undefined }
+      group_bills_by_biller: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      group_bills_by_weeks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       is_approved_amount_within_threshold: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
-          pending_amount: number
-          threshold: number
           total_approved: number
+          threshold: number
+          pending_amount: number
         }[]
       }
       recalc_active_bill: {
-        Args: { p_connection_id: string }
+        Args: {
+          p_connection_id: string
+        }
         Returns: undefined
       }
-      refresh_report_tables: { Args: never; Returns: undefined }
       store_kpi_metrics: {
-        Args: { p_calculation_month?: string; p_org_id: string }
+        Args: {
+          p_org_id: string
+          p_calculation_month?: string
+        }
         Returns: undefined
       }
       store_kpi_metrics_for_year: {
-        Args: { p_org_id: string; p_year: number }
+        Args: {
+          p_org_id: string
+          p_year: number
+        }
         Returns: undefined
       }
       update_approved_bills:
-        | { Args: { bill_ids: string[] }; Returns: undefined }
         | {
-            Args: { approver_email: string; bill_ids: string[] }
+            Args: {
+              bill_ids: string[]
+            }
             Returns: undefined
           }
-      update_bill_report_fields: { Args: never; Returns: undefined }
-      update_dashboard_data: { Args: never; Returns: undefined }
-      update_dashboard_summary: { Args: never; Returns: undefined }
-      update_dashboard_support_data: { Args: never; Returns: undefined }
+        | {
+            Args: {
+              bill_ids: string[]
+              approver_email: string
+            }
+            Returns: undefined
+          }
+      update_bill_report_fields: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_dashboard_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_dashboard_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_dashboard_support_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      site_type: "COCO" | "POCO" | "COPO" | "POPO"
+      site_type: "COCO" | "POCO" | "COPO" | "POPO" | "Warehouse" | "Trial"
+      station_type: "COCO" | "POCO" | "COPO" | "POPO"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2440,18 +2600,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pending_refund_count: {
-        Row: {
-          count: number | null
-        }
-        Insert: {
-          count?: number | null
-        }
-        Update: {
-          count?: number | null
-        }
-        Relationships: []
-      }
       third_party_servers: {
         Row: {
           allowed_scopes: string[] | null
@@ -2542,12 +2690,14 @@ export type Database = {
     }
     Functions: {
       cleanup_old_auth_logs: {
-        Args: { days_to_keep?: number }
+        Args: {
+          days_to_keep?: number
+        }
         Returns: number
       }
     }
     Enums: {
-      site_type: "COCO" | "POCO" | "COPO" | "POPO"
+      station_type: "COCO" | "POCO" | "COPO" | "POPO" | "Warehouse" | "Trial"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2555,33 +2705,27 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -2589,24 +2733,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -2614,24 +2754,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -2639,48 +2775,30 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-export const Constants = {
-  portal: {
-    Enums: {
-      site_type: ["COCO", "POCO", "COPO", "POPO"],
-    },
-  },
-  public: {
-    Enums: {
-      site_type: ["COCO", "POCO", "COPO", "POPO"],
-    },
-  },
-} as const

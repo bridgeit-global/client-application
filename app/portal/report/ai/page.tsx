@@ -31,10 +31,9 @@ export default async function Page() {
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
           AI Bill Analyst
         </h1>
-        <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-muted-foreground">
           Ask questions about bills, penalties, rebates, and anomalies across{' '}
-          {site_name}. The analyst will always use live data from your portal
-          database for org_id <span className="font-mono text-sm">{orgId}</span>.
+          {site_name}. The analyst uses live data from your portal.
         </p>
       </div>
       <div className="flex-1 min-h-0">

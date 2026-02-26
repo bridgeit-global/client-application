@@ -4,8 +4,10 @@ import { useRef, useEffect, useMemo, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import ReactMarkdown from 'react-markdown';
+import { SendHorizontal, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 type AIAnalystChatProps = {
@@ -21,8 +23,18 @@ const SUGGESTED_PROMPTS = [
   'Summarise my overall portfolio: total spend, LPSC, PF penalties, and missed rebates.'
 ];
 
+function getMessageText(message: { parts?: Array<{ type: string; text?: string }> }): string {
+  const parts = message.parts ?? [];
+  return parts
+    .filter((p: { type: string }) => p.type === 'text')
+    .map((p: { text?: string }) => p.text ?? '')
+    .join('');
+}
+
 export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
   const [input, setInput] = useState('');
+  const [feedbackByMessageId, setFeedbackByMessageId] = useState<Record<string, 'up' | 'down'>>({});
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
@@ -54,120 +66,226 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
     setInput('');
   };
 
+  const submitFeedback = async (
+    messageId: string,
+    rating: 'up' | 'down',
+    userQuery: string,
+    assistantText: string
+  ) => {
+    if (feedbackSubmitting === messageId) return;
+    setFeedbackSubmitting(messageId);
+    try {
+      const res = await fetch('/api/chat/analyst/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message_id: messageId,
+          rating,
+          user_query: userQuery || undefined,
+          assistant_text: assistantText || undefined
+        })
+      });
+      if (res.ok) {
+        setFeedbackByMessageId((prev) => ({ ...prev, [messageId]: rating }));
+      }
+    } finally {
+      setFeedbackSubmitting(null);
+    }
+  };
+
   return (
-    <div className="flex h-[calc(100vh-14rem)] flex-col rounded-lg border bg-background">
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        {!hasMessages && (
-          <div className="rounded-lg border bg-muted/60 p-4 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">
-              Ask anything about your electricity bills for {orgName}.
-            </p>
-            <p className="mt-1">
-              The AI analyst will always query your live portal data (filtered by your
-              organization) before answering. It can analyse trends, penalties, rebates,
-              anomalies, and portfolio performance.
-            </p>
-            <p className="mt-2 text-xs">
-              Tip: be specific with bill IDs, account numbers, sites, or date ranges for
-              the most actionable insights.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {SUGGESTED_PROMPTS.map((prompt) => (
-                <Button
-                  key={prompt}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isLoading}
-                  className="whitespace-normal text-left text-xs"
-                  onClick={() => {
-                    if (isLoading) return;
-                    sendMessage({ text: prompt });
-                  }}
-                >
-                  {prompt}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
+    <div className="flex h-full min-h-0 flex-col rounded-lg border bg-background">
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+        <div
+          className={cn(
+            'flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-4',
+            !hasMessages && 'flex flex-col items-center justify-center'
+          )}
+        >
+          {!hasMessages && (
+            <Card className="w-full max-w-2xl border bg-muted/40">
+              <CardContent className="p-4 text-sm text-muted-foreground sm:p-5">
+                <p className="font-medium text-foreground">
+                  Ask anything about your electricity bills for {orgName}.
+                </p>
+                <p className="mt-1">
+                  The AI analyst will always query your live portal data (filtered by
+                  your organization) before answering. It can analyse trends, penalties,
+                  rebates, anomalies, and portfolio performance.
+                </p>
+                <p className="mt-2 text-xs">
+                  Tip: be specific with bill IDs, account numbers, sites, or date ranges
+                  for the most actionable insights.
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <Button
+                      key={prompt}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isLoading}
+                      className="whitespace-normal text-left text-xs"
+                      onClick={() => {
+                        if (isLoading) return;
+                        sendMessage({ text: prompt });
+                      }}
+                    >
+                      {prompt}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        {messages.map((message: any) => (
-          <div
-            key={message.id}
-            className={cn(
-              'flex',
-              message.role === 'user' ? 'justify-end' : 'justify-start'
-            )}
-          >
-            <div
-              className={cn(
-                'max-w-xl rounded-2xl px-3 py-2 text-sm shadow-sm',
-                message.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground'
-              )}
-            >
-              {message.role === 'user'
-                ? renderUserMessage(message)
-                : renderAssistantMessage(message)}
-            </div>
-          </div>
-        ))}
+          {messages.map((message: any, index: number) => {
+            const isStreamingAssistant =
+              isLoading &&
+              index === messages.length - 1 &&
+              message.role === 'assistant';
+            const showFeedback =
+              message.role === 'assistant' && !isStreamingAssistant;
+            const userQuery =
+              index > 0 && messages[index - 1]?.role === 'user'
+                ? getMessageText(messages[index - 1])
+                : '';
+            const assistantText = getMessageText(message);
+            const currentRating = feedbackByMessageId[message.id];
+            const isSubmitting = feedbackSubmitting === message.id;
 
-        {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            Thinking with live bill data…
-          </div>
-        )}
-
-        {error && (
-          <div className="text-xs text-destructive">
-            {(error as any)?.message ?? 'Something went wrong. Please try again.'}
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      <div className="border-t bg-background px-4 py-3">
-        <div className="flex flex-col gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about bills, LPSC, PF penalties, rebates, or anomalies…"
-            rows={2}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                submit();
-              }
-            }}
-          />
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              Press Enter to send, Shift+Enter for a new line.
-            </p>
-            <div className="flex items-center gap-2">
-              {isLoading && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => stop()}
-                >
-                  Stop
-                </Button>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                disabled={isLoading || input.trim().length === 0}
-                onClick={submit}
+            return (
+              <div
+                key={message.id}
+                className={cn(
+                  'flex flex-col',
+                  message.role === 'user' ? 'items-end' : 'items-start'
+                )}
               >
-                Send
-              </Button>
+                <div
+                  className={cn(
+                    'flex',
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-xl',
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-foreground'
+                    )}
+                  >
+                    {message.role === 'user'
+                      ? renderUserMessage(message)
+                      : renderAssistantMessage(message)}
+                  </div>
+                </div>
+                {showFeedback && (
+                  <div className="mt-1 flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      aria-label="Helpful"
+                      disabled={isSubmitting}
+                      onClick={() =>
+                        submitFeedback(
+                          message.id,
+                          'up',
+                          userQuery,
+                          assistantText
+                        )
+                      }
+                      className={cn(
+                        'rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50',
+                        currentRating === 'up' && 'text-foreground'
+                      )}
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Not helpful"
+                      disabled={isSubmitting}
+                      onClick={() =>
+                        submitFeedback(
+                          message.id,
+                          'down',
+                          userQuery,
+                          assistantText
+                        )
+                      }
+                      className={cn(
+                        'rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50',
+                        currentRating === 'down' && 'text-foreground'
+                      )}
+                    >
+                      <ThumbsDown className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {isLoading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="flex gap-1">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.3s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.15s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
+              </span>
+              Thinking with live bill data…
+            </div>
+          )}
+
+          {error && (
+            <div className="text-xs text-destructive">
+              {(error as any)?.message ?? 'Something went wrong. Please try again.'}
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="border-t bg-background px-3 py-3 sm:px-4">
+          <div className="flex flex-col gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about bills, LPSC, PF penalties, rebates, or anomalies…"
+              rows={2}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  submit();
+                }
+              }}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <p className="hidden text-xs text-muted-foreground sm:block">
+                Press Enter to send, Shift+Enter for a new line.
+              </p>
+              <div className="ml-auto flex items-center gap-2">
+                {isLoading && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => stop()}
+                  >
+                    Stop
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isLoading || input.trim().length === 0}
+                  onClick={submit}
+                >
+                  <SendHorizontal className="mr-1.5 h-4 w-4" />
+                  Send
+                </Button>
+              </div>
             </div>
           </div>
         </div>

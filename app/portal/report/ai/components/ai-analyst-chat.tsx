@@ -1,10 +1,22 @@
 'use client';
 
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useMemo, useState, type ComponentProps } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import ReactMarkdown from 'react-markdown';
-import { SendHorizontal, ThumbsUp, ThumbsDown } from 'lucide-react';
+import remarkGfm from 'remark-gfm';
+import {
+  SendHorizontal,
+  ThumbsUp,
+  ThumbsDown,
+  Database,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,6 +42,45 @@ function getMessageText(message: { parts?: Array<{ type: string; text?: string }
     .map((p: { text?: string }) => p.text ?? '')
     .join('');
 }
+
+const markdownComponents: ComponentProps<typeof ReactMarkdown>['components'] = {
+  table: ({ children, ...props }) => (
+    <div className="my-3 overflow-x-auto rounded-lg border">
+      <table
+        className="min-w-full divide-y divide-border text-sm"
+        {...props}
+      >
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children, ...props }) => (
+    <thead className="bg-muted/60" {...props}>
+      {children}
+    </thead>
+  ),
+  th: ({ children, ...props }) => (
+    <th
+      className="whitespace-nowrap px-3 py-2 text-left text-xs font-semibold text-foreground"
+      {...props}
+    >
+      {children}
+    </th>
+  ),
+  td: ({ children, ...props }) => (
+    <td
+      className="whitespace-nowrap px-3 py-2 text-xs text-muted-foreground"
+      {...props}
+    >
+      {children}
+    </td>
+  ),
+  tr: ({ children, ...props }) => (
+    <tr className="border-b last:border-0 even:bg-muted/30" {...props}>
+      {children}
+    </tr>
+  )
+};
 
 export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
   const [input, setInput] = useState('');
@@ -98,7 +149,7 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         <div
           className={cn(
-            'flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-4',
+            'flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-6',
             !hasMessages && 'flex flex-col items-center justify-center'
           )}
         >
@@ -164,16 +215,16 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
               >
                 <div
                   className={cn(
-                    'flex',
+                    'flex w-full',
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
                   <div
                     className={cn(
-                      'max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm sm:max-w-xl',
+                      'rounded-2xl px-4 py-3 text-sm shadow-sm',
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-foreground'
+                        ? 'max-w-[85%] bg-primary text-primary-foreground sm:max-w-xl'
+                        : 'max-w-full bg-muted text-foreground sm:max-w-3xl'
                     )}
                   >
                     {message.role === 'user'
@@ -228,18 +279,15 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
           })}
 
           {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex gap-1">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.3s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:-0.15s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
-              </span>
-              Thinking with live bill data…
+            <div className="flex items-center gap-2.5 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-500" />
+              <span>Analysing your live bill data&hellip;</span>
             </div>
           )}
 
           {error && (
-            <div className="text-xs text-destructive">
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <XCircle className="h-3.5 w-3.5 shrink-0" />
               {(error as any)?.message ?? 'Something went wrong. Please try again.'}
             </div>
           )}
@@ -310,61 +358,156 @@ function renderUserMessage(message: any) {
   );
 }
 
+function ToolCallCard({
+  input,
+  output,
+  state,
+  errorText
+}: {
+  input: { sql?: string; reasoning?: string };
+  output?: { rows?: unknown; reasoning?: string };
+  state: string;
+  errorText?: string;
+}) {
+  const [sqlExpanded, setSqlExpanded] = useState(false);
+
+  const rows = Array.isArray(output?.rows) ? output.rows : [];
+  const rowCount = rows.length;
+  const hasError = state === 'output-error';
+  const isComplete = state === 'output-available' || state === 'output-error';
+  const isEmpty = state === 'output-available' && rowCount === 0;
+
+  let statusColor = 'text-muted-foreground';
+  let StatusIcon = Loader2;
+  let statusLabel = 'Running query…';
+
+  if (hasError) {
+    statusColor = 'text-destructive';
+    StatusIcon = XCircle;
+    statusLabel = 'Query failed';
+  } else if (isEmpty) {
+    statusColor = 'text-amber-600 dark:text-amber-400';
+    StatusIcon = AlertCircle;
+    statusLabel = 'No rows returned';
+  } else if (isComplete) {
+    statusColor = 'text-emerald-600 dark:text-emerald-400';
+    StatusIcon = CheckCircle2;
+    statusLabel = `${rowCount} row${rowCount !== 1 ? 's' : ''} fetched`;
+  }
+
+  return (
+    <div className="rounded-lg border bg-background/80 text-xs">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <Database className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="font-medium text-foreground">Database Query</span>
+        <span className="ml-auto flex items-center gap-1.5">
+          <StatusIcon
+            className={cn(
+              'h-3.5 w-3.5 shrink-0',
+              statusColor,
+              !isComplete && 'animate-spin'
+            )}
+          />
+          <span className={cn('font-medium', statusColor)}>
+            {statusLabel}
+          </span>
+        </span>
+      </div>
+
+      {input.reasoning && (
+        <div className="border-t px-3 py-2 text-muted-foreground">
+          {input.reasoning}
+        </div>
+      )}
+
+      {input.sql && (
+        <div className="border-t">
+          <button
+            type="button"
+            className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left text-muted-foreground transition-colors hover:text-foreground"
+            onClick={() => setSqlExpanded((v) => !v)}
+          >
+            {sqlExpanded ? (
+              <ChevronDown className="h-3 w-3 shrink-0" />
+            ) : (
+              <ChevronRight className="h-3 w-3 shrink-0" />
+            )}
+            <span className="font-mono">SQL</span>
+          </button>
+          {sqlExpanded && (
+            <pre className="max-h-48 overflow-auto border-t bg-muted/50 px-3 py-2 text-[11px] leading-relaxed">
+              <code>{input.sql}</code>
+            </pre>
+          )}
+        </div>
+      )}
+
+      {hasError && errorText && (
+        <div className="border-t px-3 py-2 text-destructive">
+          {errorText}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function renderAssistantMessage(message: any) {
   const parts = message.parts ?? [];
+
+  const hasTextContent = parts.some(
+    (p: any) => p.type === 'text' && p.text?.trim()
+  );
+  const toolParts = parts.filter(
+    (p: any) => p.type === 'tool-execute_query'
+  );
+  const allToolsEmpty =
+    toolParts.length > 0 &&
+    toolParts.every((p: any) => {
+      const rows = Array.isArray(p.output?.rows) ? p.output.rows : [];
+      return p.state === 'output-available' && rows.length === 0;
+    });
 
   return (
     <div className="space-y-3">
       {parts.map((part: any, index: number) => {
         if (part.type === 'text') {
+          if (!part.text?.trim()) return null;
           return (
             <div
               key={index}
-              className="prose prose-sm dark:prose-invert prose-headings:mb-2 prose-p:mb-2 prose-ul:mb-2 prose-ol:mb-2"
+              className="prose prose-sm max-w-none dark:prose-invert prose-headings:mb-2 prose-headings:mt-4 prose-p:mb-2 prose-p:leading-relaxed prose-ul:mb-2 prose-ol:mb-2 prose-li:my-0.5"
             >
-              <ReactMarkdown>{part.text}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
+              >
+                {part.text}
+              </ReactMarkdown>
             </div>
           );
         }
 
         if (part.type === 'tool-execute_query') {
-          const args = (part.args ?? {}) as {
-            sql?: string;
-            reasoning?: string;
-          };
-          const result = part.result as
-            | { rows?: unknown; reasoning?: string; error?: string }
-            | undefined;
-
           return (
-            <div
+            <ToolCallCard
               key={index}
-              className="rounded-md border bg-background/60 p-2 text-xs"
-            >
-              <div className="font-medium text-foreground">
-                Database query executed
-              </div>
-              {args.reasoning && (
-                <div className="mt-1 text-muted-foreground">
-                  {args.reasoning}
-                </div>
-              )}
-              {args.sql && (
-                <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted p-2 text-[10px] leading-snug">
-                  <code>{args.sql}</code>
-                </pre>
-              )}
-              {result && result.error && (
-                <div className="mt-2 text-destructive">
-                  Query error: {result.error}
-                </div>
-              )}
-            </div>
+              input={part.input ?? {}}
+              output={part.output}
+              state={part.state}
+              errorText={part.errorText}
+            />
           );
         }
 
         return null;
       })}
+
+      {!hasTextContent && allToolsEmpty && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          No matching data was found for your query. Try broadening your date range or adjusting the filters.
+        </div>
+      )}
     </div>
   );
 }

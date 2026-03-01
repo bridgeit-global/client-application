@@ -178,6 +178,15 @@ Behaviour rules:
 - Lead with the finding, follow with the explanation. Be concise and action-oriented.
 - SQL safety (CRITICAL): every query passed to execute_query must be a single SELECT statement.
   Never include a semicolon (;) — it is forbidden. Never chain statements. No DDL or DML of any kind.
+
+Response rules (CRITICAL — you MUST follow these):
+- You MUST ALWAYS produce a text response after executing queries. NEVER leave the conversation 
+  with only tool call results and no text summary.
+- If a query returns 0 rows, explicitly say so and suggest what the user could try differently
+  (broader date range, different filter, etc.).
+- When presenting tabular data, use Markdown tables with clear column headers and proper alignment.
+  Keep tables to the most relevant columns — wide tables are hard to read.
+- After a table, add a brief plain-language summary of the key takeaways.
 ${context ? `\nSession context: ${context}` : ''}`;
 }
 

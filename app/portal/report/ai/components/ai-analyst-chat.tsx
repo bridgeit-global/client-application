@@ -96,9 +96,10 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
     [orgId]
   );
 
-  const { messages, sendMessage, isLoading, error, stop } = useChat({
+  const { messages, sendMessage, status, error, stop } = useChat({
     transport
   });
+  const isLoading = status === 'submitted' || status === 'streaming';
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -371,7 +372,7 @@ function ToolCallCard({
 }) {
   const [sqlExpanded, setSqlExpanded] = useState(false);
 
-  const rows = Array.isArray(output?.rows) ? output.rows : [];
+  const rows = output && Array.isArray(output.rows) ? output.rows : [];
   const rowCount = rows.length;
   const hasError = state === 'output-error';
   const isComplete = state === 'output-available' || state === 'output-error';

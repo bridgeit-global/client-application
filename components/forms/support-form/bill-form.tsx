@@ -23,7 +23,8 @@ const coreCharges = {
   demand_charges: 0,
   fppac_charges: 0,
   minimum_charges: 0,
-  surcharge: 0
+  surcharge: 0,
+  wheeling_charges: 0
 };
 
 const regulatoryCharges = {

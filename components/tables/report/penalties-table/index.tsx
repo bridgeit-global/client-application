@@ -3,6 +3,9 @@ import { PenaltiesProps } from '@/types/charges-type';
 import { formatRupees } from '@/lib/utils/number-format';
 import React from 'react';
 
+type PenaltiesWithLowPf = PenaltiesProps & { low_pf_surcharge?: number };
+const getLowPfSurcharge = (p: PenaltiesProps) => (p as PenaltiesWithLowPf).low_pf_surcharge ?? 0;
+
 export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] }) {
     // Group data by state
     const groupedByState = data.reduce((acc, item) => {
@@ -46,10 +49,11 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
                                 {stateItems
                                     .sort((a: PenaltiesProps, b: PenaltiesProps) => (a.biller_list.board_name || '').localeCompare(b.biller_list.board_name || ''))
                                     .map((penalty: PenaltiesProps) => {
+                                        const lowPfSurcharge = getLowPfSurcharge(penalty);
                                         const total = (
                                             (penalty.lpsc || 0) +
                                             (penalty.tod_surcharge || 0) +
-                                            (penalty.low_pf_surcharge || 0) +
+                                            (lowPfSurcharge || 0) +
                                             (penalty.sanctioned_load_penalty || 0) +
                                             (penalty.power_factor_penalty || 0) +
                                             (penalty.capacitor_surcharge || 0)
@@ -61,7 +65,7 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
                                                 <TableCell className="text-right">{penalty.bill_count ? penalty.bill_count : ''}</TableCell>
                                                 <TableCell className="text-right">{penalty.lpsc ? formatRupees(penalty.lpsc) : ''}</TableCell>
                                                 <TableCell className="text-right">{penalty.tod_surcharge ? formatRupees(penalty.tod_surcharge) : ''}</TableCell>
-                                                <TableCell className="text-right">{penalty.low_pf_surcharge ? formatRupees(penalty.low_pf_surcharge) : ''}</TableCell>
+                                                <TableCell className="text-right">{lowPfSurcharge ? formatRupees(lowPfSurcharge) : ''}</TableCell>
                                                 <TableCell className="text-right">{penalty.sanctioned_load_penalty ? formatRupees(penalty.sanctioned_load_penalty) : ''}</TableCell>
                                                 <TableCell className="text-right">{penalty.power_factor_penalty ? formatRupees(penalty.power_factor_penalty) : ''}</TableCell>
                                                 <TableCell className="text-right">{penalty.capacitor_surcharge ? formatRupees(penalty.capacitor_surcharge) : ''}</TableCell>
@@ -83,7 +87,7 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
                                         {formatRupees(stateItems.reduce((sum: number, p: PenaltiesProps) => sum + (p.tod_surcharge || 0), 0))}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {formatRupees(stateItems.reduce((sum: number, p: PenaltiesProps) => sum + (p.low_pf_surcharge || 0), 0))}
+                                        {formatRupees(stateItems.reduce((sum: number, p: PenaltiesProps) => sum + getLowPfSurcharge(p), 0))}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {formatRupees(stateItems.reduce((sum: number, p: PenaltiesProps) => sum + (p.sanctioned_load_penalty || 0), 0))}
@@ -98,7 +102,7 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
                                         {formatRupees(stateItems.reduce<number>((sum, p) => sum + (
                                             (p.lpsc || 0) +
                                             (p.tod_surcharge || 0) +
-                                            (p.low_pf_surcharge || 0) +
+                                            getLowPfSurcharge(p) +
                                             (p.sanctioned_load_penalty || 0) +
                                             (p.power_factor_penalty || 0) +
                                             (p.capacitor_surcharge || 0)
@@ -121,7 +125,7 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
                                 {formatRupees(data.reduce<number>((sum, p) => sum + (p.tod_surcharge || 0), 0))}
                             </TableCell>
                             <TableCell className="text-right">
-                                {formatRupees(data.reduce<number>((sum, p) => sum + (p.low_pf_surcharge || 0), 0))}
+                                {formatRupees(data.reduce<number>((sum, p) => sum + getLowPfSurcharge(p), 0))}
                             </TableCell>
                             <TableCell className="text-right">
                                 {formatRupees(data.reduce<number>((sum, p) => sum + (p.sanctioned_load_penalty || 0), 0))}
@@ -136,7 +140,7 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
                                 {formatRupees(data.reduce<number>((sum, p) => sum + (
                                     (p.lpsc || 0) +
                                     (p.tod_surcharge || 0) +
-                                    (p.low_pf_surcharge || 0) +
+                                    getLowPfSurcharge(p) +
                                     (p.sanctioned_load_penalty || 0) +
                                     (p.power_factor_penalty || 0) +
                                     (p.capacitor_surcharge || 0)

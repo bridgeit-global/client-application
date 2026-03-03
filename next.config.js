@@ -64,8 +64,8 @@ const nextConfig = {
       "font-src 'self' https://fonts.gstatic.com data:",
       // Images: Allow self, data URIs, blob URIs, UploadThing, Supabase, and Mapbox
       "img-src 'self' data: blob: https://utfs.io https://*.supabase.co https://*.supabase.in https://api.mapbox.com https://*.tiles.mapbox.com",
-      // Connections: Allow self, Supabase (HTTPS and WebSocket), Mapbox, UploadThing, and Vercel
-      "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://*.uploadthing.com https://vercel.live https://*.vercel-scripts.com https://*.amazonaws.com",
+      // Connections: Allow self, Supabase (HTTPS and WebSocket), Mapbox, UploadThing, Vercel, and BridgeIt API
+      "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://*.uploadthing.com https://vercel.live https://*.vercel-scripts.com https://api.bridgeit.in https://*.amazonaws.com",
       // Frames: Allow self and UploadThing for file uploads
       "frame-src 'self' https://uploadthing.com https://challenges.cloudflare.com",
       // Workers: Allow self and blob URIs for service workers

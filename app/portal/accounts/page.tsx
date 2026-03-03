@@ -17,12 +17,6 @@ const accountLinks = [
         adminOnly: false,
     },
     {
-        title: 'User',
-        description: 'Manage users in your organization (admin only).',
-        href: '/portal/user',
-        adminOnly: true,
-    },
-    {
         title: 'API Clients',
         description: 'Generate client credentials for integrations (admin only).',
         href: '/portal/accounts/api-clients',

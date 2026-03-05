@@ -62,8 +62,8 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Fonts: Allow self, Google Fonts, and data URIs
       "font-src 'self' https://fonts.gstatic.com data:",
-      // Images: Allow self, data URIs, blob URIs, UploadThing, Supabase, and Mapbox
-      "img-src 'self' data: blob: https://utfs.io https://*.supabase.co https://*.supabase.in https://api.mapbox.com https://*.tiles.mapbox.com",
+      // Images: Allow self, data URIs, blob URIs, UploadThing, Supabase, Mapbox, Google user content, and BridgeIt API
+      "img-src 'self' data: blob: https://utfs.io https://*.supabase.co https://*.supabase.in https://api.mapbox.com https://*.tiles.mapbox.com https://*.googleusercontent.com https://api.bridgeit.in",
       // Connections: Allow self, Supabase (HTTPS and WebSocket), Mapbox, UploadThing, Vercel, and BridgeIt API
       "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://api.mapbox.com https://events.mapbox.com https://*.uploadthing.com https://vercel.live https://*.vercel-scripts.com https://api.bridgeit.in https://*.amazonaws.com",
       // Frames: Allow self and UploadThing for file uploads

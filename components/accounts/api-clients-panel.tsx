@@ -261,8 +261,8 @@ function ApiClientsPanel() {
                 </div>
             </CardHeader>
             <CardContent>
-                {/* Desktop Table View */}
-                <div className="hidden md:block rounded-md border">
+                {/* Desktop Table View - block by default, hide only below md so table is visible when md breakpoint doesn't apply */}
+                <div className="block max-md:hidden rounded-md border">
                     <Table>
                         <TableHeader>
                             <TableRow>

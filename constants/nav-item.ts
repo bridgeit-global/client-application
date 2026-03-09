@@ -460,6 +460,14 @@ export const supportNavItems: NavItem[] = [
         isCollapsible: false,
         shortcut: ['m', 'r'],
         items: []
+    },
+    {
+        title: 'Submeter Bill',
+        url: '/support/submeter-bill',
+        icon: 'report',
+        isCollapsible: false,
+        shortcut: ['s', 'b'],
+        items: []
     }
 ];
 

@@ -158,7 +158,7 @@ export function SiteTable({
       <div className="flex flex-1 justify-between gap-2">
         <div className="flex flex-col">
           <h2 className="text-3xl font-semibold tracking-tight">
-            {site_name}
+            {site_name}s
           </h2>
           <div className="mt-2 flex items-center gap-2">
             <div className="flex h-2 w-2 rounded-full bg-green-500" />

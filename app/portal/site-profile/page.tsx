@@ -133,7 +133,7 @@ export default async function Page(
                                                 <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${[hasPostpaid, hasPrepaid, hasSubmeter].filter(Boolean).length}, 1fr)` }}>
                                                     {hasPostpaid && <TabsTrigger value="postpaid">Postpaid</TabsTrigger>}
                                                     {hasPrepaid && <TabsTrigger value="prepaid">Prepaid</TabsTrigger>}
-                                                    {hasSubmeter && <TabsTrigger value="submeter">Sub Meter</TabsTrigger>}
+                                                    {hasSubmeter && <TabsTrigger value="submeter">Submeter</TabsTrigger>}
                                                 </TabsList>
 
                                                 {hasPostpaid && (
@@ -230,7 +230,7 @@ export default async function Page(
                                                                                 <IsActiveBadge isActive={connection.is_active} />
                                                                             </TableCell>
                                                                             <TableCell>
-                                                                                <Badge variant="secondary">Sub Meter</Badge>
+                                                                                <Badge variant="secondary">Submeter</Badge>
                                                                             </TableCell>
                                                                         </TableRow>
                                                                     )

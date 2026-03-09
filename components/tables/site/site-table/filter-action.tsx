@@ -133,7 +133,7 @@ export default function FilterAction({
           <div className="flex flex-col gap-2 mt-4">
             <SheetClose asChild>
               <Button type="submit" className="w-full">
-                Find {site_name}
+                Find {site_name}s
               </Button>
             </SheetClose>
             {handleClearFilter && (

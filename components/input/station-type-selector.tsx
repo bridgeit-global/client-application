@@ -3,6 +3,7 @@ import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSiteType } from '@/hooks/use-site-type';
+import { useSiteName } from '@/lib/utils/site';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,9 +30,10 @@ export function StationTypeSelector({ value = [], onChange, className }: Station
         }
     };
 
+    const site_name = useSiteName();
     const triggerLabel =
         filteredValue.length === 0
-            ? 'Station type'
+            ? `${site_name} type`
             : filteredValue.length === 1
               ? SITE_TYPES.find((t) => t.value === filteredValue[0])?.label ?? filteredValue[0]
               : `${filteredValue.length} types selected`;

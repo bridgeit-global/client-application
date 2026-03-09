@@ -42,11 +42,13 @@ const getDefaultVisibleColumns = (payType: string) => {
   if (payType === 'postpaid') {
     return ['select', 'account_number', 'biller_board', 'site_id', 'document', 'created_at', 'actions'];
   }
-  const baseColumns = ['id', 'account_number', 'site_id', 'tariff', 'security_deposit', 'bill', 'due_date', 'due_date_rebate', 'connection_date', 'created_at', 'actions', 'current_balance', 'recharge_status'];
-  if (payType === 'submeter') {
-    return ['id', 'tariff', 'operator_name', 'operator_mobile_number', 'created_at', 'actions'];
+  if (payType === 'prepaid') {
+    return ['select', 'account_number', 'biller_board', 'site_id', 'security_deposit', 'current_balance', 'recharge_status', 'created_at', 'actions'];
   }
-  return baseColumns;
+  if (payType === 'submeter') {
+    return ['select', 'account_number', 'biller_board', 'site_id', 'tariff', 'operator_name', 'operator_mobile_number', 'created_at', 'actions'];
+  }
+  return [];
 };
 
 export function ConnectionTable({

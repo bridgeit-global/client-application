@@ -15,7 +15,6 @@ import { MoreHorizontal, Pencil, Trash } from 'lucide-react';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { useRouter } from 'next/navigation';
 import { ConnectionTableProps } from '@/types/connections-type';
-import { useSiteName } from '@/lib/utils/site';
 import { useUserStore } from '@/lib/store/user-store';
 
 interface CellActionProps {
@@ -125,7 +124,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   return (
     <>
       <AlertModal
-        title={`Do you want connection delete?`}
+        title="Delete this connection?"
         isOpen={open}
         onClose={() => setOpen(false)}
         onConfirm={deleteSite}
@@ -162,7 +161,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 export const SiteActionButton = ({ table, fetchData }: any) => {
   const { toast } = useToast();
   const router = useRouter();
-  const site_name = useSiteName();
   const { user } = useUserStore();
   const data = table
     .getFilteredSelectedRowModel()
@@ -180,15 +178,13 @@ export const SiteActionButton = ({ table, fetchData }: any) => {
     toast({
       variant: 'success',
       title: 'Success',
-      description: `${site_name} ${is_active ? 'Activated' : 'Deactivated'
-        } successfully`
+      description: `Connection(s) ${is_active ? 'activated' : 'deactivated'} successfully`
     });
     if (error) {
       toast({
         title: 'Error',
         variant: 'destructive',
-        description: `Error ${is_active ? 'Activation' : 'Deactivation'
-          } ${site_name}`
+        description: `Error ${is_active ? 'activating' : 'deactivating'} connection(s)`
       });
     }
     router.refresh();

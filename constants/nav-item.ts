@@ -19,7 +19,7 @@ export const getNavItems = (site_name: string): NavItem[] => {
             shortcut: ['s', 's'],
             items: [
                 {
-                    title: `${site_name}`,
+                    title: `${site_name}s`,
                     url: '/portal/site/sites',
                     icon: 'site',
                     isCollapsible: false,

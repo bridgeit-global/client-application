@@ -144,7 +144,7 @@ async function SiteOverview() {
                     <Building2 className="h-6 w-6 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Active {site_name}</p>
+                    <p className="text-sm text-gray-500">Active {site_name}s</p>
                     <h2 className="text-2xl font-bold text-gray-900">{formatNumber(totalActiveStation)}</h2>
                   </div>
                 </div>
@@ -224,7 +224,7 @@ async function SiteOverview() {
                     <div className="space-y-4">
                       <Link href={`/portal/site/sites?type=${station.type}`} className="block p-2 bg-gray-50 rounded-lg hover:bg-yellow-100">
                         <p className="text-2xl font-bold text-gray-900">{formatNumber(station.active_count)}</p>
-                        <p className="text-sm text-gray-500">Active {site_name}</p>
+                        <p className="text-sm text-gray-500">Active {site_name}s</p>
                       </Link>
                       <div className="space-y-2">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

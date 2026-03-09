@@ -1,5 +1,19 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+
+function formatBillingPeriod(raw: string): string {
+  const parts = raw.split(' to ');
+  if (parts.length !== 2) return raw;
+  const fmt = (s: string) => {
+    const d = new Date(s + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+  return `${fmt(parts[0])} to ${fmt(parts[1])}`;
+}
 
 type BankDetailsProps = {
   bankName: string;
@@ -32,172 +46,182 @@ export type SubmeterBillInvoiceProps = {
   className?: string;
 };
 
+const cellLabel: React.CSSProperties = {
+  width: '40%',
+  backgroundColor: '#f8fafc',
+  padding: '10px 16px',
+  fontWeight: 600,
+  fontSize: '13px',
+  color: '#1e293b',
+  borderBottom: '1px solid #e2e8f0',
+};
+
+const cellValue: React.CSSProperties = {
+  padding: '10px 16px',
+  fontSize: '13px',
+  color: '#334155',
+  borderBottom: '1px solid #e2e8f0',
+};
+
+const sectionHeading: React.CSSProperties = {
+  fontSize: '15px',
+  fontWeight: 700,
+  color: '#1e3a5f',
+  marginBottom: '8px',
+};
+
+const tableStyle: React.CSSProperties = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  border: '1px solid #e2e8f0',
+};
+
+function InvoiceRow({
+  label,
+  value,
+  isLast,
+}: {
+  label: string;
+  value: React.ReactNode;
+  isLast?: boolean;
+}) {
+  const lStyle = isLast ? { ...cellLabel, borderBottom: 'none' } : cellLabel;
+  const vStyle = isLast ? { ...cellValue, borderBottom: 'none' } : cellValue;
+  return (
+    <tr>
+      <td style={lStyle}>{label}</td>
+      <td style={vStyle}>{value}</td>
+    </tr>
+  );
+}
+
 export function SubmeterBillInvoice({
   bankDetails,
   consumerDetails,
   billingSummary,
-  className
 }: SubmeterBillInvoiceProps) {
   return (
     <div
-      className={cn(
-        'mx-auto max-w-3xl bg-white p-8 text-sm text-slate-900',
-        'border border-slate-200 shadow-sm',
-        className
-      )}
+      style={{
+        width: '794px',
+        minHeight: '1123px',
+        margin: '0 auto',
+        backgroundColor: '#ffffff',
+        padding: '60px 56px',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        color: '#1e293b',
+        boxSizing: 'border-box',
+      }}
     >
-      <div className="mb-8 border-b border-slate-200 pb-4 text-center">
-        <h1 className="text-xl font-semibold tracking-wide">
+      {/* Header */}
+      <div
+        style={{
+          textAlign: 'center',
+          paddingBottom: '20px',
+          marginBottom: '32px',
+          borderBottom: '2px solid #1e3a5f',
+        }}
+      >
+        <h1
+          style={{
+            fontSize: '22px',
+            fontWeight: 700,
+            letterSpacing: '0.5px',
+            color: '#1e293b',
+            margin: 0,
+          }}
+        >
           Submeter Electricity Bill Invoice
         </h1>
       </div>
 
-      {/* Consumer Bank Details */}
-      <section className="mb-8">
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          Consumer Bank Details
-        </h2>
-        <div className="overflow-hidden rounded border border-slate-200">
-          <table className="w-full border-collapse text-left text-xs">
-            <tbody>
-              <tr className="border-b border-slate-200">
-                <td className="w-1/3 bg-slate-50 px-3 py-2 font-medium">
-                  Bank Name
-                </td>
-                <td className="px-3 py-2">{bankDetails.bankName}</td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Bank Account Number
-                </td>
-                <td className="px-3 py-2">
-                  {bankDetails.bankAccountNumber || '-'}
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Bank Account Holder Name
-                </td>
-                <td className="px-3 py-2">
-                  {bankDetails.bankAccountHolderName || '-'}
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">IFSC Code</td>
-                <td className="px-3 py-2">{bankDetails.ifscCode || '-'}</td>
-              </tr>
-              <tr>
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Operator Mobile Number
-                </td>
-                <td className="px-3 py-2">
-                  {bankDetails.operatorMobileNumber || '-'}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
       {/* Consumer Details */}
-      <section className="mb-8">
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          Consumer Details
-        </h2>
-        <div className="overflow-hidden rounded border border-slate-200">
-          <table className="w-full border-collapse text-left text-xs">
-            <tbody>
-              <tr className="border-b border-slate-200">
-                <td className="w-1/3 bg-slate-50 px-3 py-2 font-medium">
-                  Station ID
-                </td>
-                <td className="px-3 py-2">{consumerDetails.stationId}</td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Operator Name
-                </td>
-                <td className="px-3 py-2">
-                  {consumerDetails.operatorName || '-'}
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Meter No.
-                </td>
-                <td className="px-3 py-2">{consumerDetails.meterNo}</td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">₹ Tariff</td>
-                <td className="px-3 py-2">{consumerDetails.tariff}</td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Billing Period
-                </td>
-                <td className="px-3 py-2">
-                  {consumerDetails.billingPeriod}
-                </td>
-              </tr>
-              <tr>
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Bill Number
-                </td>
-                <td className="px-3 py-2">{consumerDetails.billNumber}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div style={{ marginBottom: '28px' }}>
+        <h2 style={sectionHeading}>Consumer Details</h2>
+        <table style={tableStyle}>
+          <tbody>
+            <InvoiceRow label="Station ID" value={consumerDetails.stationId} />
+            <InvoiceRow
+              label="Operator Name"
+              value={consumerDetails.operatorName || '-'}
+            />
+            <InvoiceRow label="Meter No." value={consumerDetails.meterNo} />
+            <InvoiceRow
+              label="₹ Tariff"
+              value={`₹${consumerDetails.tariff}`}
+            />
+            <InvoiceRow
+              label="Billing Period"
+              value={formatBillingPeriod(consumerDetails.billingPeriod)}
+            />
+            <InvoiceRow
+              label="Bill Number"
+              value={consumerDetails.billNumber}
+              isLast
+            />
+          </tbody>
+        </table>
+      </div>
 
       {/* Billing Summary */}
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          Billing Summary
-        </h2>
-        <div className="overflow-hidden rounded border border-slate-200">
-          <table className="w-full border-collapse text-left text-xs">
-            <tbody>
-              <tr className="border-b border-slate-200">
-                <td className="w-1/3 bg-slate-50 px-3 py-2 font-medium">
-                  Start Reading
-                </td>
-                <td className="px-3 py-2">
-                  {billingSummary.startReading.toLocaleString()}
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  End Reading
-                </td>
-                <td className="px-3 py-2">
-                  {billingSummary.endReading.toLocaleString()}
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Units Consumed
-                </td>
-                <td className="px-3 py-2">
-                  {billingSummary.unitsConsumed.toLocaleString()}
-                </td>
-              </tr>
-              <tr>
-                <td className="bg-slate-50 px-3 py-2 font-medium">
-                  Amount Payable
-                </td>
-                <td className="px-3 py-2 font-semibold">
-                  ₹ {billingSummary.amountPayable.toLocaleString(undefined, {
+      <div style={{ marginBottom: '28px' }}>
+        <h2 style={sectionHeading}>Billing Summary</h2>
+        <table style={tableStyle}>
+          <tbody>
+            <InvoiceRow
+              label="Start Reading"
+              value={billingSummary.startReading.toLocaleString()}
+            />
+            <InvoiceRow
+              label="End Reading"
+              value={billingSummary.endReading.toLocaleString()}
+            />
+            <InvoiceRow
+              label="Units Consumed"
+              value={billingSummary.unitsConsumed.toLocaleString()}
+            />
+            <InvoiceRow
+              label="Amount Payable"
+              value={
+                <span style={{ fontWeight: 700, fontSize: '14px' }}>
+                  ₹{billingSummary.amountPayable.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    maximumFractionDigits: 2,
                   })}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                </span>
+              }
+              isLast
+            />
+          </tbody>
+        </table>
+      </div>
+
+      {/* Payment Bank Details */}
+      <div>
+        <h2 style={sectionHeading}>Payment Bank Details</h2>
+        <table style={tableStyle}>
+          <tbody>
+            <InvoiceRow label="Bank Name" value={bankDetails.bankName} />
+            <InvoiceRow
+              label="Bank Account Number"
+              value={bankDetails.bankAccountNumber || '-'}
+            />
+            <InvoiceRow
+              label="Bank Account Holder Name"
+              value={bankDetails.bankAccountHolderName || '-'}
+            />
+            <InvoiceRow
+              label="IFSC Code"
+              value={bankDetails.ifscCode || '-'}
+            />
+            <InvoiceRow
+              label="Operator Mobile Number"
+              value={bankDetails.operatorMobileNumber || '-'}
+              isLast
+            />
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-

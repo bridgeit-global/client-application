@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { Loader2 } from "lucide-react";
 
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { SubmeterBillInvoice } from "./submeter-bill-invoice";
 import type { SubmeterBillInvoiceProps } from "./submeter-bill-invoice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/client";
 
 type ConnectionOption = {
   id: string;
@@ -46,31 +48,64 @@ type ConnectionOption = {
   } | null;
 };
 
-const formSchema = z.object({
-  site_id: z.string().min(1, { message: "Site ID is required" }),
-  connection_id: z.string().min(1, { message: "Connection is required" }),
-  billing_start: z.date({ required_error: "Billing start date is required" }),
-  billing_end: z.date({ required_error: "Billing end date is required" }),
-}).refine(
-  (data) =>
-    !data.billing_start ||
-    !data.billing_end ||
-    data.billing_start <= data.billing_end,
-  {
-    message: "Billing start date must be before or equal to end date",
-    path: ["billing_end"],
-  }
-);
+const formSchema = z
+  .object({
+    site_id: z.string().min(1, { message: "Site ID is required" }),
+    connection_id: z.string().min(1, { message: "Connection is required" }),
+    billing_start: z.date({ required_error: "Billing start date is required" }),
+    billing_end: z.date({ required_error: "Billing end date is required" }),
+  })
+  .refine(
+    (data) =>
+      !data.billing_start ||
+      !data.billing_end ||
+      data.billing_start <= data.billing_end,
+    {
+      message: "Billing start date must be before or equal to end date",
+      path: ["billing_end"],
+    }
+  );
 
 type FormValues = z.infer<typeof formSchema>;
+
+type RequestPayload = {
+  connection_id: string;
+  billing_start: string;
+  billing_end: string;
+};
+
+async function generatePdfBlob(
+  element: HTMLElement
+): Promise<{ blob: Blob; pdf: jsPDF }> {
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+    width: 794,
+    windowWidth: 794,
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+  const blob = pdf.output("blob");
+  return { blob, pdf };
+}
 
 export default function SubmeterBillForm() {
   const { toast } = useToast();
   const [connections, setConnections] = useState<ConnectionOption[]>([]);
   const [isFetchingConnections, setIsFetchingConnections] = useState(false);
-  const [isGeneratingBill, setIsGeneratingBill] = useState(false);
-  const [invoiceData, setInvoiceData] = useState<SubmeterBillInvoiceProps | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [invoiceData, setInvoiceData] =
+    useState<SubmeterBillInvoiceProps | null>(null);
   const [billNumber, setBillNumber] = useState<string | null>(null);
+  const [savedPayload, setSavedPayload] = useState<RequestPayload | null>(null);
+  const [billSaved, setBillSaved] = useState(false);
   const invoiceRef = useRef<HTMLDivElement | null>(null);
 
   const form = useForm<FormValues>({
@@ -94,14 +129,22 @@ export default function SubmeterBillForm() {
 
     setIsFetchingConnections(true);
     setConnections([]);
+    setInvoiceData(null);
+    setBillNumber(null);
+    setSavedPayload(null);
+    setBillSaved(false);
     form.setValue("connection_id", "");
 
     try {
-      const res = await fetch(`/api/submeter-bill?site_id=${encodeURIComponent(siteId)}`);
+      const res = await fetch(
+        `/api/submeter-bill?site_id=${encodeURIComponent(siteId)}`
+      );
       const payload = await res.json();
 
       if (!res.ok) {
-        throw new Error(payload?.error || "Failed to fetch submeter connections");
+        throw new Error(
+          payload?.error || "Failed to fetch submeter connections"
+        );
       }
 
       const options: ConnectionOption[] = payload.data || [];
@@ -110,7 +153,8 @@ export default function SubmeterBillForm() {
       if (options.length === 0) {
         toast({
           title: "No submeter connections",
-          description: "No active submeter connections were found for this site.",
+          description:
+            "No active submeter connections were found for this site.",
         });
       } else {
         toast({
@@ -123,20 +167,23 @@ export default function SubmeterBillForm() {
       toast({
         variant: "destructive",
         title: "Error fetching connections",
-        description: error?.message || "Something went wrong. Please try again.",
+        description:
+          error?.message || "Something went wrong. Please try again.",
       });
     } finally {
       setIsFetchingConnections(false);
     }
   };
 
-  const onSubmit = async (values: FormValues) => {
-    setIsGeneratingBill(true);
+  const handlePreview = async (values: FormValues) => {
+    setIsPreviewing(true);
     setInvoiceData(null);
     setBillNumber(null);
+    setSavedPayload(null);
+    setBillSaved(false);
 
     try {
-      const payload = {
+      const payload: RequestPayload = {
         connection_id: values.connection_id,
         billing_start: format(values.billing_start, "yyyy-MM-dd"),
         billing_end: format(values.billing_end, "yyyy-MM-dd"),
@@ -144,16 +191,14 @@ export default function SubmeterBillForm() {
 
       const res = await fetch("/api/submeter-bill", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, preview: true }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to generate bill");
+        throw new Error(data?.error || "Failed to generate preview");
       }
 
       if (!data?.invoice) {
@@ -161,52 +206,97 @@ export default function SubmeterBillForm() {
       }
 
       setInvoiceData(data.invoice as SubmeterBillInvoiceProps);
-      setBillNumber(data.bill?.bill_number || null);
+      setBillNumber(data.billNumber || null);
+      setSavedPayload(payload);
 
       toast({
         variant: "success",
-        title: "Bill generated",
-        description: "Submeter bill has been created and saved.",
+        title: "Preview ready",
+        description:
+          "Review the bill below. Click 'Save & Download PDF' to confirm.",
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error generating bill",
-        description: error?.message || "Something went wrong. Please try again.",
+        title: "Error generating preview",
+        description:
+          error?.message || "Something went wrong. Please try again.",
       });
     } finally {
-      setIsGeneratingBill(false);
+      setIsPreviewing(false);
     }
   };
 
-  const handleDownloadPdf = async () => {
-    if (!invoiceRef.current || !invoiceData) return;
+  const handleSaveAndDownload = async () => {
+    if (!savedPayload || !invoiceRef.current || !invoiceData) return;
+
+    setIsSaving(true);
 
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
-        useCORS: true,
+      const { blob, pdf } = await generatePdfBlob(invoiceRef.current);
+
+      // Upload PDF to Supabase storage
+      const supabase = createClient();
+      const storagePath = `bills/${savedPayload.connection_id}/${billNumber || "bill"}.pdf`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("bill-documents")
+        .upload(storagePath, blob, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      // Save bill to DB with the storage path
+      const res = await fetch("/api/submeter-bill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...savedPayload,
+          preview: false,
+          content_path: storagePath,
+        }),
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const data = await res.json();
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${billNumber || "submeter-bill"}.pdf`);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to save bill");
+      }
+
+      // Download the PDF locally
+      const savedBillNumber = data.bill?.bill_number || billNumber;
+      pdf.save(`${savedBillNumber || "submeter-bill"}.pdf`);
+
+      setBillSaved(true);
+
+      toast({
+        variant: "success",
+        title: "Bill saved",
+        description:
+          "Bill has been saved to the database and downloaded as PDF.",
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error downloading PDF",
-        description: error?.message || "Unable to generate PDF. Please try again.",
+        title: "Error saving bill",
+        description:
+          error?.message || "Something went wrong. Please try again.",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const selectedConnection = connections.find(
-    (c) => c.id === form.watch("connection_id")
-  );
+  const handleReset = () => {
+    setInvoiceData(null);
+    setBillNumber(null);
+    setSavedPayload(null);
+    setBillSaved(false);
+  };
 
   return (
     <div className="space-y-8">
@@ -217,7 +307,7 @@ export default function SubmeterBillForm() {
         <CardContent>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={form.handleSubmit(handlePreview)}
               className="space-y-6"
             >
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -228,10 +318,7 @@ export default function SubmeterBillForm() {
                     <FormItem>
                       <FormLabel>Site ID</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="Enter site ID"
-                          {...field}
-                        />
+                        <Input placeholder="Enter site ID" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -246,7 +333,9 @@ export default function SubmeterBillForm() {
                     onClick={handleFetchConnections}
                     disabled={isFetchingConnections || !form.watch("site_id")}
                   >
-                    {isFetchingConnections ? "Fetching..." : "Fetch Connections"}
+                    {isFetchingConnections
+                      ? "Fetching..."
+                      : "Fetch Connections"}
                   </Button>
                 </div>
 
@@ -369,21 +458,13 @@ export default function SubmeterBillForm() {
                 <Button
                   type="submit"
                   className="w-full md:w-auto"
-                  disabled={isGeneratingBill}
+                  disabled={isPreviewing || isSaving}
                 >
-                  {isGeneratingBill ? "Generating Bill..." : "Generate Bill"}
+                  {isPreviewing && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isPreviewing ? "Generating Preview..." : "Preview Bill"}
                 </Button>
-
-                {invoiceData && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full md:w-auto"
-                    onClick={handleDownloadPdf}
-                  >
-                    Download PDF
-                  </Button>
-                )}
               </div>
             </form>
           </Form>
@@ -391,11 +472,53 @@ export default function SubmeterBillForm() {
       </Card>
 
       {invoiceData && (
-        <div ref={invoiceRef}>
-          <SubmeterBillInvoice {...invoiceData} />
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">
+              Bill Preview
+              {billSaved && (
+                <span className="ml-2 text-xs font-normal text-green-600">
+                  (Saved)
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="overflow-x-auto">
+              <div ref={invoiceRef}>
+                <SubmeterBillInvoice {...invoiceData} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 md:flex-row">
+              {!billSaved && (
+                <Button
+                  type="button"
+                  className="w-full md:w-auto"
+                  onClick={handleSaveAndDownload}
+                  disabled={isSaving}
+                >
+                  {isSaving && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isSaving ? "Saving..." : "Save & Download PDF"}
+                </Button>
+              )}
+
+              {billSaved && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full md:w-auto"
+                  onClick={handleReset}
+                >
+                  Generate Another Bill
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 }
-

@@ -35,11 +35,80 @@ type PostBody = {
   connection_id?: string;
   billing_start?: string;
   billing_end?: string;
+  preview?: boolean;
+  content_path?: string;
 };
+
+function buildInvoicePayload(
+  connection: any,
+  startReading: any,
+  endReading: any,
+  billing_start: string,
+  billing_end: string
+) {
+  const unitsConsumed =
+    Number(endReading.end_reading) - Number(startReading.start_reading);
+
+  const tariffValue = Number(connection.tariff) || 0;
+  const billAmount = Number((unitsConsumed * tariffValue).toFixed(2));
+
+  const siteId: string = connection.site_id;
+  const accountNumber: string = String(connection.account_number);
+
+  const endDate = new Date(billing_end);
+  const y = endDate.getFullYear();
+  const m = String(endDate.getMonth() + 1).padStart(2, '0');
+  const billPeriodKey = `${y}${m}`;
+
+  const billNumber = `${siteId}_${accountNumber}_${billPeriodKey}`;
+  const billId = `${connection.id}_${billNumber}`;
+
+  const dueDate = new Date(endDate);
+  dueDate.setDate(dueDate.getDate() + 15);
+  const dueDateStr = dueDate.toISOString().split('T')[0];
+
+  const submeterInfo = connection.submeter_info || {};
+
+  const invoice = {
+    bankDetails: {
+      bankName: submeterInfo.bank_name ?? '',
+      bankAccountNumber: submeterInfo.bank_account_number ?? '',
+      bankAccountHolderName: submeterInfo.bank_account_holder_name ?? '',
+      ifscCode: submeterInfo.ifsc_code ?? '',
+      operatorMobileNumber: submeterInfo.operator_mobile_number
+        ? String(submeterInfo.operator_mobile_number)
+        : ''
+    },
+    consumerDetails: {
+      stationId: siteId,
+      operatorName: submeterInfo.operator_name ?? '',
+      meterNo: accountNumber,
+      tariff: connection.tariff ?? '',
+      billingPeriod: `${billing_start} to ${billing_end}`,
+      billNumber
+    },
+    billingSummary: {
+      startReading: Number(startReading.start_reading),
+      endReading: Number(endReading.end_reading),
+      unitsConsumed,
+      amountPayable: billAmount
+    }
+  };
+
+  return {
+    invoice,
+    billId,
+    billNumber,
+    dueDateStr,
+    unitsConsumed,
+    billAmount,
+    tariffValue
+  };
+}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as PostBody;
-  const { connection_id, billing_start, billing_end } = body;
+  const { connection_id, billing_start, billing_end, preview, content_path } = body;
 
   if (!connection_id || !billing_start || !billing_end) {
     return NextResponse.json(
@@ -93,22 +162,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const unitsConsumed =
-      Number(endReading.end_reading) - Number(startReading.start_reading);
-
-    if (unitsConsumed < 0) {
-      return NextResponse.json(
-        { error: 'End reading must be greater than or equal to start reading' },
-        { status: 400 }
-      );
-    }
-
-    const tariffValue = Number(connection.tariff) || 0;
-    const billAmount = Number((unitsConsumed * tariffValue).toFixed(2));
-
-    const siteId: string = connection.site_id;
-    const accountNumber: string = String(connection.account_number);
-
     const endDate = new Date(billing_end);
     if (Number.isNaN(endDate.getTime())) {
       return NextResponse.json(
@@ -117,24 +170,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const billPeriodLabel = `${billing_start} to ${billing_end}`;
+    const {
+      invoice,
+      billId,
+      billNumber,
+      dueDateStr,
+      unitsConsumed,
+      billAmount,
+      tariffValue
+    } = buildInvoicePayload(connection, startReading, endReading, billing_start, billing_end);
 
-    const y = endDate.getFullYear();
-    const m = String(endDate.getMonth() + 1).padStart(2, '0');
-    const billPeriodKey = `${y}${m}`;
+    if (unitsConsumed < 0) {
+      return NextResponse.json(
+        { error: 'End reading must be greater than or equal to start reading' },
+        { status: 400 }
+      );
+    }
 
-    const billNumber = `${siteId}_${accountNumber}_${billPeriodKey}`;
-    const billId = `${connection_id}_${billNumber}`;
+    // Preview mode: return invoice data without saving to DB
+    if (preview) {
+      return NextResponse.json(
+        { invoice, billNumber },
+        { status: 200 }
+      );
+    }
 
-    const dueDate = new Date(endDate);
-    dueDate.setDate(dueDate.getDate() + 15);
-    const dueDateStr = dueDate.toISOString().split('T')[0];
-
+    // Save mode: insert bill into DB
     const billInsert = {
       id: billId,
       connection_id,
       bill_number: billNumber,
-      bill_type: 'submeter',
+      bill_type: 'Normal',
       bill_status: 'new',
       bill_date: billing_end,
       start_date: billing_start,
@@ -143,8 +209,8 @@ export async function POST(req: NextRequest) {
       bill_amount: billAmount,
       unit_cost: tariffValue,
       due_date: dueDateStr,
-      content: 'Auto Generated',
-      content_type: 'plain/text',
+      content: content_path || 'Auto Generated',
+      content_type: content_path ? 'pdf' : 'plain/text',
       is_active: true,
       is_valid: true,
       payment_status: false,
@@ -169,42 +235,10 @@ export async function POST(req: NextRequest) {
     await supabase.from('adherence_charges').insert([charges]).select();
     await supabase.from('regulatory_charges').insert([charges]).select();
 
-    const submeterInfo = connection.submeter_info || {};
-
-    const bankDetails = {
-      bankName: submeterInfo.bank_name ?? '',
-      bankAccountNumber: submeterInfo.bank_account_number ?? '',
-      bankAccountHolderName: submeterInfo.bank_account_holder_name ?? '',
-      ifscCode: submeterInfo.ifsc_code ?? '',
-      operatorMobileNumber: submeterInfo.operator_mobile_number
-        ? String(submeterInfo.operator_mobile_number)
-        : ''
-    };
-
-    const consumerDetails = {
-      stationId: siteId,
-      operatorName: submeterInfo.operator_name ?? '',
-      meterNo: accountNumber,
-      tariff: connection.tariff ?? '',
-      billingPeriod: billPeriodLabel,
-      billNumber
-    };
-
-    const billingSummary = {
-      startReading: Number(startReading.start_reading),
-      endReading: Number(endReading.end_reading),
-      unitsConsumed,
-      amountPayable: billAmount
-    };
-
     return NextResponse.json(
       {
         bill: billData,
-        invoice: {
-          bankDetails,
-          consumerDetails,
-          billingSummary
-        }
+        invoice
       },
       { status: 201 }
     );

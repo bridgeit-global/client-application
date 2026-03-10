@@ -1,10 +1,12 @@
 import React from 'react';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TimelineItem, TimelineItemProps } from './timeline-item';
+import type { StorageSource } from '@/lib/utils/presigned-url-client';
 
 type TimelineProps = {
   location: string;
   events: TimelineItemProps[];
+  storageSource?: StorageSource;
 };
 
 function getStartAndEndDates(events: TimelineItemProps[]): {
@@ -31,7 +33,7 @@ function getStartAndEndDates(events: TimelineItemProps[]): {
   };
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ location, events }) => {
+export const Timeline: React.FC<TimelineProps> = ({ location, events, storageSource = 's3' }) => {
   const { startDate, endDate } = getStartAndEndDates(events);
 
   const dateRange = generateDateRange(startDate, endDate);
@@ -54,6 +56,7 @@ export const Timeline: React.FC<TimelineProps> = ({ location, events }) => {
                 date={date}
                 events={eventMap.get(date) || []}
                 hasEvent={eventMap.has(date)}
+                storageSource={storageSource}
               />
             ))}
           </div>

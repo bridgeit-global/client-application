@@ -12,6 +12,7 @@ import StatusBadge from '@/components/badges/status-badge';
 import { LowBalanceBadge } from '@/components/badges/low-balance-badge';
 import { useSiteName } from '@/lib/utils/site';
 import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
+import { getStorageSourceFromPaytype } from '@/lib/utils/presigned-url-client';
 import { FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -417,6 +418,7 @@ export const inactiveConsumerColumns: ColumnDef<ConnectionTableProps>[] = [
         <DocumentViewerModalWithPresigned
           fileKey={doc.key}
           contentType={doc.contentType}
+          storageSource={getStorageSourceFromPaytype(row.original.paytype)}
           icon={<FileText className="h-4 w-4" />}
           label={doc.contentType === 'pdf' ? 'View PDF' : 'View HTML'}
         />

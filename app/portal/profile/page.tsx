@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ddmmyy } from '@/lib/utils/date-format';
 import { getPrepaidBalance } from '@/lib/utils';
 import { formatRupees } from '@/lib/utils/number-format';
+import { getStorageSourceFromPaytype } from '@/lib/utils/presigned-url-client';
 import { TimelineItemProps } from './timeline-item';
 import PrepaidBalancesChart from './prepaid-balances-chart';
 import { fetchSiteProfile } from '@/services/sites';
@@ -402,7 +403,7 @@ export default async function Page(props: paramsProps) {
         ) : null}
         {
           events.length > 0 ? (
-            <Timeline location="Electricity Bill Timeline" events={events} />
+            <Timeline location="Electricity Bill Timeline" events={events} storageSource={getStorageSourceFromPaytype(paytype)} />
           ) : null
         }
       </div>

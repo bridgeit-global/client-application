@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { PDFViewer, HTMLViewer } from './pdf-viewer-modal';
-import { getPresignedUrl } from '@/lib/utils/presigned-url-client';
+import { getPresignedUrl, type StorageSource } from '@/lib/utils/presigned-url-client';
 import { Loader2 } from 'lucide-react';
 
 interface PDFViewerWithPresignedProps {
   fileKey: string;
   contentType?: 'pdf' | 'html';
+  storageSource?: StorageSource;
 }
 
 /**
@@ -16,7 +17,8 @@ interface PDFViewerWithPresignedProps {
  */
 export function PDFViewerWithPresigned({ 
   fileKey, 
-  contentType = 'pdf' 
+  contentType = 'pdf',
+  storageSource = 's3',
 }: PDFViewerWithPresignedProps) {
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +36,7 @@ export function PDFViewerWithPresigned({
       setError(null);
       
       try {
-        const url = await getPresignedUrl(fileKey);
+        const url = await getPresignedUrl(fileKey, storageSource);
         console.log(url)
         setPresignedUrl(url);
       } catch (err: any) {

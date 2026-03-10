@@ -108,7 +108,7 @@ export const SiteBulkForm: React.FC<SiteBulkFormProps> = ({ initialData }) => {
   const downloadTemplate = async () => {
     try {
       const { getPresignedUrl } = await import('@/lib/utils/presigned-url-client');
-      const url = await getPresignedUrl('template/Bulk-Template-Excel.xlsx');
+      const url = await getPresignedUrl('template/Bulk-Template-Excel.xlsx', 's3');
       window.open(url);
     } catch (error) {
       console.error('Failed to get presigned URL for template:', error);

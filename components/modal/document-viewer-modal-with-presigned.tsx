@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { getPresignedUrl } from '@/lib/utils/presigned-url-client';
+import { getPresignedUrl, type StorageSource } from '@/lib/utils/presigned-url-client';
 import { Loader2, FileText } from 'lucide-react';
 import { PDFViewer, HTMLViewer, ImageViewer } from './document-viewer-modal';
 
@@ -11,6 +11,7 @@ interface DocumentViewerModalWithPresignedProps {
   contentType?: string | undefined | null;
   icon?: React.ReactNode;
   label?: string;
+  storageSource?: StorageSource;
 }
 
 /**
@@ -21,6 +22,7 @@ export default function DocumentViewerModalWithPresigned({
   contentType,
   icon,
   label,
+  storageSource = 's3',
 }: DocumentViewerModalWithPresignedProps) {
   const [open, setOpen] = useState(false);
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export default function DocumentViewerModalWithPresigned({
       setIsLoading(true);
       setError(null);
       try {
-        const url = await getPresignedUrl(fileKey);
+        const url = await getPresignedUrl(fileKey, storageSource);
         setPresignedUrl(url);
       } catch (err) {
         console.error('Failed to get presigned URL:', err);
@@ -49,7 +51,7 @@ export default function DocumentViewerModalWithPresigned({
         setIsLoading(false);
       }
     },
-    [fileKey, presignedUrl]
+    [fileKey, presignedUrl, storageSource]
   );
 
   const getIcon = () => {

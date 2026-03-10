@@ -1,20 +1,17 @@
 import { createClient } from '@/lib/supabase/server';
+import type { StorageSource } from './presigned-url-client';
 
 const SUPABASE_STORAGE_BUCKET = 'bill-documents';
 
-function isSupabaseStoragePath(key: string): boolean {
-  return key.endsWith('.pdf');
-}
-
 /**
  * Get a presigned/signed URL for a file (server-side).
- * Automatically detects whether the file is in Supabase Storage (submeter bills)
- * or S3 (regular bills) and returns the appropriate signed URL.
+ * - source 'supabase-storage': fetches from Supabase Storage bill-documents bucket (submeter bills)
+ * - source 's3': fetches via the get-s3-presigned-url Edge Function (prepaid/postpaid bills)
  */
-export async function getPresignedUrlServer(key: string): Promise<string> {
+export async function getPresignedUrlServer(key: string, source: StorageSource = 's3'): Promise<string> {
   const supabase = await createClient();
 
-  if (isSupabaseStoragePath(key)) {
+  if (source === 'supabase-storage') {
     const { data, error } = await supabase.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .createSignedUrl(key, 120);

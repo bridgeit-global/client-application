@@ -14,7 +14,7 @@ import { HTMLViewer } from '@/components/modal/document-viewer-modal';
 import { DialogContent } from '@/components/ui/dialog';
 import { Dialog } from '@/components/ui/dialog';
 import { ABNORMAL_BILL_STATUS_COLOR } from '@/constants/colors';
-import { getPresignedUrl } from '@/lib/utils/presigned-url-client';
+import { getPresignedUrl, type StorageSource } from '@/lib/utils/presigned-url-client';
 import { Skeleton } from '@/components/ui/skeleton';
 export type TimelineItemProps = {
   id: string;
@@ -32,12 +32,14 @@ type TimelineItemComponentProps = {
   date: string;
   events: TimelineItemProps[];
   hasEvent: boolean;
+  storageSource?: StorageSource;
 };
 
 export const TimelineItem: React.FC<TimelineItemComponentProps> = ({
   date,
   events,
-  hasEvent
+  hasEvent,
+  storageSource = 's3',
 }) => {
 
   const [open, setOpen] = useState(false);
@@ -66,7 +68,7 @@ export const TimelineItem: React.FC<TimelineItemComponentProps> = ({
         setIsLoadingUrl(true);
         setPresignedUrl(null);
         try {
-          const url = await getPresignedUrl(link);
+          const url = await getPresignedUrl(link, storageSource);
           setPresignedUrl(url);
         } catch (error) {
           console.error('Failed to get presigned URL:', error);

@@ -94,7 +94,6 @@ export function KPISection({ orgId }: KPISectionProps) {
         const { startDate, endDate } = getStartDateAndEndDate(month);
         const nowIso = new Date().toISOString();
 
-        console.log('selectedSiteTypes', selectedSiteTypes)
         const [benefitsRes, paymentSavingsRes, needAttentionRes] = await Promise.all([
             supabase.rpc('get_benefits_kpis', {
                 p_org_id: orgId,

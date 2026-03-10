@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { getPresignedUrl, type StorageSource } from '@/lib/utils/presigned-url-client';
 import { Loader2, FileText } from 'lucide-react';
@@ -53,6 +53,14 @@ export default function DocumentViewerModalWithPresigned({
     },
     [fileKey, presignedUrl, storageSource]
   );
+
+  // @react-pdf-viewer needs a resize to calculate dimensions inside dialogs
+  useEffect(() => {
+    if (open && presignedUrl && !isLoading) {
+      const timer = setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open, presignedUrl, isLoading]);
 
   const getIcon = () => {
     if (icon) return icon;

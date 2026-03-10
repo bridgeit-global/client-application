@@ -82,7 +82,15 @@ export const TimelineItem: React.FC<TimelineItemComponentProps> = ({
     };
 
     fetchPresignedUrl();
-  }, [link]);
+  }, [link, storageSource]);
+
+  // @react-pdf-viewer needs a resize to calculate dimensions inside dialogs
+  useEffect(() => {
+    if (open && presignedUrl && !isLoadingUrl) {
+      const timer = setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open, presignedUrl, isLoadingUrl]);
 
   const handleMouseEnter = (id: any) => setTimelineId(id);
   const handleMouseLeave = () => setTimelineId('');

@@ -39,7 +39,6 @@ const adherenceCharges = {
   lpsc: 0,
   tod_rebate: 0,
   tod_surcharge: 0,
-  low_pf_surcharge: 0,
   sanctioned_load_penalty: 0,
   power_factor_penalty: 0,
   power_factor_incentive: 0,

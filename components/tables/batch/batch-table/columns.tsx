@@ -88,7 +88,6 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
   }).length;
 
   const hasUnresolvedBillsCount = isPaidCount || unresolvedBillCount;
-  console.log('hasUnresolvedBillsCount', hasUnresolvedBillsCount, isPaidCount, unresolvedBillCount)
 
   //hooks
   const supabase = createClient();

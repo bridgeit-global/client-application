@@ -239,7 +239,8 @@ export function KPISection({ orgId }: KPISectionProps) {
         const setA = new Set(normalizedA);
         const setB = new Set(normalizedB);
         if (setA.size !== setB.size) return false;
-        for (const v of setA) {
+        // Avoid `for...of` directly on `Set` to prevent TS downlevel iteration errors.
+        for (const v of Array.from(setA)) {
             if (!setB.has(v)) return false;
         }
         return true;

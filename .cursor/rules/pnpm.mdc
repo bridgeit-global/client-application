@@ -11,5 +11,6 @@ This project uses **pnpm** as the package manager.
 - **Add a package**: `pnpm add <package>` / `pnpm add -D <package>` for dev
 - **Remove a package**: `pnpm remove <package>`
 - **Run scripts**: `pnpm run <script>` or `pnpm <script>` (e.g. `pnpm dev`, `pnpm build`)
+- **Verify builds**: always use `pnpm build` as the canonical check after fixes; avoid running `next build` or `npm run build` directly
 
 Do not use `npm` or `yarn` for installs or script runs in this repo.

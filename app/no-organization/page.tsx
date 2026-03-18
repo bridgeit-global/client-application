@@ -8,11 +8,10 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import { Mail, ArrowLeft, Home } from 'lucide-react';
+import { Mail, Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/landing/header';
 import Footer from '@/components/layout/landing/footer';
-import Link from 'next/link';
 
 export default function NoOrganizationPage() {
   const router = useRouter();
@@ -66,14 +65,6 @@ export default function NoOrganizationPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/login')}
-                className="flex-1 bg-white/10 backdrop-blur-sm hover:bg-white/15 border-white/20 text-white"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
-              </Button>
               <Button
                 variant="outline"
                 onClick={() => router.push('/')}

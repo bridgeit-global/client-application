@@ -134,6 +134,33 @@ export default function ClientBenefitsSection() {
             </CardContent>
           </Card>
         </div>
+
+        <div className="mt-10 md:mt-12">
+          <div className="text-center">
+            <h3 className="text-white font-semibold">What this impact looks like</h3>
+            <p className="mx-auto mt-2 max-w-2xl text-white/70">
+              Faster processing, higher accuracy, and on-time payments—built into the workflow.
+            </p>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <div className="text-3xl font-bold text-primary">100%</div>
+              <div className="mt-1 text-white/80 font-medium">Bill digitization</div>
+              <div className="mt-2 text-sm text-white/70">Zero manual data entry</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <div className="text-3xl font-bold text-primary">Up to 120</div>
+              <div className="mt-1 text-white/80 font-medium">Mins saved per bill</div>
+              <div className="mt-2 text-sm text-white/70">Faster extraction + approvals</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+              <div className="text-3xl font-bold text-primary">100%</div>
+              <div className="mt-1 text-white/80 font-medium">Timely payments</div>
+              <div className="mt-2 text-sm text-white/70">Avoid late payment risk</div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

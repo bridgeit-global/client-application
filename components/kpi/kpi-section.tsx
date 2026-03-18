@@ -10,9 +10,13 @@ import { KPICard } from './kpi-card';
 import { MonthPicker } from './month-picker';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
-import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard } from 'lucide-react';
+import { Loader2, Sparkles, DollarSign, AlertTriangle, LayoutDashboard, FilterX } from 'lucide-react';
 import { StationTypeSelector } from '../input/station-type-selector';
 import { ZoneIdSelector } from '../input/zone-id-selector';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface KPISectionProps {
     orgId?: string;
@@ -78,8 +82,12 @@ export function KPISection({ orgId }: KPISectionProps) {
     const [metrics, setMetrics] = useState<KPIMetric[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
+    // "Applied" filters drive the KPI query. We keep separate "draft" filters so users can
+    // select multiple options without triggering an RPC on every single click.
     const [selectedSiteTypes, setSelectedSiteTypes] = useState<string[]>([]);
     const [selectedZoneId, setSelectedZoneId] = useState<string[]>([]);
+    const [draftSelectedSiteTypes, setDraftSelectedSiteTypes] = useState<string[]>([]);
+    const [draftSelectedZoneId, setDraftSelectedZoneId] = useState<string[]>([]);
     const getStartDateAndEndDate = (month: Date): { startDate: string, endDate: string } => {
         const today = new Date();
         const startDate = formatDateYYYYMMDD(getMonthStart(month));
@@ -219,6 +227,50 @@ export function KPISection({ orgId }: KPISectionProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [orgId, selectedMonth, selectedSiteTypes, selectedZoneId]);
 
+    const normalizeValues = (values: string[]) =>
+        values
+            .map((v) => v?.trim())
+            .filter((v) => v);
+
+    const areSetsEqual = (a: string[], b: string[]) => {
+        const normalizedA = normalizeValues(a);
+        const normalizedB = normalizeValues(b);
+        if (normalizedA.length !== normalizedB.length) return false;
+        const setA = new Set(normalizedA);
+        const setB = new Set(normalizedB);
+        if (setA.size !== setB.size) return false;
+        for (const v of setA) {
+            if (!setB.has(v)) return false;
+        }
+        return true;
+    };
+
+    const formatZoneOrTypeBadge = (values: string[], pluralSuffix: string) => {
+        const normalized = normalizeValues(values);
+        if (normalized.length === 0) return `All ${pluralSuffix}`;
+        if (normalized.length === 1) return normalized[0];
+        return `${normalized.length} ${pluralSuffix}`;
+    };
+
+    const hasDraftChanges =
+        !areSetsEqual(draftSelectedSiteTypes, selectedSiteTypes) ||
+        !areSetsEqual(draftSelectedZoneId, selectedZoneId);
+
+    const canApply = hasDraftChanges && !isLoading;
+    const canClearDrafts = draftSelectedSiteTypes.length > 0 || draftSelectedZoneId.length > 0;
+
+    const applyFilters = () => {
+        setSelectedSiteTypes(normalizeValues(draftSelectedSiteTypes));
+        setSelectedZoneId(normalizeValues(draftSelectedZoneId));
+    };
+
+    const clearFilters = () => {
+        setDraftSelectedSiteTypes([]);
+        setDraftSelectedZoneId([]);
+        setSelectedSiteTypes([]);
+        setSelectedZoneId([]);
+    };
+
     const handleMonthSelect = async (date: Date) => {
         if (!orgId) {
             console.error('Organization ID not available');
@@ -284,36 +336,95 @@ export function KPISection({ orgId }: KPISectionProps) {
             <div className="mx-auto w-full max-w-7xl">
                 {/* Month Picker + Filters */}
                 <div className="bg-background/80 border-b border-border/50">
-                    <div className="flex items-center justify-center py-4">
-                        <MonthPicker
-                            value={selectedMonth}
-                            onSelect={handleMonthSelect}
-                            placeholder="Select month"
-                            className="bg-white dark:bg-white/5 border-border/50 text-foreground hover:bg-accent/50 hover:border-border shadow-sm"
-                            disabled={isLoadingMetrics}
-                            maxDate={new Date()}
-                        />
-                    </div>
-                    <div className="flex flex-col items-center gap-3 py-4">
-                        <p className="text-sm text-muted-foreground text-center">
-                            Filter metrics by zone and station type. Leave unselected to include all.
-                        </p>
-                        <div className="flex flex-wrap items-center justify-center gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <span className="text-xs font-medium text-muted-foreground">Zone ID</span>
-                                <ZoneIdSelector
-                                    value={selectedZoneId}
-                                    onChange={(zoneId) => setSelectedZoneId(zoneId)}
-                                    className="min-w-[10rem] min-h-9 rounded-md border border-input bg-background shadow-sm"
+                    <div className="flex flex-col items-center py-4 px-4 sm:px-6 lg:px-8 gap-3">
+                        <div className="w-full flex items-end justify-center sm:justify-between gap-3 flex-col sm:flex-row">
+                            <div className="flex items-center justify-center">
+                                <MonthPicker
+                                    value={selectedMonth}
+                                    onSelect={handleMonthSelect}
+                                    placeholder="Select month"
+                                    className="bg-white dark:bg-white/5 border-border/50 text-foreground hover:bg-accent/50 hover:border-border shadow-sm"
+                                    disabled={isLoadingMetrics}
+                                    maxDate={new Date()}
                                 />
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <span className="text-xs font-medium text-muted-foreground">Station type</span>
-                                <StationTypeSelector
-                                    value={selectedSiteTypes}
-                                    onChange={(types) => setSelectedSiteTypes(types)}
-                                    className="min-w-[10rem] h-9 rounded-md border border-input bg-background shadow-sm"
-                                />
+
+                            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+                                <Badge variant="outline" className="whitespace-nowrap">
+                                    Showing: {formatZoneOrTypeBadge(selectedZoneId, 'zones')} •{' '}
+                                    {formatZoneOrTypeBadge(selectedSiteTypes, 'types')}
+                                </Badge>
+                                {hasDraftChanges && (
+                                    <Badge
+                                        variant="secondary"
+                                        className="whitespace-nowrap bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+                                    >
+                                        Changes pending
+                                    </Badge>
+                                )}
+
+                                <Sheet>
+                                    <SheetTrigger asChild>
+                                        <Button type="button" variant="outline" size="sm" className="gap-2">
+                                            <FilterX className="h-4 w-4" />
+                                            Filters
+                                        </Button>
+                                    </SheetTrigger>
+                                    <SheetContent side="right" className="w-full sm:w-[520px]">
+                                        <div className="space-y-6 py-2">
+                                            <div className="space-y-1">
+                                                <h2 className="text-lg font-semibold">Filters</h2>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Refine KPI metrics by zone and station type. Leave empty to include all.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex flex-col gap-4">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Label className="text-xs font-medium text-muted-foreground">Zone ID</Label>
+                                                    <ZoneIdSelector
+                                                        value={draftSelectedZoneId}
+                                                        onChange={(zoneId) => setDraftSelectedZoneId(zoneId)}
+                                                        className="min-w-[10rem] min-h-9 rounded-md border border-input bg-background shadow-sm"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Label className="text-xs font-medium text-muted-foreground">Station type</Label>
+                                                    <StationTypeSelector
+                                                        value={draftSelectedSiteTypes}
+                                                        onChange={(types) => setDraftSelectedSiteTypes(types)}
+                                                        className="min-w-[10rem] h-9 rounded-md border border-input bg-background shadow-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                                                <SheetClose asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="flex-1 gap-2"
+                                                        onClick={clearFilters}
+                                                        disabled={(!canClearDrafts && !hasDraftChanges) || isLoadingMetrics}
+                                                    >
+                                                        <FilterX className="h-4 w-4" />
+                                                        Clear
+                                                    </Button>
+                                                </SheetClose>
+                                                <SheetClose asChild>
+                                                    <Button
+                                                        type="button"
+                                                        className="flex-1"
+                                                        onClick={applyFilters}
+                                                        disabled={!canApply}
+                                                    >
+                                                        Apply Filters
+                                                    </Button>
+                                                </SheetClose>
+                                            </div>
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
                             </div>
                         </div>
                     </div>
@@ -331,9 +442,25 @@ export function KPISection({ orgId }: KPISectionProps) {
                         <h3 className="text-xl font-semibold text-foreground mb-2">
                             No metrics for {calculationMonth}
                         </h3>
-                        <p className="text-muted-foreground text-center max-w-md">
-                            Select a different month to view your KPI metrics and performance insights.
-                        </p>
+                        {selectedSiteTypes.length > 0 || selectedZoneId.length > 0 ? (
+                            <div className="space-y-3">
+                                <p className="text-muted-foreground text-center max-w-md">
+                                    Try clearing your filters, or choose a different month to view KPI metrics.
+                                </p>
+                                <Button
+                                    type="button"
+                                    variant="link"
+                                    className="px-0"
+                                    onClick={clearFilters}
+                                >
+                                    Clear filters
+                                </Button>
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground text-center max-w-md">
+                                Select a different month to view your KPI metrics and performance insights.
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -353,6 +480,14 @@ export function KPISection({ orgId }: KPISectionProps) {
                                 description: '',
                             };
                             const CategoryIcon = config.icon;
+                                    const categoryAccentByKey: Record<string, string> = {
+                                        benefits: 'text-violet-600 dark:text-violet-400',
+                                        need_attention: 'text-orange-600 dark:text-orange-400',
+                                        payment_savings: 'text-emerald-600 dark:text-emerald-400',
+                                        payment: 'text-emerald-600 dark:text-emerald-400',
+                                        billing: 'text-blue-600 dark:text-blue-400',
+                                    };
+                                    const accentClass = categoryAccentByKey[category] ?? 'text-muted-foreground';
 
                             return (
                                 <div
@@ -364,12 +499,17 @@ export function KPISection({ orgId }: KPISectionProps) {
                                     <div className="flex items-center gap-3 mb-6">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 rounded-lg bg-muted/50">
-                                                <CategoryIcon className="h-4 w-4 text-muted-foreground" />
+                                                <CategoryIcon className={`h-4 w-4 ${accentClass}`} />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-semibold text-foreground">
-                                                    {config.label}
-                                                </h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-lg font-semibold text-foreground">
+                                                        {config.label}
+                                                    </h3>
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {categoryMetrics.length}
+                                                    </Badge>
+                                                </div>
                                                 {config.description && (
                                                     <p className="text-xs text-muted-foreground">
                                                         {config.description}

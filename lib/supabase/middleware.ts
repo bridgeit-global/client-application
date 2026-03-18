@@ -54,6 +54,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
   const url = request.nextUrl.clone();
   const isOperator = user?.user_metadata?.role === 'operator';
+  const userOrgId = user?.user_metadata?.org_id;
+  const userMetadataRole = user?.user_metadata?.role;
 
   // If user is already logged in with email, redirect to appropriate dashboard
   // Email is mandatory for all users (including operators)
@@ -83,6 +85,13 @@ export async function updateSession(request: NextRequest) {
   if (user?.email) {
     if (isProtectedRoute) {
       // Handle role-specific redirects for protected routes
+      // Organization access guard:
+      // Only allow users that have BOTH `org_id` and `role` in `user_metadata`.
+      // Anything else should be redirected to the "no organization registered yet" page.
+      if (!userOrgId || !userMetadataRole) {
+        url.pathname = '/no-organization';
+        return addSecurityHeaders(NextResponse.redirect(url));
+      }
 
       // Restrict operator users to only meter-reading pages
       if (user.user_metadata?.role === 'operator') {
@@ -104,7 +113,7 @@ export async function updateSession(request: NextRequest) {
         return addSecurityHeaders(NextResponse.redirect(url));
       }
 
-      if (user.role !== 'service_role' && isSupportRoute) {
+      if (user.user_metadata?.role !== 'service_role' && isSupportRoute) {
         if (path !== '/portal/dashboard') {
           url.pathname = '/portal/dashboard';
           return addSecurityHeaders(NextResponse.redirect(url));

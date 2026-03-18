@@ -2,12 +2,12 @@ import dynamic from 'next/dynamic';
 import AboutSection from '@/components/landing/about-section';
 import StepsSection from '@/components/landing/steps-section';
 import FeaturesSection from '@/components/landing/features-section';
-import CostImpactSection from '@/components/landing/cost-impact-section';
 import ClientBenefitsSection from '@/components/landing/client-benefits-section';
 import MetricsSection from '@/components/landing/metrics-section';
 import CTASection from '@/components/landing/cta-section';
 import MapSection from '@/components/landing/map-section';
 import FAQSection from '@/components/landing/faq-section';
+import ScrollReveal from '@/components/landing/scroll-reveal';
 import Footer from '@/components/layout/landing/footer';
 
 // Dynamically import client components for incremental loading
@@ -48,16 +48,33 @@ export default async function Home() {
       <div className="absolute inset-0 bg-theme-mesh pointer-events-none" />
       <Header />
       <main className="w-full pt-16 relative">
-        <HeroSection />
-        <AboutSection />
-        <FeaturesSection />
-        <ClientBenefitsSection />
-        <MapSection />
-        <StepsSection />
-        <CostImpactSection />
-        <MetricsSection />
-        <FAQSection />
-        <CTASection />
+        <ScrollReveal>
+          <HeroSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <MetricsSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <AboutSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <FeaturesSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <StepsSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <ClientBenefitsSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <MapSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <FAQSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <CTASection />
+        </ScrollReveal>
         <Footer />
       </main>
     </div>

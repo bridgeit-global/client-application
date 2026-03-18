@@ -9,7 +9,6 @@ import { createClient } from '@/lib/supabase/client';
 import { LoadingButton } from '../buttons/loading-button';
 import { Skeleton } from '../ui/skeleton';
 import { Turnstile } from '@marsidev/react-turnstile';
-import Link from 'next/link';
 
 const supabase = createClient();
 
@@ -133,6 +132,15 @@ export default function UserAuthForm({ users }: { users: any }) {
   useEffect(() => {
     if (users?.email) {
       const isOperator = users?.user_metadata?.role === 'operator';
+      const userOrgId = users?.user_metadata?.org_id;
+
+      // If authenticated but they don't have an org, route them to the
+      // no-organization landing page.
+      if (!userOrgId) {
+        router.push('/no-organization');
+        return;
+      }
+
       router.push(isOperator ? '/portal/meter-reading-list' : '/portal/dashboard');
     }
   }, [users, router]);
@@ -226,44 +234,6 @@ export default function UserAuthForm({ users }: { users: any }) {
               </svg>
               Continue with Google
             </LoadingButton>
-
-            <div className="relative my-4 md:my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">Create Account</h3>
-                <p className="text-sm text-gray-600 mb-3">Choose your organization type</p>
-              </div>
-              
-              <div className="space-y-2">
-                <Link href="/existing" className="block">
-                  <LoadingButton
-                    variant="outline"
-                    className="w-full py-2.5 md:py-3 transition-colors text-sm md:text-base border-2 border-gray-300 text-gray-900 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"
-                    disabled={isLoader}
-                  >
-                    Existing Organization
-                  </LoadingButton>
-                </Link>
-                <LoadingButton
-                  onClick={() => {
-                    router.push('/signup');
-                  }}
-                  variant="outline"
-                  className="w-full py-2.5 md:py-3 transition-colors text-sm md:text-base border-2 border-gray-300 text-gray-900 hover:border-primary hover:bg-primary/5 hover:text-primary font-medium"
-                  disabled={isLoader}
-                >
-                  New Organization
-                </LoadingButton>
-              </div>
-            </div>
           </>
         ) : (
           <div className="space-y-4 text-center">

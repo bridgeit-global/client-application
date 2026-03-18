@@ -7,12 +7,18 @@ export default function Loading() {
         <div className="mx-auto w-full max-w-7xl">
           {/* Month picker + filters (matches KPISection) */}
           <div className="bg-background/80 border-b border-border/50">
-            <div className="flex items-center justify-center py-4">
-              <Skeleton className="h-10 w-64 rounded-md" />
-            </div>
-            <div className="flex items-center justify-center py-4 gap-4">
-              <Skeleton className="h-10 w-40 rounded-md" />
-              <Skeleton className="h-10 w-48 rounded-md" />
+            <div className="flex flex-col items-center py-4 px-4 sm:px-6 lg:px-8 gap-3">
+              <div className="w-full flex items-end justify-center sm:justify-between gap-3 flex-col sm:flex-row">
+                <div className="flex items-center justify-center">
+                  <Skeleton className="h-10 w-72 rounded-md" />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2">
+                  <Skeleton className="h-7 w-80 rounded-full" />
+                  <Skeleton className="h-7 w-28 rounded-full" />
+                  <Skeleton className="h-8 w-28 rounded-md" />
+                </div>
+              </div>
             </div>
           </div>
 

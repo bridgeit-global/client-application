@@ -29,10 +29,10 @@ const MapboxLandingPage = dynamic(
 
 export default function MapSection() {
   return (
-    <section className="min-h-screen">
-      <div className="container py-12 sm:py-16">
+    <section className="py-12 sm:py-16">
+      <div className="container">
         <h2 className="text-xl text-white font-sans tracking-tight sm:text-2xl text-center mb-8">
-          Standardizing electricity bills from the following electricity providers in India
+          Covering 92+ electricity billers across India
         </h2>
         <MapboxLandingPage />
       </div>

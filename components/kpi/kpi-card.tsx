@@ -19,6 +19,7 @@ import {
     Clock,
     ArrowUpRight,
     ArrowDownRight,
+    ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -140,6 +141,9 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
 
     // Hide comparison for benefits category (Time Savings) in current month
     const shouldShowComparison = !(metric.kpi_category === 'benefits' && isCurrentMonth);
+
+    const isDrillDownDisabled =
+        metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured';
 
     // Calculate time saved for benefits KPIs
     const getTimeSaved = (): string | null => {
@@ -263,15 +267,10 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
                 styles.border,
                 styles.hoverBorder,
                 styles.glow,
-                (metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured') ? '' : 'cursor-pointer'
+                isDrillDownDisabled ? 'cursor-default' : 'cursor-pointer'
             )}
-            onClick={() => {
-                if (metric.kpi_name === 'Balance Fetched' || metric.kpi_name === 'Sub meter readings captured') {
-                    return;
-                }
-                handleViewKPI();
-            }}
-            title="View KPI"
+            onClick={isDrillDownDisabled ? undefined : handleViewKPI}
+            title={`View ${displayName} report`}
         >
             {/* Gradient Background */}
             <div
@@ -419,6 +418,14 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
                                 {metadata.benefitDescription}
                             </p>
                         </div>
+                    </div>
+                )}
+
+                {/* Drill-down affordance (only for cards that actually navigate) */}
+                {!isDrillDownDisabled && (
+                    <div className="pt-3 border-t border-border/40 flex items-center justify-end gap-1 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                        <span>View report</span>
+                        <ExternalLink className="h-3 w-3" />
                     </div>
                 )}
             </CardContent>

@@ -1,0 +1,50 @@
+---
+description: Standardized UI guidance for the BridgeIT authenticated portal (/portal).
+alwaysApply: true
+---
+
+# Portal UI Standards
+
+When making changes under routes/components related to `/portal`, follow these rules to keep the UI consistent.
+
+## Use shared components (preferred)
+- Prefer `components/portal/*` when implementing any of the following:
+  - Page headings/top action bars
+  - Standard filter-sheet layout (Sheet with sticky footer buttons)
+  - Shared portal loading/error/empty state patterns (especially for chart pages)
+
+## Token discipline (required)
+- Prefer theme tokens for color/typography:
+  - `bg-background`, `text-foreground`, `bg-card`, `text-muted-foreground`, `border-input`
+  - `text-primary-foreground`, `bg-primary`
+  - `text-destructive-foreground`, `bg-destructive`
+- Avoid hard-coded Tailwind gray/color classes in portal UI:
+  - e.g. `text-gray-*`, `bg-gray-*`, `text-blue-*`, `bg-blue-*`, `text-red-*`, `bg-red-*`
+
+## Typography scale (required)
+- Use the portal heading components or follow a consistent hierarchy:
+  - Page title: `text-2xl md:text-3xl font-semibold tracking-tight` (or `text-2xl` when space constrained)
+  - Section titles: `text-lg md:text-xl font-semibold`
+  - Supporting: `text-sm text-muted-foreground`
+- Avoid ad-hoc mixes of `text-2xl` vs `text-3xl` for similar page titles.
+
+## List/Table conventions
+- Reuse `components/custom-table.tsx` for list/table wrappers.
+- Empty state should match the shared `CustomTable` pattern: `No results.`
+
+## Chart / analysis pages
+- For chart-based report pages:
+  - Show an error `Alert variant="destructive"` + a retry button
+  - Show a skeleton while loading
+  - Show a consistent empty state with a small outline button (Clear Filters / Retry)
+
+## Forms & filter sheets
+- Standard filter sheets should use the shared sheet width:
+  - `w-full sm:w-[400px]`
+- Field spacing:
+  - `space-y-1.5` between `Label` and control
+  - Use `grid` for multi-column field clusters
+- Sticky bottom actions:
+  - Primary: `Find ...`
+  - Secondary: Clear with `FilterX`
+

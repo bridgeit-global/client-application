@@ -191,7 +191,9 @@ export default function CustomTable<TData>({
                 <TableRow
                   className={cn(
                     "border-none items-start",
-                    row.original?.bill_type?.toLowerCase() === "abnormal" ? "[&_td]:text-gray-900" : ""
+                    row.original?.bill_type?.toLowerCase() === "abnormal"
+                      ? "[&_td]:text-primary-foreground"
+                      : ""
                   )}
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}

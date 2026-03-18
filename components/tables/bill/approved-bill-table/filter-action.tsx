@@ -1,13 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose
-} from '@/components/ui/sheet';
-import { Filter, FilterX } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import IconButton from '@/components/buttons/icon-button';
 import { BillerBoardSelector } from '@/components/input/biller-board-selector';
 import {
@@ -26,6 +20,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useBatchCartStore } from '@/lib/store/batch-cart-store';
 import { SURCHARGE_OPTIONS } from '@/constants/surcharge-options';
 import { useSiteName } from '@/lib/utils/site';
+import { PortalFilterSheet } from '@/components/portal/PortalFilterSheet';
 type Props = {
   filterBody: any;
   setFilterBody: any;
@@ -74,133 +69,128 @@ export default function FilterAction({
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <IconButton variant="outline" icon={Filter} text="Filter" />
-      </SheetTrigger>
-      <SheetContent className="w-full sm:w-[400px]" side="right">
-        <form onSubmit={handleSubmit} className="flex flex-col h-full justify-between">
-          <div className="grid gap-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="site_id">{site_name} ID</Label>
-                <Input
-                  id="site_id"
-                  value={filterBody.site_id}
-                  onChange={onChangeHandle}
-                  placeholder={`Enter ${site_name} ID`}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="account_number">Account Number</Label>
-                <Input
-                  id="account_number"
-                  value={filterBody.account_number}
-                  onChange={onChangeHandle}
-                  placeholder="Enter Account Number"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <BillerBoardSelector
-                onChange={(value) => onChangeSelectHandle('biller_id', value)}
-              />
-            </div>
-
-            {/* station type */}
-            <div className="space-y-1.5">
-              <Label htmlFor="site_type">{site_name} Type</Label>
-              <StationTypeSelector
-                value={Array.isArray(filterBody?.type) ? filterBody.type : filterBody?.type?.split(',') || []}
-                onChange={(types) => onChangeSelectHandle("type", types)} />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="bill_date_start">Bill Date Range</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="bill_date_start"
-                  type="date"
-                  value={filterBody.bill_date_start}
-                  onChange={onChangeHandle}
-                />
-                <Input
-                  id="bill_date_end"
-                  type="date"
-                  value={filterBody.bill_date_end}
-                  onChange={onChangeHandle}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="is_arrear">Arrear</Label>
-                <Select
-                  onValueChange={(value) => onChangeSelectHandle('is_arrear', value)}
-                  value={filterBody.is_arrear || ""}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Arrear" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Positive</SelectItem>
-                    <SelectItem value="false">Negative</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="penalty">Penalty</Label>
-                <MultipleSelector
-                  commandProps={{
-                    label: "Select Penalty"
-                  }}
-                  onChange={(value) => onChangeSelectHandle('penalty', value.map(option => option.value))}
-                  defaultOptions={SURCHARGE_OPTIONS}
-                  placeholder="Select Penalty"
-                  emptyIndicator={<p className="text-center text-sm">No results found</p>}
-                />
-              </div>
-
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="payment_status">Pay Status</Label>
-              <Select
-                onValueChange={(value) => onChangeSelectHandle('payment_status', value)}
-                value={filterBody.payment_status || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All</SelectItem>
-                  <SelectItem value="true">Paid</SelectItem>
-                  <SelectItem value="false">Unpaid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    <PortalFilterSheet
+      trigger={<IconButton variant="outline" icon={Filter} text="Filter" />}
+      primaryLabel="Find Bills"
+      onSubmit={handleSubmit}
+      onClear={handleClearFilter}
+    >
+      <div className="grid gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="site_id">{site_name} ID</Label>
+            <Input
+              id="site_id"
+              value={filterBody.site_id}
+              onChange={onChangeHandle}
+              placeholder={`Enter ${site_name} ID`}
+            />
           </div>
-          <div className="flex flex-col gap-2 mt-4">
-            <SheetClose asChild>
-              <Button type="submit" className="w-full">
-                Find Bills
-              </Button>
-            </SheetClose>
-            <SheetClose asChild>
-              <Button
-                type="button"
-                className="w-full text-black"
-                variant="link"
-                onClick={handleClearFilter}
-              >
-                Clear <FilterX className="ml-2 h-4 w-4" />
-              </Button>
-            </SheetClose>
+          <div className="space-y-1.5">
+            <Label htmlFor="account_number">Account Number</Label>
+            <Input
+              id="account_number"
+              value={filterBody.account_number}
+              onChange={onChangeHandle}
+              placeholder="Enter Account Number"
+            />
           </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+        </div>
+
+        <div className="space-y-1.5">
+          <BillerBoardSelector
+            onChange={(value) => onChangeSelectHandle('biller_id', value)}
+          />
+        </div>
+
+        {/* station type */}
+        <div className="space-y-1.5">
+          <Label htmlFor="site_type">{site_name} Type</Label>
+          <StationTypeSelector
+            value={
+              Array.isArray(filterBody?.type)
+                ? filterBody.type
+                : filterBody?.type?.split(',') || []
+            }
+            onChange={(types) => onChangeSelectHandle("type", types)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="bill_date_start">Bill Date Range</Label>
+          <div className="flex space-x-2">
+            <Input
+              id="bill_date_start"
+              type="date"
+              value={filterBody.bill_date_start}
+              onChange={onChangeHandle}
+            />
+            <Input
+              id="bill_date_end"
+              type="date"
+              value={filterBody.bill_date_end}
+              onChange={onChangeHandle}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="is_arrear">Arrear</Label>
+            <Select
+              onValueChange={(value) =>
+                onChangeSelectHandle('is_arrear', value)
+              }
+              value={filterBody.is_arrear || ""}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Arrear" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Positive</SelectItem>
+                <SelectItem value="false">Negative</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="penalty">Penalty</Label>
+            <MultipleSelector
+              commandProps={{ label: "Select Penalty" }}
+              onChange={(value) =>
+                onChangeSelectHandle(
+                  'penalty',
+                  value.map((option: any) => option.value)
+                )
+              }
+              defaultOptions={SURCHARGE_OPTIONS}
+              placeholder="Select Penalty"
+              emptyIndicator={
+                <p className="text-center text-sm">No results found</p>
+              }
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="payment_status">Pay Status</Label>
+          <Select
+            onValueChange={(value) =>
+              onChangeSelectHandle('payment_status', value)
+            }
+            value={filterBody.payment_status || ""}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All</SelectItem>
+              <SelectItem value="true">Paid</SelectItem>
+              <SelectItem value="false">Unpaid</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </PortalFilterSheet>
   );
 }
 

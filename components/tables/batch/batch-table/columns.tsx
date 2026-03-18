@@ -12,8 +12,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, IndianRupeeIcon, RefreshCw } from 'luc
 import { UploadBatchReceiptModal } from '@/components/modal/upload-batch-receipt-modal';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { getNewBillCount } from '@/lib/utils/bill';
-import { getAfterDueAmount } from '@/lib/utils';
+import { getTodaysAmount } from '@/lib/utils/bill';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertModal } from '@/components/modal/alert-modal';
 import ViewBatchButton from '@/components/buttons/view-batch-button';
@@ -70,7 +69,6 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
   }
 
   const allData = row.original.bills || row.original.prepaid_recharge;
-  const newBillCount = getNewBillCount(allData, row.original.bills ? 'postpaid' : 'prepaid');
   const isPaidCount = allData.filter((bill: any) => bill.payment_status === true).length;
 
   // 1. Batch validity check
@@ -82,17 +80,15 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
     isBatchExpired = new Date(new Date().setHours(0, 0, 0, 0)) > batchExpiryDate;
   }
 
-  // 2. Increased amount bills count
-  const increasedAmountCount = (allData || []).filter(bill => {
-    const dueDate = new Date(bill.due_date);
-    const today = new Date(new Date().setHours(0, 0, 0, 0));
-    return bill.approved_amount != null &&
-      getAfterDueAmount(bill) > bill.approved_amount &&
-      bill.payment_status === false &&
-      dueDate < today;
+  // 2. Count bills that need attention: only those where today's payable exceeds approved amount
+  const unresolvedBillCount = (row.original.bills || []).filter((bill: any) => {
+    if (bill.payment_status !== false) return false;
+    if (bill.approved_amount == null) return false;
+    return getTodaysAmount(bill) > bill.approved_amount;
   }).length;
 
-  const hasUnresolvedBillsCount = isPaidCount || newBillCount + increasedAmountCount;
+  const hasUnresolvedBillsCount = isPaidCount || unresolvedBillCount;
+  console.log('hasUnresolvedBillsCount', hasUnresolvedBillsCount, isPaidCount, unresolvedBillCount)
 
   //hooks
   const supabase = createClient();

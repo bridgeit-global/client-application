@@ -15,12 +15,16 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Sparkles,
+  RotateCcw
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, exportToExcel } from '@/lib/utils';
+import QueryChart from './query-chart';
+import BillDocumentLinks from './bill-document-links';
 
 type AIAnalystChatProps = {
   orgId: string;
@@ -28,11 +32,29 @@ type AIAnalystChatProps = {
 };
 
 const SUGGESTED_PROMPTS = [
-  'Show my top 5 highest electricity bills in the last 12 months with site names and bill_ids.',
-  'Where am I paying the most LPSC penalties? List sites with total LPSC in ₹ and bill_ids.',
-  'Identify abnormal bills in the last 6 months and explain why they are marked abnormal.',
-  'Which sites have the highest missed rebate potential in the last 3 cycles?',
-  'Summarise my overall portfolio: total spend, LPSC, PF penalties, and missed rebates.'
+  {
+    label: 'Top 5 bills',
+    prompt:
+      'Show my top 5 highest electricity bills in the last 12 months with site names and bill_ids.'
+  },
+  {
+    label: 'Max LPSC',
+    prompt:
+      'Where am I paying the most LPSC penalties? List sites with total LPSC in ₹ and bill_ids.'
+  },
+  {
+    label: 'Abnormal bills',
+    prompt:
+      'Identify abnormal bills in the last 6 months and explain why they are marked abnormal.'
+  },
+  {
+    label: 'Missed rebates',
+    prompt: 'Which sites have the highest missed rebate potential in the last 3 cycles?'
+  },
+  {
+    label: 'Portfolio summary',
+    prompt: 'Summarise my overall portfolio: total spend, LPSC, PF penalties, and missed rebates.'
+  }
 ];
 
 function getMessageText(message: { parts?: Array<{ type: string; text?: string }> }): string {
@@ -43,17 +65,83 @@ function getMessageText(message: { parts?: Array<{ type: string; text?: string }
     .join('');
 }
 
-const markdownComponents: ComponentProps<typeof ReactMarkdown>['components'] = {
-  table: ({ children, ...props }) => (
+function MarkdownTableWithExport({
+  children,
+  ...props
+}: ComponentProps<'table'> & { children?: any }) {
+  const tableRef = useRef<HTMLTableElement | null>(null);
+
+  const exportTable = () => {
+    const table = tableRef.current;
+    if (!table) return;
+
+    const theadHeaders = Array.from(table.querySelectorAll('thead th')).map(
+      (th) => th.textContent?.trim() || ''
+    );
+
+    const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+
+    let headers = theadHeaders;
+    let dataRows = bodyRows;
+
+    // Fallback: if no header, use the first body row as headers.
+    if (!headers.length && bodyRows.length > 0) {
+      const firstCells = Array.from(bodyRows[0].querySelectorAll('td')).map(
+        (td) => td.textContent?.trim() || ''
+      );
+      headers = firstCells;
+      dataRows = bodyRows.slice(1);
+    }
+
+    const safeHeaders =
+      headers.length > 0 ? headers : ['col1', 'col2', 'col3', 'col4'];
+
+    const json = dataRows.map((tr) => {
+      const cells = Array.from(tr.querySelectorAll('td')).map(
+        (td) => td.textContent?.trim() || ''
+      );
+
+      const obj: Record<string, string> = {};
+      safeHeaders.forEach((h, i) => {
+        const key = h || `col${i + 1}`;
+        obj[key] = cells[i] ?? '';
+      });
+      return obj;
+    });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    exportToExcel({
+      json,
+      fileName: `ai_bill_analyst_table_${timestamp}`
+    });
+  };
+
+  return (
     <div className="my-3 overflow-x-auto rounded-lg border">
+      <div className="flex items-center justify-end px-2 py-1.5">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-[11px]"
+          onClick={exportTable}
+        >
+          Export
+        </Button>
+      </div>
       <table
+        ref={tableRef}
         className="min-w-full divide-y divide-border text-sm"
         {...props}
       >
         {children}
       </table>
     </div>
-  ),
+  );
+}
+
+const markdownComponents: ComponentProps<typeof ReactMarkdown>['components'] = {
+  table: MarkdownTableWithExport,
   thead: ({ children, ...props }) => (
     <thead className="bg-muted/60" {...props}>
       {children}
@@ -96,7 +184,7 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
     [orgId]
   );
 
-  const { messages, sendMessage, status, error, stop } = useChat({
+  const { messages, sendMessage, status, error, stop, setMessages } = useChat({
     transport
   });
   const isLoading = status === 'submitted' || status === 'streaming';
@@ -110,6 +198,15 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
   }, [messages.length, isLoading]);
 
   const hasMessages = messages.length > 0;
+  const showBottomComposer = hasMessages;
+
+  const resetConversation = () => {
+    if (isLoading) stop();
+    setInput('');
+    setFeedbackByMessageId({});
+    setFeedbackSubmitting(null);
+    setMessages([]);
+  };
 
   const submit = () => {
     const text = input.trim();
@@ -148,6 +245,22 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
   return (
     <div className="flex h-full min-h-0 flex-col rounded-lg border bg-background">
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b bg-background/60 px-4 py-2 sm:px-6">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span>AI Bill Analyst</span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={resetConversation}
+            disabled={isLoading && !hasMessages}
+          >
+            <RotateCcw className="mr-1 h-4 w-4" />
+            New conversation
+          </Button>
+        </div>
         <div
           className={cn(
             'flex-1 space-y-4 overflow-y-auto px-3 py-4 sm:px-6',
@@ -155,40 +268,81 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
           )}
         >
           {!hasMessages && (
-            <Card className="w-full max-w-2xl border bg-muted/40">
-              <CardContent className="p-4 text-sm text-muted-foreground sm:p-5">
-                <p className="font-medium text-foreground">
-                  Ask anything about your electricity bills for {orgName}.
+            <div className="w-full max-w-2xl px-2 sm:px-0">
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">
+                  AI Bill Analyst
                 </p>
-                <p className="mt-1">
-                  The AI analyst will always query your live portal data (filtered by
-                  your organization) before answering. It can analyse trends, penalties,
-                  rebates, anomalies, and portfolio performance.
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ask about electricity bills for {orgName}. (It will query your live data.)
                 </p>
-                <p className="mt-2 text-xs">
-                  Tip: be specific with bill IDs, account numbers, sites, or date ranges
-                  for the most actionable insights.
-                </p>
-                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {SUGGESTED_PROMPTS.map((prompt) => (
-                    <Button
-                      key={prompt}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isLoading}
-                      className="whitespace-normal text-left text-xs"
-                      onClick={() => {
-                        if (isLoading) return;
-                        sendMessage({ text: prompt });
-                      }}
-                    >
-                      {prompt}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <Card className="mt-4 border bg-muted/20">
+                <CardContent className="p-4 sm:p-6">
+                  <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Ask about bills, LPSC, PF penalties, rebates, or anomalies…"
+                    rows={3}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        submit();
+                      }
+                    }}
+                  />
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="hidden text-xs text-muted-foreground sm:block">
+                      Press Enter to send, Shift+Enter for a new line.
+                    </p>
+
+                    <div className="ml-auto flex items-center gap-2">
+                      {isLoading && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => stop()}
+                        >
+                          Stop
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={isLoading || input.trim().length === 0}
+                        onClick={submit}
+                      >
+                        <SendHorizontal className="mr-1.5 h-4 w-4" />
+                        Send
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    {SUGGESTED_PROMPTS.map(({ label, prompt }) => (
+                      <Button
+                        key={label}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoading}
+                        className="whitespace-normal text-xs"
+                        onClick={() => {
+                          if (isLoading) return;
+                          sendMessage({ text: prompt });
+                          setInput('');
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {messages.map((message: any, index: number) => {
@@ -220,12 +374,20 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
+                  {message.role !== 'user' && (
+                    <div className="mr-2 mt-1 flex h-7 w-7 items-center justify-center rounded-full bg-muted/60">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
                   <div
                     className={cn(
                       'rounded-2xl px-4 py-3 text-sm shadow-sm',
                       message.role === 'user'
                         ? 'max-w-[85%] bg-primary text-primary-foreground sm:max-w-xl'
-                        : 'max-w-full bg-muted text-foreground sm:max-w-3xl'
+                        : cn(
+                            'max-w-full bg-muted text-foreground sm:max-w-3xl',
+                            index === messages.length - 1 && 'animate-in fade-in duration-300'
+                          )
                     )}
                   >
                     {message.role === 'user'
@@ -296,48 +458,50 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t bg-background px-3 py-3 sm:px-4">
-          <div className="flex flex-col gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about bills, LPSC, PF penalties, rebates, or anomalies…"
-              rows={2}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  submit();
-                }
-              }}
-            />
-            <div className="flex items-center justify-between gap-2">
-              <p className="hidden text-xs text-muted-foreground sm:block">
-                Press Enter to send, Shift+Enter for a new line.
-              </p>
-              <div className="ml-auto flex items-center gap-2">
-                {isLoading && (
+        {showBottomComposer && (
+          <div className="border-t bg-background px-3 py-3 sm:px-4">
+            <div className="flex flex-col gap-2">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask about bills, LPSC, PF penalties, rebates, or anomalies…"
+                rows={2}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    submit();
+                  }
+                }}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="hidden text-xs text-muted-foreground sm:block">
+                  Press Enter to send, Shift+Enter for a new line.
+                </p>
+                <div className="ml-auto flex items-center gap-2">
+                  {isLoading && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => stop()}
+                    >
+                      Stop
+                    </Button>
+                  )}
                   <Button
                     type="button"
-                    variant="outline"
                     size="sm"
-                    onClick={() => stop()}
+                    disabled={isLoading || input.trim().length === 0}
+                    onClick={submit}
                   >
-                    Stop
+                    <SendHorizontal className="mr-1.5 h-4 w-4" />
+                    Send
                   </Button>
-                )}
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={isLoading || input.trim().length === 0}
-                  onClick={submit}
-                >
-                  <SendHorizontal className="mr-1.5 h-4 w-4" />
-                  Send
-                </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -489,14 +653,24 @@ function renderAssistantMessage(message: any) {
         }
 
         if (part.type === 'tool-execute_query') {
+          const rawRows = Array.isArray(part.output?.rows) ? part.output.rows : [];
+          const safeRows = rawRows.filter((r: unknown) => r && typeof r === 'object') as Array<
+            Record<string, unknown>
+          >;
+          const showCharts = part.state === 'output-available' && safeRows.length > 0;
+          const showDocs = part.state === 'output-available' && safeRows.length > 0;
+
           return (
-            <ToolCallCard
-              key={index}
-              input={part.input ?? {}}
-              output={part.output}
-              state={part.state}
-              errorText={part.errorText}
-            />
+            <div key={index} className="space-y-3">
+              <ToolCallCard
+                input={part.input ?? {}}
+                output={part.output}
+                state={part.state}
+                errorText={part.errorText}
+              />
+              {showCharts && <QueryChart rows={safeRows} />}
+              {showDocs && <BillDocumentLinks rows={safeRows} />}
+            </div>
           );
         }
 

@@ -172,6 +172,8 @@ Behaviour rules:
 - For a single bill question: query bills + all four charge tables + meter_readings.
 - For trend questions: query the last N months ordered by bill_date ASC.
 - For anomaly/portfolio questions: aggregate across sites and surface the top offenders.
+- The client renders charts automatically from query rows. For trend questions, return a date/month column plus numeric columns. For comparisons, return a label column plus numeric columns. Prefer <=20 rows for clean chart rendering when possible.
+- Bill copy fields: when the user asks to see/view specific bills, include b.id AS bill_id, b.content AS content, b.content_type AS content_type, and s.name AS site_name in your SELECT. Only include content/content_type when dealing with specific bills, not aggregate portfolio queries.
 - Quantify every finding in ₹. Explain LPSC, PF penalty, ToD, sanctioned load in plain language.
 - Cite bill IDs, account numbers, site names, and dates in your answers.
 - Proactively flag upcoming discount_date windows — missed windows are direct losses.

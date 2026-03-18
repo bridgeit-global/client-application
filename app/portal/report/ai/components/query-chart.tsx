@@ -195,8 +195,13 @@ export default function QueryChart({ rows }: { rows: Row[] }) {
     }));
 
     // Sort bars/pies by primary metric descending.
-    const primary = metricInternalKeys[0];
-    data.sort((a, b) => (b[primary] ?? 0) - (a[primary] ?? 0));
+    if (metricInternalKeys.length === 0) return [];
+    const primary = metricInternalKeys[0]!;
+    data.sort(
+      (a, b) =>
+        (((b as unknown as Record<string, number>)[primary] ?? 0) -
+          ((a as unknown as Record<string, number>)[primary] ?? 0))
+    );
 
     if (type === 'pie') return data.slice(0, 8) as any[];
     return data.slice(0, 15) as any[];
@@ -268,7 +273,7 @@ export default function QueryChart({ rows }: { rows: Row[] }) {
             className="h-full w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              {chartType === 'bar' && (
+              {chartType === 'bar' ? (
                 <BarChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
@@ -284,9 +289,7 @@ export default function QueryChart({ rows }: { rows: Row[] }) {
                     />
                   ))}
                 </BarChart>
-              )}
-
-              {chartType === 'line' && (
+              ) : chartType === 'line' ? (
                 <LineChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -304,9 +307,7 @@ export default function QueryChart({ rows }: { rows: Row[] }) {
                     />
                   ))}
                 </LineChart>
-              )}
-
-              {chartType === 'pie' && (
+              ) : (
                 <PieChart margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                   <ChartTooltip />
                   <Pie

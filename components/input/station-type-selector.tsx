@@ -52,7 +52,10 @@ export function StationTypeSelector({ value = [], onChange, className }: Station
                     <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+            <DropdownMenuContent
+                align="start"
+                className="z-[80] w-[var(--radix-dropdown-menu-trigger-width)]"
+            >
                 {SITE_TYPES.map((type) => (
                     <DropdownMenuCheckboxItem
                         key={type.value}

@@ -371,7 +371,11 @@ export function KPISection({ orgId }: KPISectionProps) {
                                             Filters
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="right" className="w-full sm:w-[520px]">
+                                    <SheetContent
+                                        side="right"
+                                        className="w-full sm:w-[520px]"
+                                        onOpenAutoFocus={(event) => event.preventDefault()}
+                                    >
                                         <div className="space-y-6 py-2">
                                             <div className="space-y-1">
                                                 <h2 className="text-lg font-semibold">Filters</h2>

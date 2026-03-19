@@ -40,6 +40,7 @@ function FooterSidebar() {
                     <div className='flex gap-2 px-2 mb-2'>
                         {isPortalPage ? (
                             <SidebarMenuButton
+                                type='button'
                                 className='p-2'
                                 variant='outline'
                                 onClick={gotoSupport}
@@ -49,6 +50,7 @@ function FooterSidebar() {
                             </SidebarMenuButton>
                         ) : (
                             <SidebarMenuButton
+                                type='button'
                                 className='p-2'
                                 variant='outline'
                                 onClick={goToPortal}

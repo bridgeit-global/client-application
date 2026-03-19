@@ -60,12 +60,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(loginUrl.toString());
     }
 
+    const userRole =
+      data.user.user_metadata?.role ??
+      data.user.app_metadata?.role ??
+      data.user.role;
+
     // Check if user has an organization
     const userOrgId = data.user.user_metadata?.org_id;
-    const isOperator = data.user.user_metadata?.role === 'operator';
+    const isOperator = userRole === 'operator';
+    const isSupportUser = userRole === 'service_role';
 
     // If user doesn't have an org_id and is not an operator, redirect to no-organization page
-    if (!userOrgId && !isOperator) {
+    if (!userOrgId && !isOperator && !isSupportUser) {
       console.log('User without organization, redirecting to no-organization page');
       return NextResponse.redirect(new URL('/no-organization', requestUrl.origin).toString());
     }
@@ -77,6 +83,8 @@ export async function GET(request: NextRequest) {
     // Redirect based on role and profile completion
     if (isOperator) {
       return NextResponse.redirect(new URL('/portal/meter-reading-list', requestUrl.origin).toString());
+    } else if (isSupportUser) {
+      return NextResponse.redirect(new URL('/support/dashboard', requestUrl.origin).toString());
     } else if (!hasProfile && !isOperator) {
       // New user needs to complete profile - but they have org, so go to dashboard
       // The dashboard or middleware will handle profile completion if needed

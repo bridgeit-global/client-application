@@ -131,17 +131,25 @@ export default function UserAuthForm({ users }: { users: any }) {
   // If user is already logged in with email, redirect (handled by middleware)
   useEffect(() => {
     if (users?.email) {
-      const isOperator = users?.user_metadata?.role === 'operator';
+      const userRole = users?.user_metadata?.role ?? users?.app_metadata?.role ?? users?.role;
+      const isOperator = userRole === 'operator';
+      const isSupportUser = userRole === 'service_role';
       const userOrgId = users?.user_metadata?.org_id;
 
       // If authenticated but they don't have an org, route them to the
       // no-organization landing page.
-      if (!userOrgId) {
+      if (!userOrgId && !isSupportUser) {
         router.push('/no-organization');
         return;
       }
 
-      router.push(isOperator ? '/portal/meter-reading-list' : '/portal/dashboard');
+      router.push(
+        isOperator
+          ? '/portal/meter-reading-list'
+          : isSupportUser
+            ? '/support/dashboard'
+            : '/portal/dashboard'
+      );
     }
   }, [users, router]);
 

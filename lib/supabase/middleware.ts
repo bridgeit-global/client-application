@@ -113,7 +113,7 @@ export async function updateSession(request: NextRequest) {
         return addSecurityHeaders(NextResponse.redirect(url));
       }
 
-      if (user.user_metadata?.role !== 'service_role' && isSupportRoute) {
+      if (user?.role !== 'service_role' && isSupportRoute) {
         if (path !== '/portal/dashboard') {
           url.pathname = '/portal/dashboard';
           return addSecurityHeaders(NextResponse.redirect(url));

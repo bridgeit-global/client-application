@@ -224,39 +224,47 @@ export function KPICard({ metric, isCurrentMonth = false, startDate, endDate, or
     const showSavingsInfo = isPaymentSavings && (metadata.accruedValue !== undefined || metadata.potentialValue !== undefined);
 
     const handleViewKPI = () => {
+        const params = new URLSearchParams();
 
-
-        let route = `/portal/report/bill`;
-        if (metric.kpi_category === 'payment_savings') {
-            route += `?`;
+        if (metric.kpi_name === 'Late Payment Penalty') {
+            // Force drill-down to bill report LPSC view for correct breakdown.
+            params.set('bill_fetch_start', startDate);
+            params.set('bill_fetch_end', endDate);
+            params.set('page', '1');
+            params.set('limit', '10');
+            params.set('sort', 'bill_date');
+            params.set('order', 'desc');
+            params.set('penalty', 'lpsc');
+        } else if (metric.kpi_category === 'payment_savings') {
             if (metric.kpi_name === 'Prompt Payment') {
-                route += `discount_date_start=${startDate}&discount_date_end=${endDate}`;
+                params.set('discount_date_start', startDate);
+                params.set('discount_date_end', endDate);
             } else if (metric.kpi_name === 'Timely Payment') {
-                route += `due_date_start=${startDate}&due_date_end=${endDate}`;
+                params.set('due_date_start', startDate);
+                params.set('due_date_end', endDate);
             } else if (metric.kpi_name === 'Surcharges') {
-                route += `due_date_start=${startDate}&due_date_end=${endDate}`;
+                params.set('due_date_start', startDate);
+                params.set('due_date_end', endDate);
             }
-        } else {
-            route += `?`;
-            if (startDate && endDate) {
-                route += `bill_fetch_start=${startDate}&bill_fetch_end=${endDate}`;
-            }
+        } else if (startDate && endDate) {
+            params.set('bill_fetch_start', startDate);
+            params.set('bill_fetch_end', endDate);
         }
 
         if (siteTypeKey) {
-            route += `&type=${siteTypeKey}`;
+            params.set('type', siteTypeKey);
         }
         if (zoneId) {
-            route += `&zone_id=${zoneId}`;
+            params.set('zone_id', zoneId);
         }
         if (metric.kpi_name === 'Abnormal Bills') {
-            route += `&bill_type=Abnormal`;
+            params.set('bill_type', 'Abnormal');
+        }
+        if (metric.kpi_name === 'Arrears') {
+            params.set('is_arrear', 'true');
         }
 
-        if (metric.kpi_name === 'Arrears') {
-            route += `&is_arrear=true`;
-        }
-        router.push(route);
+        router.push(`/portal/report/bill?${params.toString()}`);
     };
 
     return (

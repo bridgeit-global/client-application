@@ -9,7 +9,7 @@ export const ConnectionIdCell = ({ row }: { row: any }) => {
     const router = useRouter();
     const { account_number, is_active, id } = row.original;
     const handleCopy = () => navigator.clipboard.writeText(account_number);
-    const goToSite = () => is_active ? router.push(`/portal/profile?id=${id}`) : null;
+    const goToSite = () => router.push(`/portal/profile?id=${id}`);
     return (
         <ContextMenu>
             <ContextMenuTrigger>

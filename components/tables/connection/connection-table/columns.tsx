@@ -56,7 +56,7 @@ export const subMeterColumns: ColumnDef<ConnectionTableProps>[] = [
       const router = useRouter();
       const account_number = row.original.account_number ?? '—';
       const handleCopy = () => navigator.clipboard.writeText(String(row.original.account_number ?? ''));
-      const goToProfile = () => row.original.is_active && router.push(`/portal/profile?id=${row.original.id}`);
+      const goToProfile = () => router.push(`/portal/profile?id=${row.original.id}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -64,7 +64,6 @@ export const subMeterColumns: ColumnDef<ConnectionTableProps>[] = [
               variant="outline"
               size="sm"
               className="font-mono text-sm tabular-nums"
-              disabled={!row.original.is_active}
               onClick={goToProfile}
             >
               {account_number}
@@ -101,7 +100,7 @@ export const subMeterColumns: ColumnDef<ConnectionTableProps>[] = [
       const site_name = useSiteName();
       const site_id = row.original.site_id ?? '—';
       const handleCopy = () => navigator.clipboard.writeText(String(row.original.site_id ?? ''));
-      const goToSite = () => row.original.is_active && router.push(`/portal/site-profile?id=${row.original.site_id}`);
+      const goToSite = () => router.push(`/portal/site-profile?id=${row.original.site_id}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -109,7 +108,6 @@ export const subMeterColumns: ColumnDef<ConnectionTableProps>[] = [
               variant="outline"
               size="sm"
               className="text-sm font-medium"
-              disabled={!row.original.is_active}
               onClick={goToSite}
             >
               {site_id}
@@ -188,7 +186,7 @@ export const prepaidColumns: ColumnDef<ConnectionTableProps>[] = [
       const router = useRouter();
       const account_number = row.original.account_number ?? '—';
       const handleCopy = () => navigator.clipboard.writeText(String(row.original.account_number ?? ''));
-      const goToProfile = () => row.original.is_active && router.push(`/portal/profile?id=${row.original.id}`);
+      const goToProfile = () => router.push(`/portal/profile?id=${row.original.id}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -196,7 +194,6 @@ export const prepaidColumns: ColumnDef<ConnectionTableProps>[] = [
               variant="outline"
               size="sm"
               className="font-mono text-sm tabular-nums"
-              disabled={!row.original.is_active}
               onClick={goToProfile}
             >
               {account_number}
@@ -233,7 +230,7 @@ export const prepaidColumns: ColumnDef<ConnectionTableProps>[] = [
       const site_name = useSiteName();
       const site_id = row.original.site_id ?? '—';
       const handleCopy = () => navigator.clipboard.writeText(String(row.original.site_id ?? ''));
-      const goToSite = () => row.original.is_active && router.push(`/portal/site-profile?id=${row.original.site_id}`);
+      const goToSite = () => router.push(`/portal/site-profile?id=${row.original.site_id}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -241,7 +238,6 @@ export const prepaidColumns: ColumnDef<ConnectionTableProps>[] = [
               variant="outline"
               size="sm"
               className="text-sm font-medium"
-              disabled={!row.original.is_active}
               onClick={goToSite}
             >
               {site_id}
@@ -334,7 +330,7 @@ export const inactiveConsumerColumns: ColumnDef<ConnectionTableProps>[] = [
       const router = useRouter();
       const account_number = row.original.account_number ?? '—';
       const handleCopy = () => navigator.clipboard.writeText(String(row.original.account_number ?? ''));
-      const goToProfile = () => row.original.is_active && router.push(`/portal/profile?id=${row.original.id}`);
+      const goToProfile = () => router.push(`/portal/profile?id=${row.original.id}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -342,7 +338,6 @@ export const inactiveConsumerColumns: ColumnDef<ConnectionTableProps>[] = [
               variant="outline"
               size="sm"
               className="font-mono text-sm tabular-nums"
-              disabled={!row.original.is_active}
               onClick={goToProfile}
             >
               {account_number}
@@ -379,7 +374,7 @@ export const inactiveConsumerColumns: ColumnDef<ConnectionTableProps>[] = [
       const site_name = useSiteName();
       const site_id = row.original.site_id ?? '—';
       const handleCopy = () => navigator.clipboard.writeText(String(row.original.site_id ?? ''));
-      const goToSite = () => row.original.is_active && router.push(`/portal/site-profile?id=${row.original.site_id}`);
+      const goToSite = () => router.push(`/portal/site-profile?id=${row.original.site_id}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -387,7 +382,6 @@ export const inactiveConsumerColumns: ColumnDef<ConnectionTableProps>[] = [
               variant="outline"
               size="sm"
               className="text-sm font-medium"
-              disabled={!row.original.is_active}
               onClick={goToSite}
             >
               {site_id}

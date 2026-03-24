@@ -10,7 +10,6 @@ export const AccountNumberCell = ({ row }: { row: any }) => {
         router.push(`/portal/profile?id=${row.original.connections.id}`);
     };
     const account_number = row.original.connections.account_number;
-    const is_active = row.original.connections.is_active;
     const handleCopy = () => navigator.clipboard.writeText(account_number);
     return (
         <ContextMenu>
@@ -19,7 +18,6 @@ export const AccountNumberCell = ({ row }: { row: any }) => {
                     variant="outline"
                     size="sm"
                     className="flex gap-2 items-center px-3 py-1.5 rounded-full shadow-sm focus:ring-2 focus:ring-secondary/40 transition-all duration-150"
-                    disabled={!is_active}
                     onClick={goToSite}
                 >
                     {account_number}

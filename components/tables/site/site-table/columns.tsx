@@ -24,7 +24,7 @@ export const columns: ColumnDef<SiteConnectionTableProps>[] = [
       const is_active = original.is_active;
 
       const handleCopy = () => navigator.clipboard.writeText(displayId);
-      const goToSite = () => is_active ? router.push(`/portal/site-profile?id=${displayId}`) : null;
+      const goToSite = () => router.push(`/portal/site-profile?id=${displayId}`);
       return (
         <ContextMenu>
           <ContextMenuTrigger>

@@ -68,12 +68,12 @@ export const SiteIdCell = ({ row }: { row: any }) => {
     ? row.original
     : row.original?.connections || row.original;
 
-  const { site_id, is_active, id } = original;
+  const { site_id, id } = original;
   const displayId = site_id || id;
 
   if (!displayId) return null;
   const handleCopy = () => navigator.clipboard.writeText(displayId);
-  const goToSite = () => is_active ? router.push(`/portal/site-profile?id=${displayId}`) : null;
+  const goToSite = () => router.push(`/portal/site-profile?id=${displayId}`);
 
   return (
     <ContextMenu>
@@ -174,7 +174,6 @@ export const SiteIdCell = ({ row }: { row: any }) => {
           <Button
             variant="outline"
             size="sm"
-            disabled={!is_active}
             className="flex gap-2 items-center px-3 py-1.5 rounded-full shadow-sm focus:ring-2 focus:ring-secondary/40 transition-all duration-150"
             onClick={goToSite}
           >

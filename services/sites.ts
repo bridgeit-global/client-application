@@ -105,7 +105,7 @@ export const fetchSiteProfile = cache(
           additional_charges(*))
           `
       )
-      .match({ id: id, is_active: true, is_deleted: false })
+      .match({ id: id, is_deleted: false })
       .eq('bills.is_valid', true)
       .eq('bills.is_deleted', false)
       .single();

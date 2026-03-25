@@ -278,6 +278,65 @@ export function InfrastructureExplorer({
     paytypeFilter
   ]);
 
+  const aiScope = useMemo(() => {
+    if (!openSiteId) {
+      return {
+        siteId: undefined as string | undefined,
+        connectionId: undefined as string | undefined,
+        connectionAccountNumber: undefined as string | undefined,
+        connectionsState: 'none' as
+          | 'none'
+          | 'loading'
+          | 'error'
+          | 'empty'
+          | 'ready'
+      };
+    }
+
+    const raw = connectionCache[openSiteId];
+    if (raw === undefined) {
+      // Not in cache yet; connections are being fetched.
+      return {
+        siteId: openSiteId,
+        connectionId: undefined,
+        connectionAccountNumber: undefined,
+        connectionsState: 'loading'
+      };
+    }
+
+    if (raw === null) {
+      return {
+        siteId: openSiteId,
+        connectionId: undefined,
+        connectionAccountNumber: undefined,
+        connectionsState: 'error'
+      };
+    }
+
+    const list =
+      paytypeFilter != null
+        ? raw.filter((c) => c.paytype === paytypeFilter)
+        : raw;
+
+    if (list.length === 0) {
+      return {
+        siteId: openSiteId,
+        connectionId: undefined,
+        connectionAccountNumber: undefined,
+        connectionsState: 'empty'
+      };
+    }
+
+    const selId = selectedBySite[openSiteId];
+    const conn = list.find((c) => c.id === selId);
+    return {
+      siteId: openSiteId,
+      connectionId: conn?.id,
+      connectionAccountNumber: conn?.account_number,
+      connectionsState: conn ? 'ready' : 'empty'
+    };
+  }, [openSiteId, connectionCache, selectedBySite, paytypeFilter]);
+
   return (
     <div className="space-y-6">
       <SiteFormModal
@@ -460,7 +519,7 @@ export function InfrastructureExplorer({
                     {loadingSiteId === site.id && rawList === undefined ? (
                       <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        Loading connections…
+                        Loading connections...
                       </div>
                     ) : null}
                     {isOpen && rawList !== undefined && !loadingSiteId ? (
@@ -599,9 +658,33 @@ export function InfrastructureExplorer({
               Deeper analysis with AI
             </p>
             <p className="text-sm text-muted-foreground">
-              Opens the AI Bill Analyst with the current {siteLabel.toLowerCase()} (and
-              connection, if one is selected in the dropdown). Expand a {siteLabel.toLowerCase()}{' '}
-              above to load connections first.
+              {openSiteId ? (
+                aiScope.connectionsState === 'loading' ? (
+                  <>Loading connection options for site <span className="font-mono">{openSiteId}</span>...</>
+                ) : aiScope.connectionsState === 'error' ? (
+                  <>Could not load connections for site <span className="font-mono">{openSiteId}</span>.</>
+                ) : aiScope.connectionsState === 'empty' ? (
+                  <>Opens the AI Bill Analyst scoped to site <span className="font-mono">{openSiteId}</span> (no matching connection for the current filters).</>
+                ) : (
+                  <>
+                    Opens the AI Bill Analyst scoped to site{' '}
+                    <span className="font-mono">{aiScope.siteId}</span> and connection{' '}
+                    <span className="font-mono">{aiScope.connectionId}</span>
+                    {aiScope.connectionAccountNumber ? (
+                      <>
+                        {' '}
+                        (account <span className="font-mono">{aiScope.connectionAccountNumber}</span>)
+                      </>
+                    ) : null}
+                    .
+                  </>
+                )
+              ) : (
+                <>
+                  Opens the AI Bill Analyst without a site/connection scope. Expand a{' '}
+                  {siteLabel.toLowerCase()} above to load connections first.
+                </>
+              )}
             </p>
           </div>
           <Button asChild variant="default" className="shrink-0 gap-2">

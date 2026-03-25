@@ -1,20 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import MultipleSelector, { Option } from '@/components/ui/multiple-selector';
 import { useBillerBoardStore } from '@/lib/store/biller-board-store';
+
+type BillerBoardSelectorReturnType = 'alias' | 'id';
 
 interface BillerBoardSelectorProps {
   label?: string;
   placeholder?: string;
   onChange: (value: string[]) => void;
   defaultValue?: string[];
+  value?: string[];
+  returnType?: BillerBoardSelectorReturnType;
+  maxSelected?: number;
+  hideLabel?: boolean;
 }
 
 export function BillerBoardSelector({
   label = 'Biller Name',
   placeholder = 'Select Biller Board',
   onChange,
-  defaultValue
+  defaultValue,
+  value,
+  returnType = 'alias',
+  maxSelected = 5,
+  hideLabel = false
 }: BillerBoardSelectorProps) {
   const billerBoards = useBillerBoardStore((state) => state.billers);
   const fetchBillers = useBillerBoardStore((state) => state.fetchBillers);
@@ -26,54 +36,84 @@ export function BillerBoardSelector({
     }
   }, [billerBoards, fetchBillers]);
 
-  const handleSelectChange = (selectedOptions: any) => {
-    onChange(selectedOptions.map((option: any) => getBillerId(option?.value)));
-  };
+  const isControlled = value !== undefined;
+  const [internalValue, setInternalValue] = useState<string[]>(defaultValue ?? []);
 
-  const getBillerId = (board_name: string) => {
-    return billerBoards.find((b: any) => b?.board_name === board_name)?.alias;
-  };
+  useEffect(() => {
+    if (isControlled) return;
+    setInternalValue(defaultValue ?? []);
+  }, [defaultValue, isControlled]);
 
-  const defaultList: Option[] = billerBoards.map((e) => ({
-    label: e.board_name,
-    value: e.board_name,
-    state: e.state
-  }));
+  const selectedKeys = isControlled ? value ?? [] : internalValue;
+
+  const getOptionKey = (biller: any) => (returnType === 'id' ? biller.id : biller.alias);
+
+  const defaultList: Option[] = useMemo(
+    () =>
+      billerBoards.map((e) => ({
+        label: e.board_name,
+        value: getOptionKey(e),
+        state: e.state
+      })),
+    [billerBoards, returnType]
+  );
+
+  const selectedOptions: Option[] = useMemo(() => {
+    if (!selectedKeys?.length) return [];
+    const selectedSet = new Set(selectedKeys);
+    return billerBoards
+      .filter((b) => selectedSet.has(getOptionKey(b)))
+      .map((b) => ({
+        label: b.board_name,
+        value: getOptionKey(b),
+        state: b.state
+      }));
+  }, [billerBoards, returnType, selectedKeys]);
+
+  const handleSelectChange = (selected: Option[]) => {
+    const next = selected.map((option) => option.value);
+    if (!isControlled) {
+      setInternalValue(next);
+    }
+    onChange(next);
+  };
 
   const handleSearch = (searchTerm: string) => {
     // Always return all biller boards if search is empty
     if (!searchTerm || searchTerm.trim() === '') {
       return billerBoards.map((e) => ({
         label: e.board_name,
-        value: e.board_name,
+        value: getOptionKey(e),
         state: e.state
       }));
     }
 
     const searchLower = searchTerm.toLowerCase();
     return billerBoards
-      .filter((biller) =>
-        biller.board_name.toLowerCase().includes(searchLower) ||
-        biller.state.toLowerCase().includes(searchLower)
+      .filter(
+        (biller) =>
+          biller.board_name.toLowerCase().includes(searchLower) ||
+          biller.state.toLowerCase().includes(searchLower)
       )
       .map((e) => ({
         label: e.board_name,
-        value: e.board_name,
+        value: getOptionKey(e),
         state: e.state
       }));
   };
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="biller_id">{label}</Label>
+      {!hideLabel ? <Label htmlFor="biller_id">{label}</Label> : null}
       <MultipleSelector
         commandProps={{
           label: placeholder
         }}
         groupBy="state"
-        maxSelected={5}
+        maxSelected={maxSelected}
         onChange={handleSelectChange}
         defaultOptions={defaultList}
+        value={selectedOptions}
         onSearchSync={handleSearch}
         placeholder={placeholder}
         hideClearAllButton

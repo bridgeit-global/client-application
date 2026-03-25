@@ -386,12 +386,24 @@ const MultipleSelector = React.forwardRef<
             e.stopPropagation();
           }}
           onSelect={(value: string) => {
+            const nextOption = { value, label: value };
+
             if (selected.length >= maxSelected) {
-              onMaxSelected?.(selected.length);
+              if (maxSelected === 1) {
+                const nextOptions = selected.some((s) => s.value === value)
+                  ? selected
+                  : [nextOption];
+                setSelected(nextOptions);
+                onChange?.(nextOptions);
+              } else {
+                onMaxSelected?.(selected.length);
+              }
+              setInputValue('');
               return;
             }
+
             setInputValue('');
-            const newOptions = [...selected, { value, label: value }];
+            const newOptions = [...selected, nextOption];
             setSelected(newOptions);
             onChange?.(newOptions);
           }}
@@ -630,9 +642,21 @@ const MultipleSelector = React.forwardRef<
                               }}
                               onSelect={() => {
                                 if (selected.length >= maxSelected) {
-                                  onMaxSelected?.(selected.length);
+                                  if (maxSelected === 1) {
+                                    const nextOptions = selected.some(
+                                      (s) => s.value === option.value
+                                    )
+                                      ? selected
+                                      : [option];
+                                    setSelected(nextOptions);
+                                    onChange?.(nextOptions);
+                                  } else {
+                                    onMaxSelected?.(selected.length);
+                                  }
+                                  setInputValue('');
                                   return;
                                 }
+
                                 setInputValue('');
                                 const newOptions = [...selected, option];
                                 setSelected(newOptions);

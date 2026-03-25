@@ -23,6 +23,7 @@ import { BankSelector } from "@/components/input/bank-selector"
 import { useUserStore } from "@/lib/store/user-store"
 import { useRouter } from "next/navigation"
 import { sanitizeInput } from "@/lib/utils/string-format"
+import { BillerBoardSelector } from "@/components/input/biller-board-selector"
 
 
 type EditConnectionFormProps = {
@@ -468,22 +469,17 @@ function EditConnectionForm({ connectionId, initialData, onSuccess }: EditConnec
                             render={({ field }) => (
                                 <FormItem className="mb-4">
                                     <FormLabel>Biller Board *</FormLabel>
-                                    <Select onValueChange={handleBillerChange} value={field.value} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select a Biller Board" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent className="max-h-[300px]">
-                                            <ScrollArea className="max-h-[200px]">
-                                                {billers.sort((a, b) => a.board_name.localeCompare(b.board_name)).map((biller: BillerListProps, key: number) => (
-                                                    <SelectItem key={key} value={biller.id}>
-                                                        <span className="text-ellipsis">{biller.board_name}</span>
-                                                    </SelectItem>
-                                                ))}
-                                            </ScrollArea>
-                                        </SelectContent>
-                                    </Select>
+                                    <FormControl>
+                                        <BillerBoardSelector
+                                            hideLabel
+                                            returnType="id"
+                                            maxSelected={1}
+                                            value={field.value ? [field.value] : []}
+                                            onChange={(ids) => {
+                                                handleBillerChange(ids?.[0] ?? "")
+                                            }}
+                                        />
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}

@@ -50,6 +50,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { SiteFormModal } from '@/components/modal/register-modal/site-form-modal';
 import { EditSiteForm } from '@/components/forms/client-form/edit-site-form';
+import { Skeleton } from '@/components/ui/skeleton';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useUserStore } from '@/lib/store/user-store';
@@ -94,6 +95,8 @@ export function InfrastructureExplorer({
   const [isPending, startTransition] = useTransition();
 
   const [openSiteId, setOpenSiteId] = useState<string>('');
+  const [isPaginationLoading, setIsPaginationLoading] = useState(false);
+  const pendingPageRef = useRef<number | null>(null);
   const [connectionCache, setConnectionCache] = useState<
     Record<string, Connection[] | null | undefined>
   >({});
@@ -151,6 +154,35 @@ export function InfrastructureExplorer({
       }));
     }
   }, [paytypeFilter]);
+
+  useEffect(() => {
+    // Stop pagination loader once the new page props arrive.
+    if (pendingPageRef.current == null) return;
+    if (pendingPageRef.current === currentPage) {
+      setIsPaginationLoading(false);
+      pendingPageRef.current = null;
+    }
+  }, [currentPage]);
+
+  const handlePagination = useCallback(
+    (targetPage: number) => {
+      const normalizedTarget = Math.max(1, Math.min(targetPage, pageCount));
+      if (normalizedTarget === currentPage) return;
+
+      pendingPageRef.current = normalizedTarget;
+      setIsPaginationLoading(true);
+      // Avoid holding expansion state across page changes.
+      setOpenSiteId('');
+
+      router.push(
+        buildHref({
+          page: normalizedTarget <= 1 ? undefined : String(normalizedTarget)
+        }),
+        { scroll: false }
+      );
+    },
+    [currentPage, pageCount, router, buildHref]
+  );
 
   useEffect(() => {
     if (!openSiteId) return;
@@ -318,8 +350,9 @@ export function InfrastructureExplorer({
         </Alert>
       ) : null}
 
-      <div className="space-y-3">
-        {sites.map((site) => {
+      {!isPaginationLoading ? (
+        <div className="space-y-3">
+          {sites.map((site) => {
           const isOpen = openSiteId === site.id;
           const rawList = connectionCache[site.id];
           const listForSite =
@@ -496,10 +529,31 @@ export function InfrastructureExplorer({
               </Card>
             </Collapsible>
           );
-        })}
-      </div>
+          })}
+        </div>
+      ) : null}
 
-      {sites.length === 0 ? (
+      {isPaginationLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: Math.min(5, pageSize) }, (_, idx) => idx).map((i) => (
+            <Card key={`pagination-skeleton-${i}`} className="border-border bg-card">
+              <div className="flex items-stretch gap-1 border-b border-border px-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:flex-row sm:items-center sm:gap-3">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              <CardContent className="space-y-2 pt-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : null}
+
+      {!isPaginationLoading && sites.length === 0 ? (
         <Card className="border-border bg-card">
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
             No results.
@@ -511,35 +565,28 @@ export function InfrastructureExplorer({
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <p className="text-sm text-muted-foreground">
             Page {currentPage} of {pageCount}
+            {isPaginationLoading ? (
+              <Loader2 className="ml-2 h-4 w-4 animate-spin inline" />
+            ) : null}
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild disabled={currentPage <= 1}>
-              <Link
-                href={buildHref({
-                  page: currentPage <= 1 ? undefined : String(currentPage - 1)
-                })}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Previous
-              </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isPaginationLoading || currentPage <= 1}
+              onClick={() => handlePagination(currentPage - 1)}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
             </Button>
             <Button
               variant="outline"
               size="sm"
-              asChild
-              disabled={currentPage >= pageCount}
+              disabled={isPaginationLoading || currentPage >= pageCount}
+              onClick={() => handlePagination(currentPage + 1)}
             >
-              <Link
-                href={buildHref({
-                  page:
-                    currentPage >= pageCount
-                      ? undefined
-                      : String(currentPage + 1)
-                })}
-              >
-                Next
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>

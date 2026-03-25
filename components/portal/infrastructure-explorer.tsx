@@ -439,10 +439,10 @@ export function InfrastructureExplorer({
                       />
                       <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
                         <span className="truncate font-semibold text-foreground">
-                          {site.name ?? site.id}
+                          {site.id}
                         </span>
                         <span className="font-mono text-xs text-muted-foreground">
-                          {site.id}
+                          {site.type ?? 'N/A'}
                         </span>
                         <IsActiveBadge isActive={site.is_active} />
                       </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { FilterX } from "lucide-react"
+import { FilterX, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +21,9 @@ export type PortalFilterSheetProps = {
   clearLabel?: string
   side?: "right" | "left" | "top" | "bottom"
   contentClassName?: string
+  primaryDisabled?: boolean
+  primaryPending?: boolean
+  clearDisabled?: boolean
 }
 
 export function PortalFilterSheet({
@@ -31,7 +34,10 @@ export function PortalFilterSheet({
   onClear,
   clearLabel = "Clear",
   side = "right",
-  contentClassName
+  contentClassName,
+  primaryDisabled,
+  primaryPending,
+  clearDisabled
 }: PortalFilterSheetProps) {
   return (
     <Sheet>
@@ -45,7 +51,14 @@ export function PortalFilterSheet({
 
           <div className="flex flex-col gap-2 mt-4 sticky bottom-0 py-4 bg-background border-t">
             <SheetClose asChild>
-              <Button type="submit" className="w-full">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={primaryDisabled}
+              >
+                {primaryPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 {primaryLabel}
               </Button>
             </SheetClose>
@@ -56,6 +69,7 @@ export function PortalFilterSheet({
                   variant="link"
                   className="w-full justify-start"
                   onClick={onClear}
+                  disabled={clearDisabled}
                 >
                   {clearLabel} <FilterX className="ml-2 h-4 w-4" />
                 </Button>

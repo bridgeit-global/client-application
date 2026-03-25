@@ -223,6 +223,9 @@ importers:
       jspdf:
         specifier: ^4.2.0
         version: 4.2.0
+      keyv:
+        specifier: ^5.6.0
+        version: 5.6.0
       lowlight:
         specifier: ^3.3.0
         version: 3.3.0
@@ -1217,6 +1220,9 @@ packages:
     resolution: {integrity: sha512-lM2BspGosuQaDBxdyxpZty8xrcFmz7vZ4rirGY8FKSsoGUWo6YYmKX8xaRQsPXvgXy0xUVMzE4yuTEqWWsuI0g==}
     engines: {node: '>= 18'}
     deprecated: Offline and tiered mode are now built into the cacheable library and is powered by Keyv. Please use https://www.npmjs.com/package/cacheable
+
+  '@keyv/serialize@1.1.1':
+    resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
   '@kwsites/file-exists@1.1.1':
     resolution: {integrity: sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw==}
@@ -6334,6 +6340,9 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
+  keyv@5.6.0:
+    resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
+
   kind-of@6.0.3:
     resolution: {integrity: sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==}
     engines: {node: '>=0.10.0'}
@@ -10251,6 +10260,8 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
 
   '@keyv/offline@4.0.2': {}
+
+  '@keyv/serialize@1.1.1': {}
 
   '@kwsites/file-exists@1.1.1':
     dependencies:
@@ -15993,6 +16004,10 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  keyv@5.6.0:
+    dependencies:
+      '@keyv/serialize': 1.1.1
 
   kind-of@6.0.3: {}
 

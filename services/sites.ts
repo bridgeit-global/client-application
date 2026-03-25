@@ -405,7 +405,9 @@ export const fetchAllSites = cache(
       site_id,
       type,
       zone_id,
-      status
+      status,
+      account_number,
+      paytype
     } = searchParams;
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
@@ -449,6 +451,20 @@ export const fetchAllSites = cache(
       query = query
         .gte('created_at', created_at_start)
         .lte('created_at', created_at_end);
+    }
+
+    if (account_number) {
+      const value = processValues(account_number);
+      if (value.length > 0) {
+        query = query.in('connections.account_number', value);
+      }
+    }
+
+    if (paytype !== undefined && paytype !== '') {
+      const paytypeNum = Number(paytype);
+      if (!Number.isNaN(paytypeNum)) {
+        query = query.eq('connections.paytype', paytypeNum);
+      }
     }
 
     if (is_export) {

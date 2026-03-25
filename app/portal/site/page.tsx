@@ -6,6 +6,7 @@ import { InfrastructureExplorer } from '@/components/portal/infrastructure-explo
 import { fetchAllSites } from '@/services/sites';
 import { fetchOrganization } from '@/services/organization';
 import type { SearchParamsProps } from '@/types';
+import { canonicalInfrastructureSearchKey } from '@/lib/infrastructure-explorer-search-key';
 
 function OverviewSkeleton() {
   return (
@@ -46,6 +47,9 @@ export default async function Page(props: {
       ? paytypeFilter
       : undefined;
 
+  const resolvedSearchKey =
+    canonicalInfrastructureSearchKey(modifiedSearchParams);
+
   return (
     <div className="space-y-8 px-4 py-6 pb-10">
       <PortalPageHeader
@@ -77,6 +81,7 @@ export default async function Page(props: {
           pageSize={pageSize}
           siteLabel={site_name}
           paytypeFilter={paytypeValid}
+          resolvedSearchKey={resolvedSearchKey}
         />
       </section>
     </div>

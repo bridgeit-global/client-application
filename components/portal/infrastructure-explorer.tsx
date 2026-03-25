@@ -46,6 +46,11 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PortalFilterSheet } from '@/components/portal/PortalFilterSheet';
+import IconButton from '@/components/buttons/icon-button';
+import { StationTypeSelector } from '@/components/input/station-type-selector';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { SiteFormModal } from '@/components/modal/register-modal/site-form-modal';
@@ -59,13 +64,32 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Filter,
   Loader2,
   MoreHorizontal,
   Plus,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
-import { PAY_TYPE } from '@/constants/bill';
-import { camelCaseToTitleCase } from '@/lib/utils/string-format';
+import { PAY_TYPE, PAY_TYPE_LIST } from '@/constants/bill';
+import { createQueryString } from '@/lib/createQueryString';
+import {
+  canonicalInfrastructureSearchKey,
+  searchParamsPropsFromURL
+} from '@/lib/infrastructure-explorer-search-key';
+import { camelCaseToTitleCase, snakeToTitle } from '@/lib/utils/string-format';
+
+type ExplorerFilterDraft = {
+  status: string;
+  site_id: string;
+  name: string;
+  zone_id: string;
+  type: string;
+  created_at_start: string;
+  created_at_end: string;
+  account_number: string;
+  paytype: string;
+};
 
 type InfrastructureExplorerProps = {
   sites: SiteConnectionTableProps[];
@@ -75,6 +99,7 @@ type InfrastructureExplorerProps = {
   pageSize: number;
   siteLabel: string;
   paytypeFilter?: number;
+  resolvedSearchKey: string;
 };
 
 export function InfrastructureExplorer({
@@ -84,7 +109,8 @@ export function InfrastructureExplorer({
   currentPage,
   pageSize,
   siteLabel,
-  paytypeFilter
+  paytypeFilter,
+  resolvedSearchKey
 }: InfrastructureExplorerProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -92,11 +118,24 @@ export function InfrastructureExplorer({
   const { toast } = useToast();
   const { user } = useUserStore();
   const supabase = createClient();
-  const [isPending, startTransition] = useTransition();
+  const [isDeactivatePending, startDeactivateTransition] = useTransition();
+  const [isNavPending, startNavTransition] = useTransition();
 
   const [openSiteId, setOpenSiteId] = useState<string>('');
-  const [isPaginationLoading, setIsPaginationLoading] = useState(false);
-  const pendingPageRef = useRef<number | null>(null);
+  const [pendingResolvedKey, setPendingResolvedKey] = useState<string | null>(
+    null
+  );
+  const [filterDraft, setFilterDraft] = useState<ExplorerFilterDraft>({
+    status: '1',
+    site_id: '',
+    name: '',
+    zone_id: '',
+    type: '',
+    created_at_start: '',
+    created_at_end: '',
+    account_number: '',
+    paytype: ''
+  });
   const [connectionCache, setConnectionCache] = useState<
     Record<string, Connection[] | null | undefined>
   >({});
@@ -130,6 +169,23 @@ export function InfrastructureExplorer({
     [pathname, searchParams]
   );
 
+  const navigateWithPending = useCallback(
+    (href: string) => {
+      const query = href.includes('?') ? href.slice(href.indexOf('?') + 1) : '';
+      const nextProps = searchParamsPropsFromURL(new URLSearchParams(query));
+      const key = canonicalInfrastructureSearchKey(nextProps);
+      setPendingResolvedKey(key);
+      setOpenSiteId('');
+      startNavTransition(() => {
+        router.push(href, { scroll: false });
+      });
+    },
+    [router, startNavTransition]
+  );
+
+  const isExplorerListPending =
+    pendingResolvedKey !== null && pendingResolvedKey !== resolvedSearchKey;
+
   const fetchConnections = useCallback(async (siteId: string) => {
     setLoadingSiteId(siteId);
     setLoadError(null);
@@ -156,32 +212,140 @@ export function InfrastructureExplorer({
   }, [paytypeFilter]);
 
   useEffect(() => {
-    // Stop pagination loader once the new page props arrive.
-    if (pendingPageRef.current == null) return;
-    if (pendingPageRef.current === currentPage) {
-      setIsPaginationLoading(false);
-      pendingPageRef.current = null;
+    if (pendingResolvedKey === null) return;
+    if (pendingResolvedKey === resolvedSearchKey) {
+      setPendingResolvedKey(null);
     }
-  }, [currentPage]);
+  }, [pendingResolvedKey, resolvedSearchKey]);
+
+  useEffect(() => {
+    setFilterDraft({
+      status: searchParams.get('status') ?? '1',
+      site_id: searchParams.get('site_id') ?? '',
+      name: searchParams.get('name') ?? '',
+      zone_id: searchParams.get('zone_id') ?? '',
+      type: searchParams.get('type') ?? '',
+      created_at_start: searchParams.get('created_at_start') ?? '',
+      created_at_end: searchParams.get('created_at_end') ?? '',
+      account_number: searchParams.get('account_number') ?? '',
+      paytype: searchParams.get('paytype') ?? ''
+    });
+  }, [resolvedSearchKey]);
+
+  const filterChips = useMemo(() => {
+    const items: { key: string; label: string; value: string }[] = [];
+    const st = searchParams.get('status');
+    if (st && st !== '1') {
+      items.push({
+        key: 'status',
+        label: 'Status',
+        value: st === '0' ? 'Inactive' : st
+      });
+    }
+    const simpleKeys = [
+      'site_id',
+      'name',
+      'zone_id',
+      'type',
+      'account_number',
+      'paytype'
+    ] as const;
+    for (const key of simpleKeys) {
+      const v = searchParams.get(key);
+      if (!v) continue;
+      let display = v;
+      if (key === 'paytype') {
+        display =
+          PAY_TYPE_LIST.find((p) => p.value === v)?.name ?? v;
+      }
+      const label =
+        key === 'site_id'
+          ? `${siteLabel} ID`
+          : snakeToTitle(key);
+      items.push({ key, label, value: display });
+    }
+    const ds = searchParams.get('created_at_start');
+    const de = searchParams.get('created_at_end');
+    if (ds || de) {
+      items.push({
+        key: 'registration_dates',
+        label: 'Registration',
+        value: `${ds ?? '…'} → ${de ?? '…'}`
+      });
+    }
+    return items;
+  }, [searchParams, siteLabel]);
+
+  const handleApplyFilters = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const updates: Record<string, string | null | undefined> = {
+        status: filterDraft.status || '1',
+        site_id: filterDraft.site_id.trim() || null,
+        name: filterDraft.name.trim() || null,
+        zone_id: filterDraft.zone_id.trim() || null,
+        type: filterDraft.type.trim() || null,
+        created_at_start: filterDraft.created_at_start.trim() || null,
+        created_at_end: filterDraft.created_at_end.trim() || null,
+        account_number: filterDraft.account_number.trim() || null,
+        paytype: filterDraft.paytype.trim() || null,
+        page: '1'
+      };
+      const qs = createQueryString(searchParams, updates);
+      const href = qs ? `${pathname}?${qs}` : pathname;
+      navigateWithPending(href);
+    },
+    [filterDraft, navigateWithPending, pathname, searchParams]
+  );
+
+  const handleClearFilters = useCallback(() => {
+    const limitKept = searchParams.get('limit') ?? '10';
+    const qs = createQueryString(searchParams, {
+      site_id: null,
+      name: null,
+      zone_id: null,
+      type: null,
+      created_at_start: null,
+      created_at_end: null,
+      account_number: null,
+      paytype: null,
+      status: '1',
+      page: '1',
+      limit: limitKept
+    });
+    navigateWithPending(qs ? `${pathname}?${qs}` : pathname);
+  }, [navigateWithPending, pathname, searchParams]);
+
+  const removeFilterChip = useCallback(
+    (chipKey: string) => {
+      const updates: Record<string, string | null | undefined> = {
+        page: '1'
+      };
+      if (chipKey === 'registration_dates') {
+        updates.created_at_start = null;
+        updates.created_at_end = null;
+      } else if (chipKey === 'status') {
+        updates.status = '1';
+      } else {
+        updates[chipKey] = null;
+      }
+      const qs = createQueryString(searchParams, updates);
+      navigateWithPending(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [navigateWithPending, pathname, searchParams]
+  );
 
   const handlePagination = useCallback(
     (targetPage: number) => {
       const normalizedTarget = Math.max(1, Math.min(targetPage, pageCount));
       if (normalizedTarget === currentPage) return;
 
-      pendingPageRef.current = normalizedTarget;
-      setIsPaginationLoading(true);
-      // Avoid holding expansion state across page changes.
-      setOpenSiteId('');
-
-      router.push(
-        buildHref({
-          page: normalizedTarget <= 1 ? undefined : String(normalizedTarget)
-        }),
-        { scroll: false }
-      );
+      const href = buildHref({
+        page: normalizedTarget <= 1 ? undefined : String(normalizedTarget)
+      });
+      navigateWithPending(href);
     },
-    [currentPage, pageCount, router, buildHref]
+    [currentPage, pageCount, buildHref, navigateWithPending]
   );
 
   useEffect(() => {
@@ -375,7 +539,7 @@ export function InfrastructureExplorer({
         onClose={() => setDeactivateSite(null)}
         onConfirm={() => {
           if (!deactivateSite) return;
-          startTransition(async () => {
+          startDeactivateTransition(async () => {
             const ok = await handleSiteStatus(deactivateSite, false);
             if (ok) {
               setDeactivateSite(null);
@@ -383,18 +547,222 @@ export function InfrastructureExplorer({
             }
           });
         }}
-        loading={isPending}
+        loading={isDeactivatePending}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          {totalCount} {siteLabel}
-          {totalCount === 1 ? '' : 's'} total
-          {paytypeFilter != null
-            ? ` · filtered by ${camelCaseToTitleCase(PAY_TYPE[String(paytypeFilter)])}`
-            : ''}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">
+            {isExplorerListPending ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Updating results…
+              </span>
+            ) : (
+              <>
+                {totalCount} {siteLabel}
+                {totalCount === 1 ? '' : 's'} total
+                {paytypeFilter != null
+                  ? ` · filtered by ${camelCaseToTitleCase(PAY_TYPE[String(paytypeFilter)])}`
+                  : ''}
+              </>
+            )}
+          </p>
+          {filterChips.length > 0 ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {filterChips.map((chip) => (
+                <Button
+                  key={chip.key}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-muted-foreground"
+                  disabled={isExplorerListPending || isNavPending}
+                  onClick={() => removeFilterChip(chip.key)}
+                >
+                  <span className="text-foreground">
+                    {chip.label}: {chip.value}
+                  </span>
+                  <X className="h-3 w-3 shrink-0" />
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <div className="flex flex-wrap gap-2">
+          <PortalFilterSheet
+            trigger={
+              <div className="inline-flex items-center gap-2">
+                <IconButton
+                  variant="outline"
+                  icon={Filter}
+                  text="Filter"
+                  disabled={isExplorerListPending}
+                />
+                {isNavPending ? (
+                  <Loader2
+                    aria-hidden
+                    className="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+                  />
+                ) : null}
+              </div>
+            }
+            primaryLabel={`Find ${siteLabel}s`}
+            onSubmit={handleApplyFilters}
+            onClear={handleClearFilters}
+            primaryDisabled={isNavPending}
+            primaryPending={isNavPending}
+            clearDisabled={isNavPending}
+          >
+            <div className="grid gap-3">
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select
+                  value={filterDraft.status || '1'}
+                  onValueChange={(value) =>
+                    setFilterDraft((prev) => ({ ...prev, status: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Inactive</SelectItem>
+                    <SelectItem value="1">Active</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="infra-site_id">{siteLabel} ID</Label>
+                  <Input
+                    id="infra-site_id"
+                    value={filterDraft.site_id}
+                    onChange={(e) =>
+                      setFilterDraft((prev) => ({
+                        ...prev,
+                        site_id: e.target.value
+                      }))
+                    }
+                    placeholder={`Search by ${siteLabel} ID`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="infra-account_number">Account number</Label>
+                  <Input
+                    id="infra-account_number"
+                    value={filterDraft.account_number}
+                    onChange={(e) =>
+                      setFilterDraft((prev) => ({
+                        ...prev,
+                        account_number: e.target.value
+                      }))
+                    }
+                    placeholder="Comma or space separated"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="infra-name">{siteLabel} name</Label>
+                  <Input
+                    id="infra-name"
+                    value={filterDraft.name}
+                    onChange={(e) =>
+                      setFilterDraft((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    placeholder={`${siteLabel} name`}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="infra-zone_id">Zone ID</Label>
+                  <Input
+                    id="infra-zone_id"
+                    value={filterDraft.zone_id}
+                    onChange={(e) =>
+                      setFilterDraft((prev) => ({
+                        ...prev,
+                        zone_id: e.target.value
+                      }))
+                    }
+                    placeholder="Zone ID"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{siteLabel} type</Label>
+                <StationTypeSelector
+                  value={
+                    filterDraft.type
+                      ? filterDraft.type.split(',').filter(Boolean)
+                      : []
+                  }
+                  onChange={(types) =>
+                    setFilterDraft((prev) => ({
+                      ...prev,
+                      type: types.length ? types.join(',') : ''
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Payment type</Label>
+                <Select
+                  value={filterDraft.paytype === '' ? '__all__' : filterDraft.paytype}
+                  onValueChange={(value) =>
+                    setFilterDraft((prev) => ({
+                      ...prev,
+                      paytype: value === '__all__' ? '' : value
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All payment types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All payment types</SelectItem>
+                    {PAY_TYPE_LIST.map((pt) => (
+                      <SelectItem key={pt.value} value={pt.value}>
+                        {pt.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Registration date range</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="infra-created_at_start"
+                    type="date"
+                    value={filterDraft.created_at_start}
+                    onChange={(e) =>
+                      setFilterDraft((prev) => ({
+                        ...prev,
+                        created_at_start: e.target.value
+                      }))
+                    }
+                  />
+                  <Input
+                    id="infra-created_at_end"
+                    type="date"
+                    value={filterDraft.created_at_end}
+                    onChange={(e) =>
+                      setFilterDraft((prev) => ({
+                        ...prev,
+                        created_at_end: e.target.value
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          </PortalFilterSheet>
+          {filterChips.length > 0 ? (
+            <Badge variant="secondary" className="h-8 px-2">
+              {filterChips.length} filter{filterChips.length === 1 ? '' : 's'}
+            </Badge>
+          ) : null}
           <Button type="button" onClick={() => setRegisterSiteOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Register {siteLabel}
@@ -409,7 +777,7 @@ export function InfrastructureExplorer({
         </Alert>
       ) : null}
 
-      {!isPaginationLoading ? (
+      {!isExplorerListPending ? (
         <div className="space-y-3">
           {sites.map((site) => {
           const isOpen = openSiteId === site.id;
@@ -470,7 +838,7 @@ export function InfrastructureExplorer({
                           onClick={() => {
                             if (site.is_active) setDeactivateSite(site);
                             else {
-                              startTransition(async () => {
+                              startDeactivateTransition(async () => {
                                 const ok = await handleSiteStatus(site, true);
                                 if (ok) router.refresh();
                               });
@@ -592,10 +960,10 @@ export function InfrastructureExplorer({
         </div>
       ) : null}
 
-      {isPaginationLoading ? (
+      {isExplorerListPending ? (
         <div className="space-y-3">
           {Array.from({ length: Math.min(5, pageSize) }, (_, idx) => idx).map((i) => (
-            <Card key={`pagination-skeleton-${i}`} className="border-border bg-card">
+            <Card key={`list-skeleton-${i}`} className="border-border bg-card">
               <div className="flex items-stretch gap-1 border-b border-border px-2">
                 <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:flex-row sm:items-center sm:gap-3">
                   <Skeleton className="h-4 w-48" />
@@ -612,7 +980,7 @@ export function InfrastructureExplorer({
         </div>
       ) : null}
 
-      {!isPaginationLoading && sites.length === 0 ? (
+      {!isExplorerListPending && sites.length === 0 ? (
         <Card className="border-border bg-card">
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
             No results.
@@ -624,7 +992,7 @@ export function InfrastructureExplorer({
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
           <p className="text-sm text-muted-foreground">
             Page {currentPage} of {pageCount}
-            {isPaginationLoading ? (
+            {isExplorerListPending ? (
               <Loader2 className="ml-2 h-4 w-4 animate-spin inline" />
             ) : null}
           </p>
@@ -632,7 +1000,7 @@ export function InfrastructureExplorer({
             <Button
               variant="outline"
               size="sm"
-              disabled={isPaginationLoading || currentPage <= 1}
+              disabled={isExplorerListPending || currentPage <= 1}
               onClick={() => handlePagination(currentPage - 1)}
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
@@ -641,7 +1009,7 @@ export function InfrastructureExplorer({
             <Button
               variant="outline"
               size="sm"
-              disabled={isPaginationLoading || currentPage >= pageCount}
+              disabled={isExplorerListPending || currentPage >= pageCount}
               onClick={() => handlePagination(currentPage + 1)}
             >
               Next

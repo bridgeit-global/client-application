@@ -40,6 +40,7 @@ TABLE: portal.connections
   is_deleted       BOOLEAN
   next_bill_date   DATE
   submeter_info    JSONB
+  connection_details JSONB  -- optional: pdf_key, html_key for bill document storage paths
   created_at       TIMESTAMPTZ
   updated_at       TIMESTAMPTZ
 
@@ -155,6 +156,34 @@ COMMON PATTERNS:
   (b.rebate_potential - COALESCE(b.rebate_accrued, 0))           AS missed_rebate
 `;
 
+function sanitizeScopeId(raw: unknown, maxLen: number): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const s = raw.trim();
+  if (!s || s.length > maxLen) return undefined;
+  if (!/^[a-zA-Z0-9_-]+$/.test(s)) return undefined;
+  return s;
+}
+
+function buildSessionContext(
+  siteId?: string,
+  connectionId?: string,
+  extra?: string
+): string | undefined {
+  const parts: string[] = [];
+  if (siteId) {
+    parts.push(
+      `User scoped this session to site_id = '${siteId}'. Prefer queries that JOIN portal.sites and filter s.id = '${siteId}' (in addition to org_id).`
+    );
+  }
+  if (connectionId) {
+    parts.push(
+      `User scoped this session to connection_id = '${connectionId}'. Prefer queries that filter portal.connections.id = '${connectionId}' (and still enforce org_id via sites).`
+    );
+  }
+  if (extra?.trim()) parts.push(extra.trim());
+  return parts.length ? parts.join('\n') : undefined;
+}
+
 function getSystemPrompt(orgId: string, context?: string): string {
   const today = new Date().toISOString().split('T')[0];
 
@@ -198,9 +227,13 @@ export async function POST(req: NextRequest) {
       messages?: UIMessage[];
       org_id?: string;
       context?: string;
+      site_id?: string;
+      connection_id?: string;
     };
 
     const { messages = [], org_id, context } = body;
+    const site_id = sanitizeScopeId(body.site_id, 128);
+    const connection_id = sanitizeScopeId(body.connection_id, 256);
 
     if (!org_id) {
       return NextResponse.json(
@@ -230,7 +263,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const systemPrompt = getSystemPrompt(org_id, context);
+    const sessionContext = buildSessionContext(site_id, connection_id, context);
+    const systemPrompt = getSystemPrompt(org_id, sessionContext);
 
     const result = streamText({
       model: google('gemini-3-flash-preview'),

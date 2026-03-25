@@ -17,40 +17,7 @@ export const getNavItems = (site_name: string): NavItem[] => {
             icon: 'site',
             isCollapsible: false,
             shortcut: ['s', 's'],
-            items: [
-                {
-                    title: `${site_name}s`,
-                    url: '/portal/site/sites',
-                    icon: 'site',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                    items: []
-                },
-                {
-                    title: 'Postpaid',
-                    url: '/portal/site/postpaid',
-                    icon: 'billManage',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                    items: []
-                },
-                {
-                    title: 'Prepaid',
-                    url: '/portal/site/prepaid',
-                    icon: 'payment',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                    items: []
-                },
-                {
-                    title: 'Submeter',
-                    url: '/portal/site/submeter',
-                    icon: 'site',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                    items: []
-                }
-            ]
+            items: []
         },
 
         {

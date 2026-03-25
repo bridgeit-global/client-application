@@ -1,26 +1,14 @@
-import { SiteTable } from '@/components/tables/site/site-table';
-import { fetchAllSites } from '@/services/sites';
-import { SearchParamsProps } from '@/types';
-import { getActiveSites } from '@/services/dashboard';
-export default async function Page(
-  props: {
-    searchParams: Promise<SearchParamsProps>;
-  }
-) {
+import { redirect } from 'next/navigation';
+import type { SearchParamsProps } from '@/types';
+
+export default async function Page(props: {
+  searchParams: Promise<SearchParamsProps>;
+}) {
   const searchParams = await props.searchParams;
-  const { count: active_count } = await getActiveSites();
-  // Default to showing only active sites if no status filter is provided
-  const modifiedSearchParams = {
-    ...searchParams,
-    status: searchParams.status || '1'
-  };
-  const { pageCount, data, totalCount } = await fetchAllSites(modifiedSearchParams);
-  return (
-    <SiteTable
-      data={data}
-      pageCount={pageCount}
-      totalCount={totalCount}
-      active_count={active_count}
-    />
-  );
+  const p = new URLSearchParams();
+  Object.entries(searchParams).forEach(([k, v]) => {
+    if (v !== undefined && v !== '') p.set(k, v);
+  });
+  const qs = p.toString();
+  redirect(qs ? `/portal/site?${qs}` : '/portal/site');
 }

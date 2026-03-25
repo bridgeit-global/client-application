@@ -1003,6 +1003,70 @@ export const getConnections = cache(async (siteId: string): Promise<Connection[]
   }
 });
 
+/** Full connection payload for infrastructure explorer (payments, submeter readings). */
+export const getFullConnections = cache(
+  async (siteId: string): Promise<Connection[] | null> => {
+    if (!siteId) return null;
+
+    const supabase = await createClient();
+    try {
+      const { data, error } = await supabase
+        .from('connections')
+        .select(
+          `
+                *,
+                biller_list!inner(*),
+                bills (
+                    *,
+                    is_active,
+                    is_valid
+                ),
+                payments (*),
+                prepaid_recharge (*),
+                prepaid_info (*),
+                prepaid_balances (*),
+                submeter_readings (*)
+            `
+        )
+        .eq('site_id', siteId)
+        .eq('is_deleted', false);
+
+      if (error) {
+        console.error('Error fetching full connections:', error);
+        return null;
+      }
+
+      if (!data || !Array.isArray(data)) {
+        return null;
+      }
+
+      return data.map((connection) => ({
+        id: connection.id,
+        account_number: connection.account_number,
+        connection_type: connection.connection_type,
+        tariff: connection.tariff,
+        is_active: connection.is_active,
+        name: connection.name,
+        address: connection.address,
+        connection_date: connection.connection_date,
+        biller_list: connection.biller_list,
+        paytype: connection.paytype,
+        bills: (connection.bills || []) as Connection['bills'],
+        prepaid_recharge: connection.prepaid_recharge || [],
+        prepaid_info: connection.prepaid_info,
+        prepaid_balances: connection.prepaid_balances || [],
+        security_deposit: connection.security_deposit || 0,
+        payments: (connection.payments || []) as NonNullable<Connection['payments']>,
+        submeter_readings: (connection.submeter_readings ||
+          []) as NonNullable<Connection['submeter_readings']>
+      }));
+    } catch (error) {
+      console.error('Unexpected error fetching full connections:', error);
+      return null;
+    }
+  }
+);
+
 export const getSiteProfile = cache(async (id: string): Promise<SiteProfile | null> => {
   if (!id) return null;
 

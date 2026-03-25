@@ -2,6 +2,9 @@ import { ConnectionsProps, ConnectionTableProps } from './connections-type';
 import { TableRow } from './supabase-type';
 import { AllBillTableProps } from "./bills-type";
 import { PrepaidRechargeTableProps } from "./connections-type";
+import type { PaymentsProps } from './payments-type';
+import type { SubmeterReadingWithConnection } from './submeter-readings-type';
+import type { BillerListProps } from './biller-list-type';
 
 export type SiteProps = TableRow<'sites'>;
 
@@ -41,6 +44,13 @@ export interface Connection {
   } | null;
   prepaid_balances: PrepaidBalance[];
   security_deposit: number;
+  /** Enriched on full connection fetch (explorer / profile). */
+  name?: string | null;
+  address?: string | null;
+  connection_date?: string | null;
+  biller_list?: BillerListProps | null;
+  payments?: PaymentsProps[];
+  submeter_readings?: SubmeterReadingWithConnection[];
 }
 
 export interface SiteProfilePageData {

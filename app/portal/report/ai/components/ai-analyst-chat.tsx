@@ -29,6 +29,8 @@ import BillDocumentLinks from './bill-document-links';
 type AIAnalystChatProps = {
   orgId: string;
   orgName: string;
+  siteId?: string;
+  connectionId?: string;
 };
 
 const SUGGESTED_PROMPTS = [
@@ -170,7 +172,12 @@ const markdownComponents: ComponentProps<typeof ReactMarkdown>['components'] = {
   )
 };
 
-export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
+export default function AIAnalystChat({
+  orgId,
+  orgName,
+  siteId,
+  connectionId
+}: AIAnalystChatProps) {
   const [input, setInput] = useState('');
   const [feedbackByMessageId, setFeedbackByMessageId] = useState<Record<string, 'up' | 'down'>>({});
   const [feedbackSubmitting, setFeedbackSubmitting] = useState<string | null>(null);
@@ -179,9 +186,13 @@ export default function AIAnalystChat({ orgId, orgName }: AIAnalystChatProps) {
     () =>
       new DefaultChatTransport({
         api: '/api/chat/analyst',
-        body: { org_id: orgId }
+        body: {
+          org_id: orgId,
+          ...(siteId ? { site_id: siteId } : {}),
+          ...(connectionId ? { connection_id: connectionId } : {})
+        }
       }),
-    [orgId]
+    [orgId, siteId, connectionId]
   );
 
   const { messages, sendMessage, status, error, stop, setMessages } = useChat({

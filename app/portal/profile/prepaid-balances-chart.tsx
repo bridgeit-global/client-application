@@ -28,12 +28,15 @@ type BalanceData = {
 };
 
 export default function PrepaidBalancesChart({
-  prepaid_balances
+  prepaid_balances,
+  connectionId: connectionIdProp
 }: {
   prepaid_balances: PrepaidBalanceProps[];
+  /** When not on `/portal/profile?id=`, pass connection id for prepaid_info updates. */
+  connectionId?: string;
 }) {
   const params = useSearchParams();
-  const id = params.get('id');
+  const id = connectionIdProp ?? params.get('id');
   const supabase = createClient();
   const data = fillDatesWithDefaultAmount(prepaid_balances);
   const [threshold, setThreshold] = useState(0); // Default threshold
@@ -44,6 +47,7 @@ export default function PrepaidBalancesChart({
 
   useEffect(() => {
     async function fetchThreshold() {
+      if (!id) return;
       try {
         const { data, error } = await supabase
           .from('prepaid_info')
@@ -60,7 +64,7 @@ export default function PrepaidBalancesChart({
       }
     }
     fetchThreshold();
-  }, []);
+  }, [id]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -68,6 +72,14 @@ export default function PrepaidBalancesChart({
   };
 
   const handleSaveClick = async () => {
+    if (!id) {
+      toast({
+        title: 'Missing connection',
+        description: 'Cannot update threshold without a connection id.',
+        variant: 'destructive'
+      });
+      return;
+    }
     setIsLoading(true);
     try {
       const { error } = await supabase

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, FormProvider } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -21,6 +22,9 @@ import { useSiteName } from "@/lib/utils/site"
 import { BankSelector } from "@/components/input/bank-selector"
 import { useUserStore } from "@/lib/store/user-store"
 import { sanitizeInput } from "@/lib/utils/string-format"
+import { useConnectionDetailsPoll } from "@/hooks/use-connection-details-poll"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Loader2 } from "lucide-react"
 
 
 
@@ -38,6 +42,7 @@ type ConnectionFormProps = {
 }
 function ConnectionForm(props: ConnectionFormProps) {
     const site_name = useSiteName();
+    const router = useRouter()
     const supabase = createClient()
     const { user } = useUserStore()
     const { handleDatabaseError, error: dbError, clearError } = useSupabaseError();
@@ -101,6 +106,28 @@ function ConnectionForm(props: ConnectionFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
     const { toast } = useToast()
+    const [pollConnectionId, setPollConnectionId] = useState<string | null>(null)
+    const pollStatus = useConnectionDetailsPoll(
+        pollConnectionId,
+        pollConnectionId !== null
+    )
+
+    useEffect(() => {
+        if (pollStatus === 'ready') {
+            toast({
+                title: 'Connection document ready',
+                description: 'PDF/HTML details are now available in connection_details.'
+            })
+            setPollConnectionId(null)
+            router.refresh()
+        } else if (pollStatus === 'timeout') {
+            toast({
+                title: 'Document not ready yet',
+                description: 'Refresh the page in a few minutes to pick up PDF/HTML keys.'
+            })
+            setPollConnectionId(null)
+        }
+    }, [pollStatus, toast, router])
 
     // Function to validate parameter value against regex
     const validateParameterValue = (value: string, validation: string, fieldName: string, index: number) => {
@@ -320,6 +347,7 @@ function ConnectionForm(props: ConnectionFormProps) {
                     : "Connection created successfully",
             })
 
+            setPollConnectionId(connectionId)
             form.reset()
         } catch (error) {
             toast({
@@ -346,6 +374,15 @@ function ConnectionForm(props: ConnectionFormProps) {
 
     return (
         <div>
+            {pollStatus === 'polling' ? (
+                <Alert className="mb-4 border-border bg-card">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertTitle>Syncing connection document</AlertTitle>
+                    <AlertDescription>
+                        Checking for PDF/HTML keys on this connection for up to 5 minutes.
+                    </AlertDescription>
+                </Alert>
+            ) : null}
             <Card>
                 <CardContent className="space-y-4 pt-4">
                     <FormProvider {...form}>

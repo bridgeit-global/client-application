@@ -799,16 +799,16 @@ export function InfrastructureExplorer({
               onOpenChange={(open) => setOpenSiteId(open ? site.id : '')}
             >
               <Card className="border-border bg-card">
-                <div className="flex items-stretch gap-1 border-b border-border px-2">
+                <div className="flex items-center gap-2 px-2">
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
-                      className="flex min-w-0 flex-1 items-center gap-3 py-3 text-left outline-none ring-offset-background hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left outline-none ring-offset-background hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <ChevronDown
                         className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
                       />
-                      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                         <span className="truncate font-semibold text-foreground">
                           {site.id}
                         </span>
@@ -819,7 +819,7 @@ export function InfrastructureExplorer({
                       </div>
                     </button>
                   </CollapsibleTrigger>
-                  <div className="flex items-center pr-1">
+                  <div className="flex items-center py-2 pr-1">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -964,8 +964,8 @@ export function InfrastructureExplorer({
         <div className="space-y-3">
           {Array.from({ length: Math.min(5, pageSize) }, (_, idx) => idx).map((i) => (
             <Card key={`list-skeleton-${i}`} className="border-border bg-card">
-              <div className="flex items-stretch gap-1 border-b border-border px-2">
-                <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex items-center gap-2 px-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-1 py-3 sm:flex-row sm:items-center sm:gap-2">
                   <Skeleton className="h-4 w-48" />
                   <Skeleton className="h-3 w-24" />
                 </div>

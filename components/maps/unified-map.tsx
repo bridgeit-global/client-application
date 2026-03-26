@@ -116,7 +116,6 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
     const map = useRef<mapboxgl.Map | null>(null);
     const [mapLoaded, setMapLoaded] = useState(false);
     const [sourcesInitialized, setSourcesInitialized] = useState(false);
-    const [activeMapType, setActiveMapType] = useState<MapType>('stations');
     const prevSiteTypesRef = useRef<string>('');
     const popupRef = useRef<mapboxgl.Popup | null>(null);
     // Separate markers for each type
@@ -337,35 +336,24 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
                     }
                 });
 
-                // Initially hide all layers except stations
-                if (type !== 'stations') {
-                    mapInstance.setLayoutProperty(`${type}-points`, 'visibility', 'none');
-                }
             });
 
-            // Update markers function - only for the active type
+            // Update markers function for all data types
             const updateAllMarkers = () => {
                 ['stations', 'payments'].forEach(type => {
                     const sourceId = `${type}-source`;
                     if (!mapInstance.getSource(sourceId) || !mapInstance.isSourceLoaded(sourceId)) return;
 
                     const config = getMapConfig(type as MapType);
-                    
-                    // Only update markers for the active type, hide others
-                    if (type === activeMapType) {
-                        updateMarkers(
-                            mapInstance,
-                            markers.current[type as MapType],
-                            markersOnScreen.current[type as MapType],
-                            config.chartCreator,
-                            sourceId,
-                            type as MapType
-                        );
-                    } else {
-                        // Hide markers for inactive type
-                        Object.values(markersOnScreen.current[type as MapType]).forEach(marker => marker.remove());
-                        markersOnScreen.current[type as MapType] = {};
-                    }
+
+                    updateMarkers(
+                        mapInstance,
+                        markers.current[type as MapType],
+                        markersOnScreen.current[type as MapType],
+                        config.chartCreator,
+                        sourceId,
+                        type as MapType
+                    );
                 });
             };
 
@@ -470,42 +458,19 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
         } catch (error) {
             // Handle source initialization error silently
         }
-    }, [mapLoaded, stationsData, paymentsData, SITE_TYPES, getMapConfig, convertToGeoJSON, router, site_name, sourcesInitialized, activeMapType]);
+    }, [mapLoaded, stationsData, paymentsData, SITE_TYPES, getMapConfig, convertToGeoJSON, router, site_name, sourcesInitialized]);
 
-    // Setup UI controls (legend and toggle buttons)
+    // Setup legend controls
     useEffect(() => {
         if (!map.current || !mapLoaded || !sourcesInitialized) return;
 
         const mapInstance = map.current;
 
         // Remove stale controls first (helps after hot reloads/navigation)
-        const existingDataTypeToggleControl = document.getElementById('map-data-type-toggle');
-        if (existingDataTypeToggleControl) existingDataTypeToggleControl.remove();
         const existingLegendControl = document.getElementById('map-legend');
         if (existingLegendControl) existingLegendControl.remove();
         const existingHideLegendButton = document.getElementById('map-legend-hide-button');
         if (existingHideLegendButton) existingHideLegendButton.remove();
-        const existingHideControlsButton = document.getElementById('map-controls-hide-button');
-        if (existingHideControlsButton) existingHideControlsButton.remove();
-
-        // Add data type toggle buttons
-        const dataTypeToggleControl = document.createElement('div');
-        dataTypeToggleControl.className = 'bg-white p-4 rounded-lg shadow-lg absolute right-4 bottom-4';
-        dataTypeToggleControl.style.minWidth = '200px';
-        dataTypeToggleControl.style.zIndex = '1';
-        dataTypeToggleControl.id = 'map-data-type-toggle';
-
-        dataTypeToggleControl.innerHTML = `
-            <div class="space-y-2">
-                <button id="toggle-stations" class="w-full py-2 text-sm font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
-                    ${site_name} Types
-                </button>
-                <button id="toggle-payments" class="w-full py-2 text-sm font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
-                    Payment Types
-                </button>
-            </div>
-        `;
-        mapInstance.getContainer().appendChild(dataTypeToggleControl);
 
         // Add legend control
         const legendControl = document.createElement('div');
@@ -521,24 +486,13 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
 
         legendControl.innerHTML = `
             <div class="space-y-4">
-                <div class="legend-section" id="legend-stations" style="display: block">
+                <div class="legend-section" id="legend-stations">
                     <div class="text-sm font-medium mb-2">${site_name} Types</div>
                     <div class="space-y-2">
                         ${Object.entries(station_colors).map(([key, color]) => `
                             <div class="flex items-center gap-2">
                                 <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
                                 <span class="text-sm">${key}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                <div class="legend-section" id="legend-payments" style="display: none">
-                    <div class="text-sm font-medium mb-2">Payment Types</div>
-                    <div class="space-y-2">
-                        ${Object.entries(PAYMENT_COLORS).map(([key, color]) => `
-                            <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
-                                <span class="text-sm">${camelCaseToTitleCase(key)}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -561,92 +515,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
             hideLegendButton.innerHTML = isHidden ? '🔽' : '🔼';
         };
         mapInstance.getContainer().appendChild(hideLegendButton);
-
-        // Add hide button for controls
-        const hideControlsButton = document.createElement('button');
-        hideControlsButton.innerHTML = '🔽';
-        hideControlsButton.className = 'bg-white rounded-md p-1 absolute right-4 shadow-lg';
-        hideControlsButton.style.zIndex = '1';
-        hideControlsButton.style.marginTop = '5px';
-        hideControlsButton.id = 'map-controls-hide-button';
-        hideControlsButton.onclick = () => {
-            const isHidden = dataTypeToggleControl.style.display === 'none';
-            dataTypeToggleControl.style.display = isHidden ? 'block' : 'none';
-            hideControlsButton.innerHTML = isHidden ? '🔽' : '🔼';
-        };
-        mapInstance.getContainer().appendChild(hideControlsButton);
-
-        // Add toggle functionality
-        ['stations', 'payments'].forEach(type => {
-            const button = document.getElementById(`toggle-${type}`);
-            if (button) {
-                button.addEventListener('click', () => {
-                    // Update button styles
-                    ['stations', 'payments'].forEach(t => {
-                        const btn = document.getElementById(`toggle-${t}`);
-                        if (btn) {
-                            if (t === type) {
-                                btn.classList.remove('bg-gray-100', 'text-gray-700');
-                                btn.classList.add('bg-blue-100', 'text-blue-700');
-                            } else {
-                                btn.classList.remove('bg-blue-100', 'text-blue-700');
-                                btn.classList.add('bg-gray-100', 'text-gray-700');
-                            }
-                        }
-                    });
-
-                    // Show/hide layers
-                    ['stations', 'payments'].forEach(t => {
-                        const visibility = t === type ? 'visible' : 'none';
-                        if (mapInstance.getLayer(`${t}-points`)) {
-                            mapInstance.setLayoutProperty(`${t}-points`, 'visibility', visibility);
-                        }
-                    });
-
-                    // Update legend
-                    ['stations', 'payments'].forEach(t => {
-                        const legendSection = document.getElementById(`legend-${t}`);
-                        if (legendSection) {
-                            legendSection.style.display = t === type ? 'block' : 'none';
-                        }
-                    });
-
-                    // Update active map type to trigger marker visibility change
-                    setActiveMapType(type as MapType);
-                });
-            }
-        });
     }, [mapLoaded, sourcesInitialized, site_name, SITE_TYPES]);
-
-    // Handle marker visibility when activeMapType changes
-    useEffect(() => {
-        if (!map.current || !sourcesInitialized) return;
-
-        const mapInstance = map.current;
-
-        // Show/hide markers based on active type
-        ['stations', 'payments'].forEach(type => {
-            if (type === activeMapType) {
-                // For the active type, we need to update markers
-                const sourceId = `${type}-source`;
-                if (mapInstance.getSource(sourceId) && mapInstance.isSourceLoaded(sourceId)) {
-                    const config = getMapConfig(type as MapType);
-                    updateMarkers(
-                        mapInstance,
-                        markers.current[type as MapType],
-                        markersOnScreen.current[type as MapType],
-                        config.chartCreator,
-                        sourceId,
-                        type as MapType
-                    );
-                }
-            } else {
-                // Hide markers for inactive type
-                Object.values(markersOnScreen.current[type as MapType]).forEach(marker => marker.remove());
-                markersOnScreen.current[type as MapType] = {};
-            }
-        });
-    }, [activeMapType, sourcesInitialized, getMapConfig]);
 
     return (
         <div

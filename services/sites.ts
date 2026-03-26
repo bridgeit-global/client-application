@@ -411,10 +411,19 @@ export const fetchAllSites = cache(
     } = searchParams;
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
+    const accountNumberValues = account_number
+      ? processValues(account_number)
+      : [];
+    const hasAccountNumberFilter = accountNumberValues.length > 0;
+    const hasPaytypeFilter = paytype !== undefined && paytype !== '';
+    const useInnerConnectionJoin = hasAccountNumberFilter || hasPaytypeFilter;
+    const connectionsSelect = useInnerConnectionJoin
+      ? 'connections!inner(account_number,paytype,is_deleted,biller_list!inner(*))'
+      : 'connections(account_number,paytype,is_deleted,biller_list!inner(*))';
 
     let query = supabase
       .from('sites')
-      .select(`*,connections(account_number,paytype,biller_list!inner(*))`, {
+      .select(`*,${connectionsSelect}`, {
         count: 'estimated'
       }).order('created_at', { ascending: false }).eq("connections.is_deleted", false);
 
@@ -453,11 +462,8 @@ export const fetchAllSites = cache(
         .lte('created_at', created_at_end);
     }
 
-    if (account_number) {
-      const value = processValues(account_number);
-      if (value.length > 0) {
-        query = query.in('connections.account_number', value);
-      }
+    if (hasAccountNumberFilter) {
+      query = query.in('connections.account_number', accountNumberValues);
     }
 
     if (paytype !== undefined && paytype !== '') {

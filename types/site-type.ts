@@ -33,6 +33,7 @@ export type PrepaidBalance = TableRow<'prepaid_balances'>
 
 export interface Connection {
   id: string;
+  biller_id?: string | null;
   account_number: string;
   connection_type: string;
   tariff: string;

@@ -31,6 +31,7 @@ type AIAnalystChatProps = {
   orgName: string;
   siteId?: string;
   connectionId?: string;
+  billerId?: string;
 };
 
 const SUGGESTED_PROMPTS = [
@@ -176,7 +177,8 @@ export default function AIAnalystChat({
   orgId,
   orgName,
   siteId,
-  connectionId
+  connectionId,
+  billerId
 }: AIAnalystChatProps) {
   const [input, setInput] = useState('');
   const [feedbackByMessageId, setFeedbackByMessageId] = useState<Record<string, 'up' | 'down'>>({});
@@ -189,10 +191,11 @@ export default function AIAnalystChat({
         body: {
           org_id: orgId,
           ...(siteId ? { site_id: siteId } : {}),
-          ...(connectionId ? { connection_id: connectionId } : {})
+          ...(connectionId ? { connection_id: connectionId } : {}),
+          ...(billerId ? { biller_id: billerId } : {})
         }
       }),
-    [orgId, siteId, connectionId]
+    [orgId, siteId, connectionId, billerId]
   );
 
   const { messages, sendMessage, status, error, stop, setMessages } = useChat({

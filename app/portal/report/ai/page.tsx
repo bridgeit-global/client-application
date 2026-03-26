@@ -6,6 +6,7 @@ export default async function Page(props: {
   searchParams: Promise<{
     site_id?: string;
     connection_id?: string;
+    biller_id?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
@@ -32,8 +33,8 @@ export default async function Page(props: {
   }
 
   const scoped =
-    searchParams.site_id || searchParams.connection_id
-      ? ` Scoped to${searchParams.site_id ? ` site ${searchParams.site_id}` : ''}${searchParams.connection_id ? ` · connection ${searchParams.connection_id}` : ''}.`
+    searchParams.site_id || searchParams.connection_id || searchParams.biller_id
+      ? ` Scoped to${searchParams.site_id ? ` site ${searchParams.site_id}` : ''}${searchParams.connection_id ? ` · connection ${searchParams.connection_id}` : ''}${searchParams.biller_id ? ` · biller ${searchParams.biller_id}` : ''}.`
       : '';
 
   return (
@@ -53,6 +54,7 @@ export default async function Page(props: {
           orgName={site_name}
           siteId={searchParams.site_id}
           connectionId={searchParams.connection_id}
+          billerId={searchParams.biller_id}
         />
       </div>
     </div>

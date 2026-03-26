@@ -44,6 +44,15 @@ TABLE: portal.connections
   created_at       TIMESTAMPTZ
   updated_at       TIMESTAMPTZ
 
+TABLE: portal.biller_list
+  id           TEXT  PK
+  alias        TEXT
+  board_name   TEXT
+  state        TEXT
+  status       BOOLEAN
+  created_at   TIMESTAMPTZ
+  updated_at   TIMESTAMPTZ
+
 TABLE: portal.bills
   id                        TEXT  PK
   connection_id             TEXT  FK → connections.id
@@ -135,6 +144,7 @@ TABLE: portal.meter_readings
 RELATIONSHIPS (for JOINs):
   bills         → connections   ON bills.connection_id = connections.id
   connections   → sites         ON connections.site_id = sites.id
+  connections   → biller_list   ON connections.biller_id = biller_list.id
   core_charges  → bills         ON core_charges.id = bills.id
   regulatory_charges → bills    ON regulatory_charges.id = bills.id
   adherence_charges  → bills    ON adherence_charges.id = bills.id
@@ -167,6 +177,7 @@ function sanitizeScopeId(raw: unknown, maxLen: number): string | undefined {
 function buildSessionContext(
   siteId?: string,
   connectionId?: string,
+  billerId?: string,
   extra?: string
 ): string | undefined {
   const parts: string[] = [];
@@ -178,6 +189,11 @@ function buildSessionContext(
   if (connectionId) {
     parts.push(
       `User scoped this session to connection_id = '${connectionId}'. Prefer queries that filter portal.connections.id = '${connectionId}' (and still enforce org_id via sites).`
+    );
+  }
+  if (billerId) {
+    parts.push(
+      `User scoped this session to biller_id = '${billerId}'. Prefer queries that filter portal.connections.biller_id = '${billerId}', and JOIN portal.biller_list bl when returning board/state bifurcation.`
     );
   }
   if (extra?.trim()) parts.push(extra.trim());
@@ -201,6 +217,7 @@ Behaviour rules:
 - For a single bill question: query bills + all four charge tables + meter_readings.
 - For trend questions: query the last N months ordered by bill_date ASC.
 - For anomaly/portfolio questions: aggregate across sites and surface the top offenders.
+- For biller-board/state bifurcation questions: JOIN portal.biller_list bl ON bl.id = cn.biller_id and group by bl.board_name and/or bl.state as requested.
 - The client renders charts automatically from query rows. For trend questions, return a date/month column plus numeric columns. For comparisons, return a label column plus numeric columns. Prefer <=20 rows for clean chart rendering when possible.
 - Bill copy fields: when the user asks to see/view specific bills, include b.id AS bill_id, b.content AS content, b.content_type AS content_type, and s.name AS site_name in your SELECT. Only include content/content_type when dealing with specific bills, not aggregate portfolio queries.
 - Quantify every finding in ₹. Explain LPSC, PF penalty, ToD, sanctioned load in plain language.
@@ -229,11 +246,13 @@ export async function POST(req: NextRequest) {
       context?: string;
       site_id?: string;
       connection_id?: string;
+      biller_id?: string;
     };
 
     const { messages = [], org_id, context } = body;
     const site_id = sanitizeScopeId(body.site_id, 128);
     const connection_id = sanitizeScopeId(body.connection_id, 256);
+    const biller_id = sanitizeScopeId(body.biller_id, 128);
 
     if (!org_id) {
       return NextResponse.json(
@@ -263,7 +282,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sessionContext = buildSessionContext(site_id, connection_id, context);
+    const sessionContext = buildSessionContext(
+      site_id,
+      connection_id,
+      biller_id,
+      context
+    );
     const systemPrompt = getSystemPrompt(org_id, sessionContext);
 
     const result = streamText({

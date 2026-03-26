@@ -433,7 +433,10 @@ export function InfrastructureExplorer({
           : raw;
     const selId = selectedBySite[openSiteId];
     const conn = list.find((c) => c.id === selId);
-    if (conn) p.set('connection_id', conn.id);
+    if (conn) {
+      p.set('connection_id', conn.id);
+      if (conn.biller_id) p.set('biller_id', conn.biller_id);
+    }
     return `/portal/report/ai?${p.toString()}`;
   }, [
     openSiteId,

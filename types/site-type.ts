@@ -1,4 +1,5 @@
 import { ConnectionsProps, ConnectionTableProps } from './connections-type';
+import type { Json } from './supabase';
 import { TableRow } from './supabase-type';
 import { AllBillTableProps } from "./bills-type";
 import { PrepaidRechargeTableProps } from "./connections-type";
@@ -51,6 +52,7 @@ export interface Connection {
   biller_list?: BillerListProps | null;
   payments?: PaymentsProps[];
   submeter_readings?: SubmeterReadingWithConnection[];
+  connection_details?: Json | null;
 }
 
 export interface SiteProfilePageData {

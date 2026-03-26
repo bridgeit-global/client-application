@@ -25,6 +25,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import { getPrepaidBalance } from '@/lib/utils';
 import { getLatestBill, getLatestRecharge } from '@/lib/utils/bill';
 import { getStorageSourceFromPaytype } from '@/lib/utils/presigned-url-client';
+import { getDocumentKeyAndType } from '@/lib/utils/connection-document';
 import {
   connectionPayloadForTimeline,
   convertConnectionToTimelineEvents
@@ -41,6 +42,7 @@ import { PrepaidRechargeTable } from '@/components/tables/prepaid-recharge-table
 import PrepaidBalancesChart from '@/app/portal/profile/prepaid-balances-chart';
 import { SubmeterReadingsDashboard } from '@/components/meter-dashboard/submeter-readings-dashboard';
 import { Timeline } from '@/app/portal/profile/timeline';
+import { PDFViewerWithPresigned } from '@/components/modal/pdf-viewer-with-presigned';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -55,9 +57,6 @@ import {
 
 export type ConnectionProfileBodyProps = {
   connection: Connection;
-  siteLabel: string;
-  siteId: string;
-  siteName?: string;
   /** When false, hides edit/delete/switch (e.g. read-only preview). */
   showActions?: boolean;
   onMutate?: () => void;
@@ -65,9 +64,6 @@ export type ConnectionProfileBodyProps = {
 
 export function ConnectionProfileBody({
   connection,
-  siteLabel,
-  siteId,
-  siteName,
   showActions = true,
   onMutate
 }: ConnectionProfileBodyProps) {
@@ -200,6 +196,13 @@ export function ConnectionProfileBody({
     ((connection.bills && connection.bills.length > 0) ||
       payments.length > 0 ||
       events.length > 0);
+
+  const inactivePostpaidRegistrationDoc =
+    connection.paytype === 1 &&
+    !hasPostpaidHeavy &&
+    !connection.is_active
+      ? getDocumentKeyAndType(connection.connection_details)
+      : null;
 
   const renderDetailTabs = () => {
     const hasBills = !!(connection.bills && connection.bills.length > 0);
@@ -446,13 +449,6 @@ export function ConnectionProfileBody({
                 <p className="font-medium text-foreground">{connection.name}</p>
               </div>
             ) : null}
-            <div className="space-y-1">
-              <span className="text-sm text-muted-foreground">{siteLabel}</span>
-              <p className="font-medium text-foreground">
-                {siteName ?? siteId}
-              </p>
-              <p className="text-xs text-muted-foreground font-mono">{siteId}</p>
-            </div>
             {connection.biller_list?.board_name ? (
               <div className="space-y-1">
                 <span className="text-sm text-muted-foreground">
@@ -551,6 +547,18 @@ export function ConnectionProfileBody({
                 connection yet.
               </p>
             )
+          ) : inactivePostpaidRegistrationDoc ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Bill copy</p>
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                <PDFViewerWithPresigned
+                  fileKey={inactivePostpaidRegistrationDoc.key}
+                  contentType={inactivePostpaidRegistrationDoc.contentType}
+                  storageSource={getStorageSourceFromPaytype(connection.paytype)}
+                  layout="embedded"
+                />
+              </div>
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">
               No bills or payments to show yet.

@@ -12,22 +12,10 @@ import StatusBadge from '@/components/badges/status-badge';
 import { LowBalanceBadge } from '@/components/badges/low-balance-badge';
 import { useSiteName } from '@/lib/utils/site';
 import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
+import { getDocumentKeyAndType } from '@/lib/utils/connection-document';
 import { getStorageSourceFromPaytype } from '@/lib/utils/presigned-url-client';
 import { FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
-/** Get document key and content type from connection_details (pdf_key or html_key) */
-function getDocumentKeyAndType(connectionDetails: unknown): { key: string; contentType: 'pdf' | 'html' } | null {
-  if (!connectionDetails || typeof connectionDetails !== 'object') return null;
-  const details = connectionDetails as Record<string, unknown>;
-  if (typeof details.pdf_key === 'string' && details.pdf_key) {
-    return { key: details.pdf_key, contentType: 'pdf' };
-  }
-  if (typeof details.html_key === 'string' && details.html_key) {
-    return { key: details.html_key, contentType: 'html' };
-  }
-  return null;
-}
 
 export const subMeterColumns: ColumnDef<ConnectionTableProps>[] = [
   {

@@ -478,17 +478,24 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
 
         const mapInstance = map.current;
 
-        // Check if controls already exist
-        if (document.getElementById('toggle-stations')) return;
+        // Remove stale controls first (helps after hot reloads/navigation)
+        const existingDataTypeToggleControl = document.getElementById('map-data-type-toggle');
+        if (existingDataTypeToggleControl) existingDataTypeToggleControl.remove();
+        const existingLegendControl = document.getElementById('map-legend');
+        if (existingLegendControl) existingLegendControl.remove();
+        const existingHideLegendButton = document.getElementById('map-legend-hide-button');
+        if (existingHideLegendButton) existingHideLegendButton.remove();
+        const existingHideControlsButton = document.getElementById('map-controls-hide-button');
+        if (existingHideControlsButton) existingHideControlsButton.remove();
 
         // Add data type toggle buttons
         const dataTypeToggleControl = document.createElement('div');
         dataTypeToggleControl.className = 'bg-white p-4 rounded-lg shadow-lg absolute right-4 bottom-4';
         dataTypeToggleControl.style.minWidth = '200px';
         dataTypeToggleControl.style.zIndex = '1';
+        dataTypeToggleControl.id = 'map-data-type-toggle';
 
         dataTypeToggleControl.innerHTML = `
-            <div class="text-sm font-medium mb-2">Data Type</div>
             <div class="space-y-2">
                 <button id="toggle-stations" class="w-full py-2 text-sm font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors">
                     ${site_name} Types
@@ -547,6 +554,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
         hideLegendButton.style.zIndex = '1';
         hideLegendButton.style.marginTop = '5px';
         hideLegendButton.style.top = '0px';
+        hideLegendButton.id = 'map-legend-hide-button';
         hideLegendButton.onclick = () => {
             const isHidden = legendControl.style.display === 'none';
             legendControl.style.display = isHidden ? 'block' : 'none';
@@ -560,6 +568,7 @@ export default function UnifiedMap({ stationsData, paymentsData }: UnifiedMapPro
         hideControlsButton.className = 'bg-white rounded-md p-1 absolute right-4 shadow-lg';
         hideControlsButton.style.zIndex = '1';
         hideControlsButton.style.marginTop = '5px';
+        hideControlsButton.id = 'map-controls-hide-button';
         hideControlsButton.onclick = () => {
             const isHidden = dataTypeToggleControl.style.display === 'none';
             dataTypeToggleControl.style.display = isHidden ? 'block' : 'none';

@@ -941,9 +941,6 @@ export function InfrastructureExplorer({
                             return conn ? (
                               <ConnectionProfileBody
                                 connection={conn}
-                                siteLabel={siteLabel}
-                                siteId={site.id}
-                                siteName={site.name ?? undefined}
                                 onMutate={() => invalidateSite(site.id)}
                               />
                             ) : null;

@@ -9,8 +9,19 @@ import { Viewer, Worker } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import { cn } from '@/lib/utils';
 
-export function PDFViewer({ pdfUrl }: { pdfUrl: string }) {
+export type DocumentViewerLayout = 'page' | 'embedded';
+
+const PAGE_VIEWER_HEIGHT = 'calc(100vh - 100px)';
+
+export function PDFViewer({
+  pdfUrl,
+  layout = 'page'
+}: {
+  pdfUrl: string;
+  layout?: DocumentViewerLayout;
+}) {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   const renderError = (error: any) => {
@@ -42,9 +53,19 @@ export function PDFViewer({ pdfUrl }: { pdfUrl: string }) {
 
   return (
     <Worker workerUrl="/pdf.worker.min.js">
-      <div className="mt-10 md:mt-4" style={{ height: 'calc(100vh - 100px)' }}>
-        <Viewer 
-          fileUrl={pdfUrl} 
+      <div
+        className={cn(
+          'w-full overflow-hidden',
+          layout === 'page' && 'mt-10 md:mt-4',
+          layout === 'embedded' &&
+            'mt-0 h-[min(70vh,560px)] min-h-[480px] max-h-[560px]'
+        )}
+        style={
+          layout === 'page' ? { height: PAGE_VIEWER_HEIGHT } : undefined
+        }
+      >
+        <Viewer
+          fileUrl={pdfUrl}
           plugins={[defaultLayoutPluginInstance]}
           renderError={renderError}
         />
@@ -53,7 +74,13 @@ export function PDFViewer({ pdfUrl }: { pdfUrl: string }) {
   );
 }
 
-export function HTMLViewer({ htmlUrl }: { htmlUrl: string }) {
+export function HTMLViewer({
+  htmlUrl,
+  layout = 'page'
+}: {
+  htmlUrl: string;
+  layout?: DocumentViewerLayout;
+}) {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,17 +123,19 @@ export function HTMLViewer({ htmlUrl }: { htmlUrl: string }) {
 
   return (
     <div
-      style={{ height: 'calc(100vh - 100px)' }}
-      className="items-center space-y-4 bg-background p-2 text-foreground sm:p-4"
+      className={cn(
+        'flex flex-col bg-background p-2 text-foreground sm:p-4',
+        layout === 'page' && 'items-center space-y-4',
+        layout === 'embedded' &&
+          'h-[min(70vh,560px)] min-h-[480px] max-h-[560px] space-y-2'
+      )}
+      style={layout === 'page' ? { height: PAGE_VIEWER_HEIGHT } : undefined}
     >
-      <Button size="sm" onClick={handleDownload}>
+      <Button size="sm" onClick={handleDownload} className="shrink-0 self-start">
         <Download className="mr-2 h-4 w-4" />
         Download
       </Button>
-      <div
-        className="w-full overflow-auto rounded-lg border"
-        style={{ height: 'calc(100vh - 120px)' }}
-      >
+      <div className="w-full min-h-0 flex-1 overflow-auto rounded-lg border border-border">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : error ? (

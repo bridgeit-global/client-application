@@ -1,24 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PDFViewer, HTMLViewer } from './pdf-viewer-modal';
+import {
+  PDFViewer,
+  HTMLViewer,
+  type DocumentViewerLayout
+} from './pdf-viewer-modal';
 import { getPresignedUrl, type StorageSource } from '@/lib/utils/presigned-url-client';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PDFViewerWithPresignedProps {
   fileKey: string;
   contentType?: 'pdf' | 'html';
   storageSource?: StorageSource;
+  layout?: DocumentViewerLayout;
 }
+
+const EMBEDDED_SHELL =
+  'h-[min(70vh,560px)] min-h-[480px] max-h-[560px] w-full';
 
 /**
  * Client-side wrapper that fetches presigned URL and displays PDF/HTML viewer
  * This ensures the URL is fresh and avoids expiration issues
  */
-export function PDFViewerWithPresigned({ 
-  fileKey, 
+export function PDFViewerWithPresigned({
+  fileKey,
   contentType = 'pdf',
   storageSource = 's3',
+  layout = 'page'
 }: PDFViewerWithPresignedProps) {
   const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +47,6 @@ export function PDFViewerWithPresigned({
       
       try {
         const url = await getPresignedUrl(fileKey, storageSource);
-        console.log(url)
         setPresignedUrl(url);
       } catch (err: any) {
         console.error('Failed to get presigned URL:', err);
@@ -52,9 +61,17 @@ export function PDFViewerWithPresigned({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full" style={{ height: 'calc(100vh - 100px)' }}>
+      <div
+        className={cn(
+          'flex items-center justify-center',
+          layout === 'embedded' && EMBEDDED_SHELL
+        )}
+        style={
+          layout === 'page' ? { height: 'calc(100vh - 100px)' } : undefined
+        }
+      >
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+          <Loader2 className="mx-auto mb-2 h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">Loading document...</p>
         </div>
       </div>
@@ -63,12 +80,23 @@ export function PDFViewerWithPresigned({
 
   if (error || !presignedUrl) {
     return (
-      <div className="flex items-center justify-center h-full" style={{ height: 'calc(100vh - 100px)' }}>
-        <div className="text-center p-4 max-w-md">
-          <p className="text-red-500 mb-2 font-semibold">Failed to fetch</p>
-          <p className="text-sm text-muted-foreground">{error || 'Unable to load document'}</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            If this issue persists, please check your network connection or contact support.
+      <div
+        className={cn(
+          'flex items-center justify-center',
+          layout === 'embedded' && EMBEDDED_SHELL
+        )}
+        style={
+          layout === 'page' ? { height: 'calc(100vh - 100px)' } : undefined
+        }
+      >
+        <div className="max-w-md p-4 text-center">
+          <p className="mb-2 font-semibold text-destructive">Failed to fetch</p>
+          <p className="text-sm text-muted-foreground">
+            {error || 'Unable to load document'}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            If this issue persists, please check your network connection or
+            contact support.
           </p>
         </div>
       </div>
@@ -76,8 +104,8 @@ export function PDFViewerWithPresigned({
   }
 
   return contentType === 'pdf' ? (
-    <PDFViewer pdfUrl={presignedUrl} />
+    <PDFViewer pdfUrl={presignedUrl} layout={layout} />
   ) : (
-    <HTMLViewer htmlUrl={presignedUrl} />
+    <HTMLViewer htmlUrl={presignedUrl} layout={layout} />
   );
 }

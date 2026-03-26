@@ -1074,7 +1074,8 @@ export const getFullConnections = cache(
         security_deposit: connection.security_deposit || 0,
         payments: (connection.payments || []) as NonNullable<Connection['payments']>,
         submeter_readings: (connection.submeter_readings ||
-          []) as NonNullable<Connection['submeter_readings']>
+          []) as NonNullable<Connection['submeter_readings']>,
+        connection_details: connection.connection_details ?? null
       }));
     } catch (error) {
       console.error('Unexpected error fetching full connections:', error);

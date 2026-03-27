@@ -370,7 +370,7 @@ export function InfrastructureExplorer({
     try {
       const { error: siteError, data: siteData } = await supabase
         .from('sites')
-        .update({ is_active: isActive, updated_by: user?.id })
+        .update({ is_active: isActive })
         .eq('id', site.id)
         .select();
 

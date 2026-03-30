@@ -168,7 +168,7 @@ const BatchAction = ({
     }
 
     return (
-        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="my-4 flex flex-col lg:flex-row items-start lg:items-center gap-6 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 shadow-sm">
             {/* Batch Information Section */}
             <div className="flex flex-col gap-3 min-w-0 flex-1">
                 <div className="flex flex-col sm:flex-row gap-4 text-sm">
@@ -288,31 +288,17 @@ const BatchAction = ({
                                             text={'Initiate Payment'}
                                             aria-label="Process or Pay Batch"
                                             onClick={() => {
-                                                if (hasUnresolvedBillsCount > 0) {
-                                                    toast({
-                                                        title: 'Action Required',
-                                                        description: 'Please resolve the failed bills first',
-                                                        variant: 'destructive',
-                                                    });
-                                                    return;
-                                                }
-
                                                 if (isPostpaid) {
                                                     setShowPayConfirm(true);
                                                 } else {
                                                     setIsModalOpen(true);
                                                 }
                                             }}
-                                            disabled={isLoading || hasUnresolvedBillsCount > 0 || isUtilizeLoading}
+                                            disabled={isLoading || isUtilizeLoading}
                                         />
                                     </TooltipTrigger>
                                     <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-xl max-w-xs">
-                                        {hasUnresolvedBillsCount > 0 ? (
-                                            <div>
-                                                <p className="font-medium text-red-300">⚠️ Action Required</p>
-                                                <p className="text-sm text-gray-300 mt-1">Resolve failed bills before proceeding</p>
-                                            </div>
-                                        ) : isPostpaid ? (
+                                        {isPostpaid ? (
                                             <div>
                                                 <p className="font-medium text-green-300">✅ Ready to Process</p>
                                                 <p className="text-sm text-gray-300 mt-1">Process all bills in this batch</p>
@@ -320,7 +306,7 @@ const BatchAction = ({
                                         ) : (
                                             <div>
                                                 <p className="font-medium text-blue-300">💳 Payment Required</p>
-                                                <p className="text-sm text-gray-300 mt-1">Pay all bills in this batch</p>
+                                                <p className="text-sm text-gray-300 mt-1">Add payment details to process this batch</p>
                                             </div>
                                         )}
                                     </TooltipContent>

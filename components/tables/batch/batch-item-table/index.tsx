@@ -156,7 +156,7 @@ export function BatchItemTable({
   return (
     <>
       <div className="flex flex-1 flex-col justify-between gap-2 md:flex-row">
-        <div className="flex gap-2">
+        <div className="flex gap-0">
           <div className="space-y-2">
             <h2 className="flex flex-col gap-2 text-2xl font-medium md:flex-row">
               <span>{payType === 'postpaid' ? 'Bills' : 'Recharges'}</span>

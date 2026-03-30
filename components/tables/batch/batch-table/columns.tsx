@@ -281,24 +281,17 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
                 size='sm'
                 aria-label="Pay Now"
                 onClick={() => {
-                  if (hasUnresolvedBillsCount > 0) {
-                    toast({
-                      title: 'Error',
-                      description: 'Please resolve the failed bills first'
-                    });
-                    return;
-                  }
                   if (isPostpaid) {
                     setShowPayConfirm(true);
                   } else {
                     setIsModalOpen(true);
                   }
                 }}
-                disabled={isLoading || hasUnresolvedBillsCount > 0 || isUtilizeLoading}
+                disabled={isLoading || isUtilizeLoading}
               />
             </TooltipTrigger>
             <TooltipContent>
-              {hasUnresolvedBillsCount > 0 ? 'Resolve failed bills before paying' : isPostpaid ? 'Process all bills in this batch' : 'Pay all bills in this batch'}
+              {isPostpaid ? 'Process all bills in this batch' : 'Add payment details to process this batch'}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

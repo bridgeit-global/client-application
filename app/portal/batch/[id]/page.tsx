@@ -6,7 +6,6 @@ import { getAfterDueAmount } from '@/lib/utils';
 import { BatchItemTable } from "@/components/tables/batch/batch-item-table"
 import BatchAction from "@/components/tables/batch/batch-item-table/batch-action"
 import BatchHistoryTimeline from "@/components/batch/batch-history-timeline"
-import { BatchFundsOverviewCard } from "@/components/cards/batch-fund-overview-card";
 
 export default async function Page(
     props: {
@@ -75,7 +74,6 @@ export default async function Page(
 
     return (
         <div id="bill-batches" className="space-y-6">
-            <BatchFundsOverviewCard />
             {id &&
                 <BatchAction
                     batchCreatedAt={batch?.created_at || ''}

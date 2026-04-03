@@ -946,7 +946,7 @@ export const fetchPenaltiesReport = cache(
     let query = supabase
       .from('penalties')
       .select(`*,biller_list!inner(*)`)
-      .or(`lpsc.gt.0,tod_surcharge.gt.0,low_pf_surcharge.gt.0,sanctioned_load_penalty.gt.0,power_factor_penalty.gt.0,capacitor_surcharge.gt.0`)
+      .or(`lpsc.gt.0,tod_surcharge.gt.0,sanctioned_load_penalty.gt.0,power_factor_penalty.gt.0,capacitor_surcharge.gt.0`)
     const { data, error } = await query;
     if (error) {
       console.error('error', error);

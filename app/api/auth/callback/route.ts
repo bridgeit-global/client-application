@@ -70,10 +70,10 @@ export async function GET(request: NextRequest) {
     const isOperator = userRole === 'operator';
     const isSupportUser = userRole === 'service_role';
 
-    // If user doesn't have an org_id and is not an operator, redirect to no-organization page
+    // If user doesn't have an org_id and is not an operator, redirect to onboarding
     if (!userOrgId && !isOperator && !isSupportUser) {
-      console.log('User without organization, redirecting to no-organization page');
-      return NextResponse.redirect(new URL('/no-organization', requestUrl.origin).toString());
+      console.log('User without organization, redirecting to onboarding');
+      return NextResponse.redirect(new URL('/onboarding', requestUrl.origin).toString());
     }
 
     // User has org_id, check if they need to complete profile

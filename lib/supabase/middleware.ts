@@ -87,9 +87,9 @@ export async function updateSession(request: NextRequest) {
       // Handle role-specific redirects for protected routes
       // Organization access guard:
       // Only allow users that have BOTH `org_id` and `role` in `user_metadata`.
-      // Anything else should be redirected to the "no organization registered yet" page.
+      // Anything else should be redirected to onboarding.
       if (!userOrgId || !userMetadataRole) {
-        url.pathname = '/no-organization';
+        url.pathname = '/onboarding';
         return addSecurityHeaders(NextResponse.redirect(url));
       }
 

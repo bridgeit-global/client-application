@@ -186,21 +186,19 @@ Both methods access the same account if the email matches.
 
 ### New User Organization Setup
 
-When a new user signs in with Google SSO for the first time:
+When a new user signs in with Google SSO (or magic link) and has no organization yet:
 
-1. **OAuth Callback Check**: The callback handler checks if `user.user_metadata.org_id` exists
-2. **Redirect to Signup**: If no `org_id`, user is redirected to `/signup` with email pre-filled
-3. **Organization Creation**: User completes the signup form with:
-   - Contact information (name, email, phone)
-   - Company details (name, PAN, GST, CIN)
-   - Business information (type, locations, monthly bill)
-4. **External Processing**: Form submission creates a `contact_request` record
-5. **Admin Approval**: Admin reviews and approves the request via external API
-6. **Organization Setup**: Upon approval:
-   - Organization is created in `organizations` table
-   - User metadata is updated with `org_id`
-   - Default site types are configured in `org_master` table
-   - User receives onboarding email
+1. **OAuth Callback Check**: The callback handler checks if `user.user_metadata.org_id` exists (operators and support users follow separate redirects).
+2. **Redirect to Onboarding**: If there is no `org_id`, the user is redirected to **`/onboarding`** to complete self-service setup.
+3. **Onboarding wizard**: The user provides:
+   - Organization profile (name, site label, optional company fields, PAN/GST/CIN, batch threshold, logo URL)
+   - **Organization masters**: at least one **site type** and one **zone ID** (`org_master` rows with `type` `site_type` and `zone_id`)
+4. **Provisioning** (`POST /api/onboarding/complete`): The server creates a row in `portal.organizations`, inserts the configured `org_master` rows, and updates the user’s **`user_metadata`** with `org_id` and **`role: 'admin'`** for the first user in that organization (service role key required).
+5. **Session refresh**: The client calls `supabase.auth.refreshSession()` so the JWT includes the new metadata; the user can then access **`/portal`** (middleware requires both `org_id` and `role`).
+
+The public **`/signup`** flow may still write to **`contact_requests`** for sales contact; it does not replace onboarding for portal access.
+
+The legacy route **`/no-organization`** redirects to **`/onboarding`** for backwards compatibility.
 
 ### Site Types Configuration
 

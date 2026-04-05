@@ -38,7 +38,7 @@ type Props = {
 
 export default function FinancialYearChart({ data }: Props) {
 
-    const SITE_TYPES = useSiteType();
+    const { siteTypes: SITE_TYPES } = useSiteType();
 
     const processDataForMetric = (metric: MetricType): ChartData[] => {
         if (metric === 'rate_per_unit') {

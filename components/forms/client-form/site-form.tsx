@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSiteName } from '@/lib/utils/site';
 import { useSiteType } from '@/hooks/use-site-type';
+import { InlineAddSiteType } from '@/components/forms/inline-add-site-type';
 import { sanitizeInput } from '@/lib/utils/string-format';
 type SearchResult = {
     place_name: string;
@@ -55,7 +56,7 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [showResults, setShowResults] = useState(false);
     const [siteIdExists, setSiteIdExists] = useState(false);
-    const SITE_TYPES = useSiteType();
+    const { siteTypes: SITE_TYPES, refetch: refetchSiteTypes } = useSiteType();
 
     const form = useForm<SiteFormValues>({
         defaultValues: {
@@ -531,6 +532,15 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
                                         </FormItem>
                                     )}
                                 />
+                                {SITE_TYPES.length === 0 ? (
+                                    <div className="space-y-2">
+                                        <FormLabel>{site_name} Type</FormLabel>
+                                        <InlineAddSiteType
+                                            refetch={refetchSiteTypes}
+                                            disabled={loading || siteIdExists}
+                                        />
+                                    </div>
+                                ) : null}
                                 <FormField
                                     control={control}
                                     disabled={siteIdExists}
@@ -542,7 +552,7 @@ export const SiteForm: React.FC<{ handleClose?: () => void }> = ({ handleClose }
                                         <FormItem>
                                             <FormLabel>{site_name} Type</FormLabel>
                                             <Select
-                                                disabled={loading}
+                                                disabled={loading || SITE_TYPES.length === 0}
                                                 onValueChange={field.onChange}
                                                 defaultValue={field.value}
                                             >

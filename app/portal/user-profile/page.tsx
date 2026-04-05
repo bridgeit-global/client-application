@@ -33,7 +33,7 @@ import { useSiteType } from '@/hooks/use-site-type';
 import { useSiteName } from '@/lib/utils/site';
 
 export default function UserProfilePage() {
-    const SITE_TYPES = useSiteType();
+    const { siteTypes: SITE_TYPES } = useSiteType();
     const site_name = useSiteName();
     const { user, setUser } = useUserStore();
     const { handleDatabaseError, clearError } = useSupabaseError();

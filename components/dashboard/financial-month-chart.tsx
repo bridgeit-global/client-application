@@ -143,7 +143,7 @@ export default function FinancialMonthChart({ data }: Props) {
     const searchParams = useSearchParams();
     const params = Object.fromEntries(searchParams.entries());
     const [filterBody, setFilterBody] = useState(params);
-    const SITE_TYPES = useSiteType();
+    const { siteTypes: SITE_TYPES } = useSiteType();
     const applyFilters = useCallback(() => {
         router.push(
             `${pathname}?${createQueryString(searchParams, filterBody)}`,

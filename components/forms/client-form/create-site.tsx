@@ -25,13 +25,14 @@ import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSiteName } from '@/lib/utils/site';
 import { useSiteType } from '@/hooks/use-site-type';
+import { InlineAddSiteType } from '@/components/forms/inline-add-site-type';
 type SearchResult = {
   place_name: string;
   center: [number, number];
 };
 
 export const CreateSiteOne: React.FC<{ initialData: SiteFormValues | null, handleClose?: () => void }> = ({ initialData, handleClose }) => {
-  const SITE_TYPES = useSiteType();
+  const { siteTypes: SITE_TYPES, refetch: refetchSiteTypes } = useSiteType();
   const site_name = useSiteName();
   const supabase = createClient();
   const router = useRouter();
@@ -308,6 +309,15 @@ export const CreateSiteOne: React.FC<{ initialData: SiteFormValues | null, handl
                     </FormItem>
                   )}
                 />
+                {SITE_TYPES.length === 0 ? (
+                  <div className="space-y-2">
+                    <FormLabel>{site_name} Type</FormLabel>
+                    <InlineAddSiteType
+                      refetch={refetchSiteTypes}
+                      disabled={loading || siteIdExists}
+                    />
+                  </div>
+                ) : null}
                 <FormField
                   control={control}
                   disabled={siteIdExists}
@@ -319,7 +329,7 @@ export const CreateSiteOne: React.FC<{ initialData: SiteFormValues | null, handl
                     <FormItem>
                       <FormLabel>{site_name} Type</FormLabel>
                       <Select
-                        disabled={loading}
+                        disabled={loading || SITE_TYPES.length === 0}
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >

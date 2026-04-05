@@ -6,14 +6,16 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const masterRowSchema = z.object({
-  value: z.string().min(1).max(64),
-  name: z.string().min(1).max(256)
+/** Rows may be empty strings; server skips all-empty rows and rejects half-filled rows. */
+const masterRowInputSchema = z.object({
+  value: z.string().max(64),
+  name: z.string().max(256)
 });
 
 const organizationSchema = z.object({
   name: z.string().min(2).max(256),
-  site_name: z.string().min(1).max(256),
+  /** Defaults to `site` server-side if omitted or empty. */
+  site_name: z.string().max(256).optional(),
   company_name: z.string().max(256).optional().nullable(),
   company_address: z.string().max(1024).optional().nullable(),
   company_email: z.union([z.string().email().max(256), z.literal('')]).optional(),
@@ -26,28 +28,39 @@ const organizationSchema = z.object({
 
 const bodySchema = z.object({
   organization: organizationSchema,
-  siteTypes: z.array(masterRowSchema).min(1).max(50),
-  zoneIds: z.array(masterRowSchema).min(1).max(50)
+  siteTypes: z.array(masterRowInputSchema).max(50),
+  zoneIds: z.array(masterRowInputSchema).max(50)
 });
 
 function normalizeMasterRows(
-  rows: z.infer<typeof masterRowSchema>[],
+  rows: z.infer<typeof masterRowInputSchema>[],
   type: 'site_type' | 'zone_id'
-): { type: string; value: string; name: string }[] {
+):
+  | { ok: false; error: string }
+  | { ok: true; rows: { type: string; value: string; name: string }[] } {
   const seen = new Set<string>();
   const out: { type: string; value: string; name: string }[] = [];
   for (const row of rows) {
     const value = row.value.trim();
+    const name = row.name.trim();
+    if (!value && !name) continue;
+    if (!value || !name) {
+      return {
+        ok: false,
+        error:
+          'Each site type and zone row must include both code and display name, or leave the row empty.'
+      };
+    }
     const key = `${type}:${value}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({
       type,
       value,
-      name: row.name.trim()
+      name
     });
   }
-  return out;
+  return { ok: true, rows: out };
 }
 
 export async function POST(req: NextRequest) {
@@ -74,14 +87,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingOrgId = user.user_metadata?.org_id as string | undefined;
-    if (existingOrgId) {
-      return NextResponse.json({
-        orgId: existingOrgId,
-        alreadyOnboarded: true
-      });
-    }
-
     const json = await req.json();
     const parsed = bodySchema.safeParse(json);
     if (!parsed.success) {
@@ -93,19 +98,37 @@ export async function POST(req: NextRequest) {
 
     const { organization: orgInput, siteTypes, zoneIds } = parsed.data;
 
-    const siteTypeRows = normalizeMasterRows(siteTypes, 'site_type');
-    const zoneRows = normalizeMasterRows(zoneIds, 'zone_id');
-
-    if (siteTypeRows.length < 1 || zoneRows.length < 1) {
-      return NextResponse.json(
-        { error: 'At least one site type and one zone are required.' },
-        { status: 400 }
-      );
+    const siteTypeResult = normalizeMasterRows(siteTypes, 'site_type');
+    if (!siteTypeResult.ok) {
+      return NextResponse.json({ error: siteTypeResult.error }, { status: 400 });
+    }
+    const zoneResult = normalizeMasterRows(zoneIds, 'zone_id');
+    if (!zoneResult.ok) {
+      return NextResponse.json({ error: zoneResult.error }, { status: 400 });
     }
 
-    const orgId = crypto.randomUUID();
+    const siteTypeRows = siteTypeResult.rows;
+    const zoneRows = zoneResult.rows;
+
     const adminClient = createAdminClient();
     const portal = createServicePortalClient();
+
+    const metaOrgId = user.user_metadata?.org_id as string | undefined;
+    if (metaOrgId) {
+      const { data: existingRow } = await portal
+        .from('organizations')
+        .select('id')
+        .eq('id', metaOrgId)
+        .maybeSingle();
+      if (existingRow) {
+        return NextResponse.json({
+          orgId: metaOrgId,
+          alreadyOnboarded: true
+        });
+      }
+    }
+
+    const orgId = metaOrgId ?? crypto.randomUUID();
 
     const companyEmail =
       orgInput.company_email && orgInput.company_email.length > 0
@@ -117,10 +140,15 @@ export async function POST(req: NextRequest) {
         ? orgInput.logo_url
         : null;
 
+    const siteName =
+      orgInput.site_name && orgInput.site_name.trim().length > 0
+        ? orgInput.site_name.trim()
+        : 'site';
+
     const { error: orgError } = await portal.from('organizations').insert({
       id: orgId,
       name: orgInput.name.trim(),
-      site_name: orgInput.site_name.trim(),
+      site_name: siteName,
       company_name: orgInput.company_name?.trim() || null,
       company_address: orgInput.company_address?.trim() || null,
       company_email: companyEmail,
@@ -146,15 +174,17 @@ export async function POST(req: NextRequest) {
       name: row.name
     }));
 
-    const { error: masterError } = await portal.from('org_master').insert(masterInserts);
+    if (masterInserts.length > 0) {
+      const { error: masterError } = await portal.from('org_master').insert(masterInserts);
 
-    if (masterError) {
-      console.error('onboarding org_master insert:', masterError);
-      await portal.from('organizations').delete().eq('id', orgId);
-      return NextResponse.json(
-        { error: 'Failed to save organization configuration', details: masterError.message },
-        { status: 500 }
-      );
+      if (masterError) {
+        console.error('onboarding org_master insert:', masterError);
+        await portal.from('organizations').delete().eq('id', orgId);
+        return NextResponse.json(
+          { error: 'Failed to save organization configuration', details: masterError.message },
+          { status: 500 }
+        );
+      }
     }
 
     const { data: fullUser, error: getUserError } =

@@ -28,7 +28,7 @@ export default function FilterChips({
   const router = useRouter();
   const pathname = usePathname();
   const site_name = useSiteName();
-  const siteTypes = useSiteType();
+  const { siteTypes } = useSiteType();
   
   // Get valid site type values
   const validSiteTypes = siteTypes.map(t => t.value.toLowerCase());

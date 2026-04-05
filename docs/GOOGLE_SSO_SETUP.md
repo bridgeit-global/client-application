@@ -190,11 +190,9 @@ When a new user signs in with Google SSO (or magic link) and has no organization
 
 1. **OAuth Callback Check**: The callback handler checks if `user.user_metadata.org_id` exists (operators and support users follow separate redirects).
 2. **Redirect to Onboarding**: If there is no `org_id`, the user is redirected to **`/onboarding`** to complete self-service setup.
-3. **Onboarding wizard**: The user provides:
-   - Organization profile (name, site label, optional company fields, PAN/GST/CIN, batch threshold, logo URL)
-   - **Organization masters**: at least one **site type** and one **zone ID** (`org_master` rows with `type` `site_type` and `zone_id`)
-4. **Provisioning** (`POST /api/onboarding/complete`): The server creates a row in `portal.organizations`, inserts the configured `org_master` rows, and updates the user’s **`user_metadata`** with `org_id` and **`role: 'admin'`** for the first user in that organization (service role key required).
-5. **Session refresh**: The client calls `supabase.auth.refreshSession()` so the JWT includes the new metadata; the user can then access **`/portal`** (middleware requires both `org_id` and `role`).
+3. **Minimal onboarding** (`/onboarding`): The user enters an **organization name** (optional extra company fields are under “More details”). **`site_name`** is provisioned as the default **`site`**. Users can **Skip for now** and return to the marketing site without an org (no portal access until they complete this step).
+4. **Provisioning** (`POST /api/onboarding/complete`): The server creates a row in `portal.organizations`, optionally inserts **`org_master`** rows if provided, and updates the user’s **`user_metadata`** with `org_id` and **`role: 'admin'`**. The minimal flow sends **empty** `siteTypes` / `zoneIds`.
+5. **Session refresh** and **dashboard**: The client calls `supabase.auth.refreshSession()` and redirects to **`/portal/dashboard?welcome=1`**, which shows a short **Get started** banner (add site, connection, bills). **Site types** for the site form are added **inline** on first site creation when `org_master` has no `site_type` rows (same data model as **Site & zone config**).
 
 The public **`/signup`** flow may still write to **`contact_requests`** for sales contact; it does not replace onboarding for portal access.
 
@@ -202,17 +200,9 @@ The legacy route **`/no-organization`** redirects to **`/onboarding`** for backw
 
 ### Site Types Configuration
 
-Site types are organization-specific and stored in the `org_master` table:
+Site types are organization-specific and stored in the `org_master` table (`type` = `site_type`). New orgs start with **no** site types; users add the first type **when creating a site** (inline form) or under **Site & zone config**.
 
-**Default Site Types** (if none configured):
-- COCO (Company Owned, Company Operated)
-- POPO (Partner Owned, Partner Operated)
-- COPO (Company Owned, Partner Operated)
-- POCO (Partner Owned, Company Operated)
-- Warehouse
-
-**Custom Site Types**:
-Organizations can have custom site types configured by admin during organization setup. These are stored as:
+**Custom Site Types** (examples: COCO, Warehouse) are stored as:
 ```
 org_master {
   org_id: <organization_id>

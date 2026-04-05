@@ -25,7 +25,7 @@ interface StationProperties extends MapLocation {
 
 export default function StationsMap({ mapData }: { mapData: MapLocation[] }) {
     const site_name = useSiteName();
-    const SITE_TYPES = useSiteType();
+    const { siteTypes: SITE_TYPES } = useSiteType();
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<mapboxgl.Map | null>(null);
     const [mapLoaded, setMapLoaded] = useState(false);

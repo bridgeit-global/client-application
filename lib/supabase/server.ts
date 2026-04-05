@@ -92,3 +92,31 @@ export function createAdminClient() {
     }
   );
 }
+
+/**
+ * Service-role client for `portal` schema (bypasses RLS). Use only in trusted server routes.
+ */
+export function createServicePortalClient() {
+  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
+  }
+
+  if (!serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Please add it to your environment variables.');
+  }
+
+  return createSupabaseClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    db: {
+      schema: 'portal'
+    }
+  });
+}

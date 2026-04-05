@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { KPISection } from '@/components/kpi/kpi-section';
 import { Badge } from '@/components/ui/badge';
+import { GettingStartedBanner } from '@/components/portal/getting-started-banner';
 
 export default async function Page() {
   try {
@@ -26,6 +28,9 @@ export default async function Page() {
 
     return (
       <div className="min-h-[calc(100vh-4rem)] px-4 sm:px-6 lg:px-8">
+        <Suspense fallback={null}>
+          <GettingStartedBanner />
+        </Suspense>
         <div className="py-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">

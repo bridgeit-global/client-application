@@ -210,9 +210,9 @@ function SignUpContent() {
           const userOrgId = user?.user_metadata?.org_id;
           const isOperator = user?.user_metadata?.role === 'operator';
 
-          // If user is authenticated but doesn't have org_id and is not an operator, redirect to no-organization page
+          // If user is authenticated but doesn't have org_id and is not an operator, continue onboarding
           if (user && !userOrgId && !isOperator) {
-            router.push('/no-organization');
+            router.push('/onboarding');
           } else {
             // Redirect to home page on success
             router.push('/');

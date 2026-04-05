@@ -24,7 +24,7 @@ function HeaderSidebar() {
         if (!isSupportSection) {
             execute(async () => {
                 const { data: { user } } = await supabase.auth.getUser();
-                const { data, error } = await supabase.from('organizations').select('*').eq('id', user?.user_metadata?.org_id).single();
+                const { data, error } = await supabase.from('organizations').select('*').eq('id', user?.user_metadata?.org_id).maybeSingle();
                 if (error) throw error;
                 return {
                     logo_url: data?.logo_url || null,

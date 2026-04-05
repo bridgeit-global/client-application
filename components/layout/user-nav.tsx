@@ -28,7 +28,7 @@ export function UserNav() {
       } = await supabase.auth.getUser();
       if (Object.keys(user).length === 0 && supabaseUser) {
         setUser(supabaseUser);
-        const { data: organization, error: org_error } = await supabase.from('organizations').select('*').eq('id', supabaseUser.user_metadata?.org_id).single();
+        const { data: organization, error: org_error } = await supabase.from('organizations').select('*').eq('id', supabaseUser.user_metadata?.org_id).maybeSingle();
         if (org_error) throw org_error;
         if (organization) {
           setOrganization(organization);

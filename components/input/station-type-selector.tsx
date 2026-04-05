@@ -19,7 +19,7 @@ interface StationTypeSelectorProps {
 }
 
 export function StationTypeSelector({ value = [], onChange, className }: StationTypeSelectorProps) {
-    const SITE_TYPES = useSiteType();
+    const { siteTypes: SITE_TYPES } = useSiteType();
     const filteredValue = value.filter((v) => v.trim() !== '');
 
     const handleCheckedChange = (type: string, checked: boolean) => {

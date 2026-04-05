@@ -136,20 +136,18 @@ export default function UserAuthForm({ users }: { users: any }) {
       const isSupportUser = userRole === 'service_role';
       const userOrgId = users?.user_metadata?.org_id;
 
-      // If authenticated but they don't have an org, route them to the
-      // no-organization landing page.
-      if (!userOrgId && !isSupportUser) {
-        router.push('/no-organization');
+      if (isOperator) {
+        router.push('/portal/meter-reading-list');
         return;
       }
 
-      router.push(
-        isOperator
-          ? '/portal/meter-reading-list'
-          : isSupportUser
-            ? '/support/dashboard'
-            : '/portal/dashboard'
-      );
+      // If authenticated but they don't have an org, complete self-service onboarding.
+      if (!userOrgId && !isSupportUser) {
+        router.push('/onboarding');
+        return;
+      }
+
+      router.push(isSupportUser ? '/support/dashboard' : '/portal/dashboard');
     }
   }, [users, router]);
 

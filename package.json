@@ -94,6 +94,7 @@
     "framer-motion": "^12.7.4",
     "gsap": "^3.12.7",
     "highlight.js": "^11.11.1",
+    "html-entities": "^2.6.0",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.1",
     "jspdf": "^4.2.0",

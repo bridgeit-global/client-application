@@ -22,4 +22,22 @@ describe('decodeBlogHtml', () => {
     const double = '&amp;lt;p&amp;gt;Hi&amp;lt;/p&amp;gt;';
     expect(decodeBlogHtml(double)).toBe('<p>Hi</p>');
   });
+
+  it('repairs malformed nested href for Electricity Act style links', () => {
+    const malformed =
+      '<p>Law: &lt;a href="<a target="_blank" href="https://www.indiacode.nic.in/handle/123456789/2058">https://www.indiacode.nic.in/handle/123456789/2058</a>" rel="noopener"&gt;Electricity Act of 2003&lt;/a&gt;</p>';
+
+    expect(decodeBlogHtml(malformed)).toBe(
+      '<p>Law: <a href="https://www.indiacode.nic.in/handle/123456789/2058" rel="noopener">Electricity Act of 2003</a></p>'
+    );
+  });
+
+  it('repairs malformed nested href for CERC style links and keeps target attrs', () => {
+    const malformed =
+      '&lt;a href="<a target="_blank" href="https://cercind.gov.in/">https://cercind.gov.in/</a>" rel="noopener" target="_blank"&gt;Central Electricity Regulatory Commission (CERC)&lt;/a&gt;';
+
+    expect(decodeBlogHtml(malformed)).toBe(
+      '<a href="https://cercind.gov.in/" rel="noopener" target="_blank">Central Electricity Regulatory Commission (CERC)</a>'
+    );
+  });
 });

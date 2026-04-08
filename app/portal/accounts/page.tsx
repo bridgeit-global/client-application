@@ -28,6 +28,12 @@ const accountLinks = [
         href: '/portal/accounts/site-zone-config',
         adminOnly: true,
     },
+    {
+        title: 'Notifications',
+        description: 'Configure email digest reports for billing pipeline activity.',
+        href: '/portal/accounts/notifications',
+        adminOnly: false,
+    },
 ];
 
 export default async function AccountsPage() {

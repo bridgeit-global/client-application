@@ -29,7 +29,7 @@ import { useEffect, useState } from 'react';
 
 const buildAccountsItems = (
     items: NavItem[],
-    options: { includeApiClients: boolean; includeSiteZoneConfig: boolean }
+    options: { includeApiClients: boolean; includeSiteZoneConfig: boolean; includeNotifications: boolean }
 ): NavItem[] => {
     return items.map((item) => {
         if (item.url !== '/portal/accounts') {
@@ -82,6 +82,17 @@ const buildAccountsItems = (
             byUrl.set('/portal/accounts/site-zone-config', siteZoneConfigItem);
         }
 
+        if (options.includeNotifications && !byUrl.has('/portal/accounts/notifications')) {
+            const notificationsItem: NavItem = {
+                title: 'Notifications',
+                url: '/portal/accounts/notifications',
+                icon: 'report',
+                isCollapsible: false,
+            };
+            uniqueItems.push(notificationsItem);
+            byUrl.set('/portal/accounts/notifications', notificationsItem);
+        }
+
         return {
             ...item,
             items: uniqueItems,
@@ -110,19 +121,19 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
                 item.url === '/portal/meter-reading-list' ||
                 item.url === '/portal/accounts'
             );
-            setSidebarItems(buildAccountsItems(operatorNavItems, { includeApiClients: false, includeSiteZoneConfig: false }));
+            setSidebarItems(buildAccountsItems(operatorNavItems, { includeApiClients: false, includeSiteZoneConfig: false, includeNotifications: false }));
         } else if (user?.user_metadata.role === 'admin') {
             // For admin users, show all items except meter-reading pages (which are operator-only)
             const adminItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(adminItems, { includeApiClients: true, includeSiteZoneConfig: true }));
+            setSidebarItems(buildAccountsItems(adminItems, { includeApiClients: true, includeSiteZoneConfig: true, includeNotifications: true }));
         } else {
             // For regular users, show all items except meter-reading pages (which are operator-only)
             const regularUserItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(regularUserItems, { includeApiClients: false, includeSiteZoneConfig: false }));
+            setSidebarItems(buildAccountsItems(regularUserItems, { includeApiClients: false, includeSiteZoneConfig: false, includeNotifications: true }));
         }
     }
 

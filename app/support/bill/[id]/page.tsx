@@ -2,6 +2,7 @@ import { BillForm } from '@/components/forms/support-form/bill-form';
 import { PDFViewerWithPresigned } from '@/components/modal/pdf-viewer-with-presigned';
 import { fetchSingleBill } from '@/services/bills';
 import { notFound } from 'next/navigation';
+import type { StorageSource } from '@/lib/utils/presigned-url-client';
 
 export default async function Page({
   params
@@ -27,6 +28,10 @@ export default async function Page({
     notFound();
   }
 
+  const paytype = (data as any)?.connections?.paytype as number | null | undefined;
+  const storageSource: StorageSource =
+    paytype === -1 ? 'supabase-storage' : 's3';
+
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       <div className="overflow-y-auto max-h-screen">
@@ -36,6 +41,7 @@ export default async function Page({
         <PDFViewerWithPresigned
           fileKey={data.content}
           contentType={data?.content_type === 'pdf' ? 'pdf' : 'html'}
+          storageSource={storageSource}
         />
       )}
     </div>

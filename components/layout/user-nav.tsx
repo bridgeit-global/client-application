@@ -18,7 +18,6 @@ import {
   LayoutDashboard,
   LogOut,
   MapPin,
-  Settings,
   User,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -121,12 +120,6 @@ export function UserNav() {
               Administration
             </DropdownMenuLabel>
             <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={() => router.push('/portal/accounts')}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Manage Accounts
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => router.push('/portal/accounts/api-clients')}
               >

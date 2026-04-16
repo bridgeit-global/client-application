@@ -27,79 +27,6 @@ import { NavItem } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
 
-const buildAccountsItems = (
-    items: NavItem[],
-    options: { includeApiClients: boolean; includeSiteZoneConfig: boolean; includeNotifications: boolean }
-): NavItem[] => {
-    return items.map((item) => {
-        if (item.url !== '/portal/accounts') {
-            return item;
-        }
-
-        const existingItems = item.items ?? [];
-        const byUrl = new Map<string, NavItem>();
-        
-        // Build map and filter out duplicates
-        const uniqueItems: NavItem[] = [];
-        for (const entry of existingItems) {
-            if (!byUrl.has(entry.url)) {
-                byUrl.set(entry.url, entry);
-                uniqueItems.push(entry);
-            }
-        }
-
-        // Add API Clients if it doesn't exist and should be included
-        // Insert after Profile if Profile exists
-        if (options.includeApiClients && !byUrl.has('/portal/accounts/api-clients')) {
-            const profileIndex = uniqueItems.findIndex(item => item.url === '/portal/user-profile');
-            const apiClientsItem: NavItem = {
-                title: 'API',
-                url: '/portal/accounts/api-clients',
-                icon: 'extraction',
-                isCollapsible: false,
-            };
-            if (profileIndex >= 0) {
-                uniqueItems.splice(profileIndex + 1, 0, apiClientsItem);
-            } else {
-                uniqueItems.push(apiClientsItem);
-            }
-            byUrl.set('/portal/accounts/api-clients', apiClientsItem);
-        }
-
-        if (options.includeSiteZoneConfig && !byUrl.has('/portal/accounts/site-zone-config')) {
-            const profileIndex = uniqueItems.findIndex(item => item.url === '/portal/user-profile');
-            const siteZoneConfigItem: NavItem = {
-                title: 'Site & zone config',
-                url: '/portal/accounts/site-zone-config',
-                icon: 'settings',
-                isCollapsible: false,
-            };
-            if (profileIndex >= 0) {
-                uniqueItems.splice(profileIndex + 1, 0, siteZoneConfigItem);
-            } else {
-                uniqueItems.push(siteZoneConfigItem);
-            }
-            byUrl.set('/portal/accounts/site-zone-config', siteZoneConfigItem);
-        }
-
-        if (options.includeNotifications && !byUrl.has('/portal/accounts/notifications')) {
-            const notificationsItem: NavItem = {
-                title: 'Notifications',
-                url: '/portal/accounts/notifications',
-                icon: 'report',
-                isCollapsible: false,
-            };
-            uniqueItems.push(notificationsItem);
-            byUrl.set('/portal/accounts/notifications', notificationsItem);
-        }
-
-        return {
-            ...item,
-            items: uniqueItems,
-        };
-    });
-};
-
 function ContentSidebar({ items }: { items: NavItem[] }) {
     const supabase = createClient();
     const [sidebarItems, setSidebarItems] = useState<NavItem[]>(items);
@@ -118,22 +45,21 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
         if (user?.user_metadata.role === 'operator') {
             const operatorNavItems = items.filter(item =>
                 item.url === '/portal/meter-reading' ||
-                item.url === '/portal/meter-reading-list' ||
-                item.url === '/portal/accounts'
+                item.url === '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(operatorNavItems, { includeApiClients: false, includeSiteZoneConfig: false, includeNotifications: false }));
+            setSidebarItems(operatorNavItems);
         } else if (user?.user_metadata.role === 'admin') {
             // For admin users, show all items except meter-reading pages (which are operator-only)
             const adminItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(adminItems, { includeApiClients: true, includeSiteZoneConfig: true, includeNotifications: true }));
+            setSidebarItems(adminItems);
         } else {
             // For regular users, show all items except meter-reading pages (which are operator-only)
             const regularUserItems = items.filter(item =>
                 item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
             );
-            setSidebarItems(buildAccountsItems(regularUserItems, { includeApiClients: false, includeSiteZoneConfig: false, includeNotifications: true }));
+            setSidebarItems(regularUserItems);
         }
     }
 

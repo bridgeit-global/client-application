@@ -237,31 +237,6 @@ export const getNavItems = (site_name: string): NavItem[] => {
             isCollapsible: false,
             shortcut: ['m', 'l'],
             items: []
-        },
-        {
-            title: 'Accounts',
-            url: '/portal/accounts',
-            icon: 'settings',
-            isCollapsible: true,
-            shortcut: ['a', 'c'],
-            items: [
-                {
-                    title: 'Issues',
-                    url: '/portal/report-issue',
-                    icon: 'warning',
-                    isCollapsible: false,
-                    shortcut: ['i', 'i'],
-                    items: []
-                },
-                {
-                    title: 'Profile',
-                    url: '/portal/user-profile',
-                    icon: 'profile',
-                    isCollapsible: false,
-                    shortcut: ['p', 'r'],
-                    items: []
-                }
-            ]
         }
 
     ];

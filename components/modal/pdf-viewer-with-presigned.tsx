@@ -57,7 +57,7 @@ export function PDFViewerWithPresigned({
     };
 
     fetchPresignedUrl();
-  }, [fileKey]);
+  }, [fileKey, storageSource]);
 
   if (isLoading) {
     return (

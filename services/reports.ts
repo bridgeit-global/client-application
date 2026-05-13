@@ -155,14 +155,15 @@ export const fetchRegistrationReport = cache(
   }
 );
 
-/** Rows per request for bill_report export (Supabase default cap + memory friendly). */
-const BILL_REPORT_EXPORT_CHUNK = 500;
+/** Rows per request for bill_report export (keep small: nested embeds are heavy per row). */
+const BILL_REPORT_EXPORT_CHUNK = 100;
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 function buildBillHistoryReportFilteredQuery(
   supabase: SupabaseServerClient,
-  searchParams: SearchParamsProps
+  searchParams: SearchParamsProps,
+  opts?: { exportKeysetOrder?: boolean }
 ) {
   const {
     zone_id,
@@ -204,14 +205,14 @@ function buildBillHistoryReportFilteredQuery(
         regulatory_charges(*),
         meter_readings(*),
         connections!inner(*,biller_list!inner(*),sites!inner(*))`,
-      {
-        count: 'estimated'
-      }
+      opts?.exportKeysetOrder ? {} : { count: 'estimated' }
     )
     .eq('is_valid', true)
     .eq('is_deleted', false);
 
-  if (sort) {
+  if (opts?.exportKeysetOrder) {
+    query = query.order('id', { ascending: true });
+  } else if (sort) {
     query = query.order(sort, { ascending: order === 'asc' });
   } else {
     query = query.order('due_date', { ascending: true });
@@ -351,15 +352,19 @@ export const fetchBillHistoryReport = cache(
 
     if (options?.is_export) {
       const bills: AllBillTableProps[] = [];
-      let chunkStart = 0;
+      let lastBillId: string | undefined;
       let exportError: SupabaseError | undefined;
 
       for (;;) {
-        const chunkQuery = buildBillHistoryReportFilteredQuery(supabase, searchParams);
-        const { data, error } = await chunkQuery.range(
-          chunkStart,
-          chunkStart + BILL_REPORT_EXPORT_CHUNK - 1
+        let chunkQuery = buildBillHistoryReportFilteredQuery(
+          supabase,
+          searchParams,
+          { exportKeysetOrder: true }
         );
+        if (lastBillId) {
+          chunkQuery = chunkQuery.gt('id', lastBillId);
+        }
+        const { data, error } = await chunkQuery.limit(BILL_REPORT_EXPORT_CHUNK);
         if (error) {
           exportError = error;
           break;
@@ -367,8 +372,16 @@ export const fetchBillHistoryReport = cache(
         const chunk = (data || []) as AllBillTableProps[];
         if (!chunk.length) break;
         bills.push(...chunk);
+        const tail = chunk[chunk.length - 1] as { id?: string };
+        if (!tail?.id) {
+          exportError = {
+            message: 'Export failed: bill row missing id',
+            code: 'EXPORT_INVARIANT'
+          } as SupabaseError;
+          break;
+        }
+        lastBillId = tail.id;
         if (chunk.length < BILL_REPORT_EXPORT_CHUNK) break;
-        chunkStart += BILL_REPORT_EXPORT_CHUNK;
       }
 
       if (exportError) {

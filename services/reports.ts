@@ -12,28 +12,19 @@ import { PaidBillTableProps, PaymentTableProps } from '@/types/payments-type';
 import { DlqMessagesTableProps } from '@/types/dlq-messages-type';
 import { PAY_TYPE_LIST } from '@/constants/bill';
 import { fetchOrganization } from './organization';
-
-
-const getUnitCostStatus = (site: AllBillTableProps) => {
-  const isNormalBill = site.bill_type.toLowerCase() === 'normal';
-  let statusMessage = '';
-
-  if (!isNormalBill) {
-    statusMessage = 'Abnormal Bill';
-  } else if (site.billed_unit < 1000) {
-    statusMessage = 'Insufficient unit consumed';
-  }
-
-  if (statusMessage) {
-    return statusMessage;
-  }
-
-  return site.unit_cost ? formatRupees(site.unit_cost) : null;
-};
+import {
+  buildChargeSplitWideExportRows,
+  buildMeterReadingExportRows,
+  getEnergyBasedUnitCostLabel,
+} from '@/lib/utils/bill-export-charges';
 
 type Result<TData> = {
   data: TData[];
   export_data?: SearchParamsProps[];
+  /** Long-format charge lines for bill_report XLSX "charges split" tab */
+  export_charge_lines?: Record<string, string | number | null>[];
+  /** Meter reading rows for bill_report XLSX "Meter Readings" tab */
+  export_meter_readings?: Record<string, string | number | null>[];
   totalCount: number;
   pageCount: number;
   error?: SupabaseError;
@@ -164,210 +155,244 @@ export const fetchRegistrationReport = cache(
   }
 );
 
+/** Rows per request for bill_report export (Supabase default cap + memory friendly). */
+const BILL_REPORT_EXPORT_CHUNK = 500;
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+function buildBillHistoryReportFilteredQuery(
+  supabase: SupabaseServerClient,
+  searchParams: SearchParamsProps
+) {
+  const {
+    zone_id,
+    account_number,
+    due_date_start,
+    due_date_end,
+    bill_date_start,
+    bill_date_end,
+    bill_fetch_start,
+    bill_fetch_end,
+    discount_date_start,
+    discount_date_end,
+    site_id,
+    biller_id,
+    is_arrear,
+    penalty,
+    type,
+    bill_status,
+    is_active,
+    connection_status,
+    bill_type,
+    sort,
+    pay_type,
+    bill_date_vs_fetch_date,
+    bill_date_vs_due_date,
+    is_overload,
+    order = 'asc',
+    is_rebate_eligible,
+    paid_status
+  } = searchParams;
+
+  let query = supabase
+    .from('bills')
+    .select(
+      `*,
+        additional_charges(*),
+        adherence_charges(*),
+        core_charges(*),
+        regulatory_charges(*),
+        meter_readings(*),
+        connections!inner(*,biller_list!inner(*),sites!inner(*))`,
+      {
+        count: 'estimated'
+      }
+    )
+    .eq('is_valid', true)
+    .eq('is_deleted', false);
+
+  if (sort) {
+    query = query.order(sort, { ascending: order === 'asc' });
+  } else {
+    query = query.order('due_date', { ascending: true });
+  }
+
+  if (is_rebate_eligible) {
+    query = query.gt('rebate_potential', 0);
+  }
+
+  if (connection_status) {
+    const value = processValues(connection_status);
+    query = query.in('connections.is_active', value);
+  }
+
+  if (bill_type) {
+    const value = processValues(bill_type);
+    query = query.in('bill_type', value);
+  }
+
+  if (bill_status) {
+    const value = processValues(bill_status);
+    query = query.in('bill_status', value);
+  }
+
+  if (is_active) {
+    const value = processValues(is_active);
+    query = query.in('is_active', value);
+  }
+
+  if (type) {
+    const value = type.split(',');
+    query = query.in('connections.sites.type', value);
+  }
+
+  if (is_arrear) {
+    query = query
+      .not('additional_charges', 'is', null)
+      .gt('additional_charges.arrears', 0);
+  } else if (is_arrear == 'false') {
+    query = query.not('additional_charges', 'is', null).lt('additional_charges.arrears', 0);
+  }
+
+  if (penalty) {
+    const penaltyArray = Array.isArray(penalty) ? penalty : [penalty];
+    penaltyArray.map((e) => {
+      query = query.not('adherence_charges', 'is', null).gt(`adherence_charges.${e}`, 0);
+    });
+  }
+
+  if (biller_id) {
+    const value = processValues(biller_id);
+    query = query.in('connections.biller_list.alias', value);
+  }
+
+  if (site_id) {
+    const value = processValues(site_id);
+    query = query.in('connections.site_id', value);
+  }
+
+  if (account_number) {
+    const value = processValues(account_number);
+    query = query.in('connections.account_number', value);
+  }
+
+  if (zone_id) {
+    const value = zone_id.split(',');
+    query = query.in('connections.sites.zone_id', value);
+  }
+
+  if (discount_date_start && discount_date_end) {
+    query = query
+      .gte('discount_date', discount_date_start)
+      .lte('discount_date', discount_date_end);
+  }
+
+  if (due_date_start && due_date_end) {
+    query = query.gte('due_date', due_date_start).lte('due_date', due_date_end);
+  }
+
+  if (bill_fetch_start && bill_fetch_end) {
+    query = query
+      .gte('created_at', bill_fetch_start)
+      .lte('created_at', bill_fetch_end + ' 23:59:59');
+  }
+
+  if (bill_date_start && bill_date_end) {
+    query = query.gte('bill_date', bill_date_start).lte('bill_date', bill_date_end);
+  }
+
+  if (bill_date_vs_fetch_date) {
+    if (bill_date_vs_fetch_date === '0-3') {
+      query = query.lte('days_created_vs_bill_date', 3);
+    } else if (bill_date_vs_fetch_date === '4-7') {
+      query = query
+        .gte('days_created_vs_bill_date', 4)
+        .lte('days_created_vs_bill_date', 7);
+    } else if (bill_date_vs_fetch_date === '7+') {
+      query = query.gt('days_created_vs_bill_date', 7);
+    }
+  }
+
+  if (bill_date_vs_due_date) {
+    if (bill_date_vs_due_date === '0-3') {
+      query = query.lte('days_due_vs_bill_date', 3);
+    } else if (bill_date_vs_due_date === '4-7') {
+      query = query.gte('days_due_vs_bill_date', 4).lte('days_due_vs_bill_date', 7);
+    } else if (bill_date_vs_due_date === '7+') {
+      query = query.gt('days_due_vs_bill_date', 7);
+    }
+  }
+
+  if (pay_type) {
+    const value = processValues(pay_type);
+    query = query.in('connections.paytype', value);
+  }
+
+  if (is_overload) {
+    query = query.eq('is_overload', is_overload === 'true');
+  }
+  if (paid_status) {
+    query = query.eq('paid_status', paid_status);
+  }
+
+  return query;
+}
+
 export const fetchBillHistoryReport = cache(
   async (
     searchParams: SearchParamsProps,
     options?: { is_export?: boolean }
   ): Promise<Result<AllBillTableProps>> => {
     const supabase = await createClient();
-    const {
-      page = 1,
-      limit = 10,
-      zone_id,
-      account_number,
-      due_date_start,
-      due_date_end,
-      bill_date_start,
-      bill_date_end,
-      bill_fetch_start,
-      bill_fetch_end,
-      discount_date_start,
-      discount_date_end,
-      site_id,
-      biller_id,
-      is_arrear,
-      penalty,
-      type,
-      bill_status,
-      is_active,
-      connection_status,
-      bill_type,
-      sort,
-      pay_type,
-      bill_date_vs_fetch_date,
-      bill_date_vs_due_date,
-      is_overload,
-      order = 'asc',
-      is_rebate_eligible,
-      paid_status
-    } = searchParams;
+    const { page = 1, limit = 10 } = searchParams;
 
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
 
-    let query = supabase
-      .from('bills')
-      .select(
-        `*,
-        additional_charges(*),
-        adherence_charges(*),
-        connections!inner(*,biller_list!inner(*),sites!inner(*))`,
-        {
-          count: 'estimated'
-        })
-      .eq('is_valid', true)
-      .eq('is_deleted', false)
-
-    if (sort) {
-      query = query.order(sort, { ascending: order === 'asc' });
-    } else {
-      query = query.order('due_date', { ascending: true });
-    }
-
-    if (is_rebate_eligible) {
-      query = query.gt('rebate_potential', 0);
-    }
-
-    if (connection_status) {
-      const value = processValues(connection_status);
-      query = query.in('connections.is_active', value);
-    }
-
-    if (bill_type) {
-      const value = processValues(bill_type);
-      query = query.in('bill_type', value);
-    }
-
-    if (bill_status) {
-      const value = processValues(bill_status);
-      query = query.in('bill_status', value);
-    }
-
-    if (is_active) {
-      const value = processValues(is_active);
-      query = query.in('is_active', value);
-    }
-
-    if (type) {
-      const value = type.split(',');
-      query = query.in('connections.sites.type', value);
-    }
-
-    if (is_arrear) {
-      query = query.not('additional_charges', 'is', null)
-        .gt('additional_charges.arrears', 0)
-    } else if (is_arrear == 'false') {
-      query = query.not('additional_charges', 'is', null).lt('additional_charges.arrears', 0)
-    }
-
-    if (penalty) {
-      const penaltyArray = Array.isArray(penalty) ? penalty : [penalty];
-      penaltyArray.map((e) => {
-        query = query.not('adherence_charges', 'is', null).gt(`adherence_charges.${e}`, 0)
-      })
-    }
-
-    if (biller_id) {
-      const value = processValues(biller_id);
-      query = query.in('connections.biller_list.alias', value);
-    }
-
-    if (site_id) {
-      const value = processValues(site_id);
-      query = query.in('connections.site_id', value);
-    }
-
-    if (account_number) {
-      const value = processValues(account_number);
-      query = query.in('connections.account_number', value);
-    }
-
-    if (zone_id) {
-      const value = zone_id.split(',');
-      query = query.in('connections.sites.zone_id', value);
-    }
-
-    if (discount_date_start && discount_date_end) {
-      query = query
-        .gte('discount_date', discount_date_start)
-        .lte('discount_date', discount_date_end);
-    }
-
-    if (due_date_start && due_date_end) {
-      query = query
-        .gte('due_date', due_date_start)
-        .lte('due_date', due_date_end);
-    }
-
-    if (bill_fetch_start && bill_fetch_end) {
-      query = query
-        .gte('created_at', bill_fetch_start)
-        .lte('created_at', bill_fetch_end + ' 23:59:59');
-    }
-
-    if (bill_date_start && bill_date_end) {
-      query = query
-        .gte('bill_date', bill_date_start)
-        .lte('bill_date', bill_date_end);
-    }
-
-    if (bill_date_vs_fetch_date) {
-
-      if (bill_date_vs_fetch_date === '0-3') {
-        query = query.lte('days_created_vs_bill_date', 3);
-      } else if (bill_date_vs_fetch_date === '4-7') {
-        query = query.gte('days_created_vs_bill_date', 4).lte('days_created_vs_bill_date', 7);
-      } else if (bill_date_vs_fetch_date === '7+') {
-        query = query.gt('days_created_vs_bill_date', 7);
-      }
-
-    }
-
-    if (bill_date_vs_due_date) {
-      if (bill_date_vs_due_date === '0-3') {
-        query = query.lte('days_due_vs_bill_date', 3);
-      } else if (bill_date_vs_due_date === '4-7') {
-        query = query.gte('days_due_vs_bill_date', 4).lte('days_due_vs_bill_date', 7);
-      } else if (bill_date_vs_due_date === '7+') {
-        query = query.gt('days_due_vs_bill_date', 7);
-      }
-    }
-
-    if (pay_type) {
-      const value = processValues(pay_type);
-      query = query.in('connections.paytype', value);
-    }
-
-    if (is_overload) {
-      query = query.eq('is_overload', is_overload === 'true');
-    }
-    if (paid_status) {
-      query = query.eq('paid_status', paid_status);
-    }
-
-
     if (options?.is_export) {
+      const bills: AllBillTableProps[] = [];
+      let chunkStart = 0;
+      let exportError: SupabaseError | undefined;
 
-      const { data, error } = await query;
-      const { site_name } = await fetchOrganization();
+      for (;;) {
+        const chunkQuery = buildBillHistoryReportFilteredQuery(supabase, searchParams);
+        const { data, error } = await chunkQuery.range(
+          chunkStart,
+          chunkStart + BILL_REPORT_EXPORT_CHUNK - 1
+        );
+        if (error) {
+          exportError = error;
+          break;
+        }
+        const chunk = (data || []) as AllBillTableProps[];
+        if (!chunk.length) break;
+        bills.push(...chunk);
+        if (chunk.length < BILL_REPORT_EXPORT_CHUNK) break;
+        chunkStart += BILL_REPORT_EXPORT_CHUNK;
+      }
 
-      if (error) {
+      if (exportError) {
         return {
           data: [],
           totalCount: 0,
           pageCount: 0,
-          error: error
+          error: exportError
         };
       }
 
-      const modifiedData = (data || []).map((site) => ({
-        [`${site_name}_id`]: site.connections?.site_id || '',
+      const { site_name } = await fetchOrganization();
+
+      const siteIdKey = `${site_name}_id`;
+
+      const modifiedData = bills.map((site) => ({
+        [siteIdKey]: site.connections?.site_id || '',
         [`${site_name}_type`]: site.connections?.sites?.type || '',
         [`${site_name}_status`]: site.connections?.is_active ? 'Active' : 'Inactive',
         account_number: String(site.connections?.account_number || ''),
         biller_board: site.connections?.biller_list?.board_name || '',
-        pay_type: PAY_TYPE_LIST.find((b) => b.value == site.connections?.paytype)?.name || '',
+        pay_type: PAY_TYPE_LIST.find((b) => String(b.value) === String(site.connections?.paytype))?.name || '',
         bill_date: ddmmyy(site.bill_date),
+        bill_date_iso: site.bill_date?.slice(0, 10) || '',
         due_date: ddmmyy(getDueDate(site.discount_date, site.due_date)),
         bill_amount: site.bill_amount,
         bill_type: site.bill_type,
@@ -377,7 +402,7 @@ export const fetchBillHistoryReport = cache(
         billed_unit: site.billed_unit,
         start_date: ddmmyy(site.start_date),
         end_date: ddmmyy(site.end_date),
-        unit_cost: getUnitCostStatus(site),
+        unit_cost: getEnergyBasedUnitCostLabel(site) ?? '—',
         swap_cost: site.swap_cost,
         state: site.connections?.biller_list?.state || '',
         lpsc: site.adherence_charges?.lpsc,
@@ -389,15 +414,27 @@ export const fetchBillHistoryReport = cache(
         address: site.connections?.address || '',
         consumer_name: site.connections?.name || '',
         batch_id: site.batch_id,
+        sanction_load: site.connections?.sanction_load ?? '',
+        sanction_type: site.connections?.sanction_type ?? '',
+        next_bill_date: site.next_bill_date ? ddmmyy(site.next_bill_date) : '',
       }));
+
+      const export_charge_lines = buildChargeSplitWideExportRows(bills, siteIdKey);
+      const export_meter_readings = bills.flatMap((b) =>
+        buildMeterReadingExportRows(b, siteIdKey)
+      );
 
       return {
         data: [],
         export_data: convertKeysToTitleCase(modifiedData),
+        export_charge_lines,
+        export_meter_readings,
         totalCount: 0,
         pageCount: 0
       };
     }
+
+    let query = buildBillHistoryReportFilteredQuery(supabase, searchParams);
 
     // Pagination
     query = query.range(offset, offset + pageLimit - 1);

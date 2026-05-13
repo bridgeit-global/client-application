@@ -181,7 +181,7 @@ export function BillReportTable({
               {filterCount} <FilterX className="ml-2 h-4 w-4" />
             </Button>
           )} */}
-          <ExportButton file_name="bill_report" />
+          <ExportButton file_name="bill_report" queryString={searchParams.toString()} />
           <TableColumns table={table} />
         </div>
       </div>

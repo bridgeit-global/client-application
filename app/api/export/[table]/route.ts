@@ -32,7 +32,12 @@ import {
 import { fetchSubmeterReadings } from '@/services/submeter-readings';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { convertKeysToTitleCase } from '@/lib/utils/string-format';
+import type { SearchParamsProps } from '@/types';
 import * as XLSX from 'xlsx';
+
+/** Allow large bill exports on serverless (e.g. Vercel); adjust if your host caps lower. */
+export const maxDuration = 300;
 
 function getParams(queryString: string): Record<string, string> {
   const queryPart = queryString.includes('?')
@@ -52,7 +57,7 @@ function getParams(queryString: string): Record<string, string> {
 }
 
 async function fetchMeterReadingsForBills(
-  searchParams: Record<string, string>,
+  searchParams: SearchParamsProps,
   table: string,
   param?: string
 ): Promise<any[]> {
@@ -169,6 +174,18 @@ async function fetchMeterReadingsForBills(
   }
 }
 
+function mergeExportSearchParams(
+  request: NextRequest,
+  referer: string
+): SearchParamsProps {
+  const fromReferer = getParams(referer);
+  const fromUrl: Record<string, string> = {};
+  request.nextUrl.searchParams.forEach((value, key) => {
+    fromUrl[key] = value;
+  });
+  return { ...fromReferer, ...fromUrl };
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ table: string }> }
@@ -176,11 +193,14 @@ export async function GET(
   const { table } = await params;
   const referer = request?.headers.get('referer') || '';
   const param = referer.split('/').slice(-1)[0].split("?")[0]
-  const searchParams = getParams(referer);
-  console.log(table)
+  const searchParams = mergeExportSearchParams(request, referer);
   try {
     let fetchData: any = [];
     let fetchError = null;
+    let exportChargeLines: Record<string, string | number | null>[] | undefined;
+    let exportMeterReadingsBillReport:
+      | Record<string, string | number | null>[]
+      | undefined;
     if (table === 'registration_failed') {
       const filterBody = searchParams?.filter
         ? JSON?.parse(searchParams?.filter)
@@ -274,10 +294,17 @@ export async function GET(
       fetchData = export_data;
       fetchError = error;
     } else if (table === 'bill_report') {
-      const { export_data, error } = await fetchBillHistoryReport(searchParams, {
+      const {
+        export_data,
+        export_charge_lines,
+        export_meter_readings,
+        error,
+      } = await fetchBillHistoryReport(searchParams, {
         is_export: true
       });
-      fetchData = export_data;
+      fetchData = export_data || [];
+      exportChargeLines = export_charge_lines;
+      exportMeterReadingsBillReport = export_meter_readings;
       fetchError = error;
     } else if (table === 'payment_report') {
       const { export_data, error } = await fetchPaymentHistoryReport(searchParams, {
@@ -364,15 +391,28 @@ export async function GET(
     // Append the worksheet to the workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, table);
 
-    // For bill-related exports, add meter readings sheet
+    // For bill-related exports, add meter readings sheet (and bill_report extras)
     const billExportTables = ['all_bill', 'new_bills', 'bills_in_batches', 'postpaid_paid', 'bill_report'];
     if (billExportTables.includes(table)) {
-      const meterReadingsData = await fetchMeterReadingsForBills(searchParams, table, param);
-      console.log(meterReadingsData)
-      if (meterReadingsData.length > 0) {
-        const meterReadingsWorksheet = XLSX.utils.json_to_sheet(meterReadingsData);
+      if (table === 'bill_report' && exportMeterReadingsBillReport?.length) {
+        const meterReadingsWorksheet = XLSX.utils.json_to_sheet(
+          convertKeysToTitleCase(exportMeterReadingsBillReport)
+        );
         XLSX.utils.book_append_sheet(workbook, meterReadingsWorksheet, 'Meter Readings');
+      } else if (table !== 'bill_report') {
+        const meterReadingsData = await fetchMeterReadingsForBills(searchParams, table, param);
+        if (meterReadingsData.length > 0) {
+          const meterReadingsWorksheet = XLSX.utils.json_to_sheet(meterReadingsData);
+          XLSX.utils.book_append_sheet(workbook, meterReadingsWorksheet, 'Meter Readings');
+        }
       }
+    }
+
+    if (table === 'bill_report' && exportChargeLines?.length) {
+      const chargesSplitSheet = XLSX.utils.json_to_sheet(
+        convertKeysToTitleCase(exportChargeLines)
+      );
+      XLSX.utils.book_append_sheet(workbook, chargesSplitSheet, 'charges split');
     }
 
     // Convert workbook to a binary string

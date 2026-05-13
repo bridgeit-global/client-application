@@ -3,12 +3,24 @@ import { useState } from 'react';
 import { LoadingButton } from './loading-button';
 import { Download } from 'lucide-react';
 
-const ExportButton = ({ file_name }: { file_name: string }) => {
+const ExportButton = ({
+  file_name,
+  queryString
+}: {
+  file_name: string;
+  /** Current URL search string (no leading ?) so export matches filters even if Referer is stripped */
+  queryString?: string;
+}) => {
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const handleExport = async (): Promise<void> => {
     setIsExporting(true);
     try {
-      const response = await fetch(`/api/export/${file_name}`);
+      const qs = queryString?.trim();
+      const path =
+        qs && qs.length > 0
+          ? `/api/export/${file_name}?${qs.startsWith('?') ? qs.slice(1) : qs}`
+          : `/api/export/${file_name}`;
+      const response = await fetch(path, { cache: 'no-store' });
       if (!response.ok) {
         throw new Error('Export failed');
       }

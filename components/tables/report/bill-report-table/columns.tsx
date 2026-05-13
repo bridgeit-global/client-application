@@ -8,7 +8,10 @@ import BillTypeCell from '@/components/table-cells/bill-type-cell';
 import PaidBadge from '@/components/badges/paid-badge';
 import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { UnitCost } from '@/components/table-cells/unit-cost';
+import { BillReportEnergyUnitCost } from '@/components/table-cells/bill-report-energy-unit-cost';
+import { BillChargesDisclosure } from '@/components/table-cells/bill-charges-disclosure';
+import { BillBilledUnitWithReadings } from '@/components/table-cells/bill-billed-unit-with-readings';
+import { NextBillDateCell } from '@/components/table-cells/next-bill-date-cell';
 import PayTypeBadge from '@/components/badges/pay-type-badge';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import StatusBadge from '@/components/badges/status-badge';
@@ -16,6 +19,18 @@ import IsActiveBadge from '@/components/badges/is-active-badge';
 import { Button } from '@/components/ui/button';
 import { useSiteName } from '@/lib/utils/site';
 import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+
+const ADHERENCE_LINE_KEYS = [
+  'lpsc',
+  'misuse_surcharge',
+  'power_factor_penalty',
+  'sanctioned_load_penalty',
+  'tod_surcharge',
+  'capacitor_surcharge',
+  'power_factor_incentive',
+  'tod_rebate',
+] as const;
+
 export const columns: ColumnDef<AllBillTableProps>[] = [
 
   {
@@ -35,6 +50,20 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
     cell: ({ row }) => {
       const paytype = row.original.connections.paytype;
       return <PayTypeBadge paytype={paytype} />
+    }
+  },
+  {
+    header: 'Sanction load',
+    cell: ({ row }) => {
+      const load = row.original.connections.sanction_load;
+      const st = row.original.connections.sanction_type;
+      if (load == null && !st) return <span className="text-muted-foreground">—</span>;
+      return (
+        <span className="text-sm">
+          {load != null ? <span className="tabular-nums">{load}</span> : '—'}
+          {st ? <span className="text-muted-foreground"> {String(st)}</span> : null}
+        </span>
+      );
     }
   },
   {
@@ -82,6 +111,16 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
     accessorKey: 'due_date'
   },
   {
+    header: 'Next bill date',
+    cell: ({ row }) => (
+      <NextBillDateCell
+        next_bill_date={row.original.next_bill_date}
+        is_active={row.original.is_active}
+      />
+    ),
+    accessorKey: 'next_bill_date',
+  },
+  {
     header: 'Bill Amount',
     cell: ({ row }) => formatRupees(row.original.bill_amount)
   },
@@ -107,7 +146,7 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
   },
   {
     header: 'Billed Unit',
-    accessorKey: 'billed_unit',
+    cell: ({ row }) => <BillBilledUnitWithReadings bill={row.original} />
   },
   {
     header: 'Start Date',
@@ -119,7 +158,11 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
   },
   {
     header: 'Unit Cost',
-    cell: ({ row }) => <UnitCost row={row} />
+    cell: ({ row }) => <BillReportEnergyUnitCost bill={row.original} />
+  },
+  {
+    header: 'Charges',
+    cell: ({ row }) => <BillChargesDisclosure bill={row.original} />
   },
   // {
   //   header: 'Swap Cost',
@@ -154,22 +197,23 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
     enableResizing: false,
     size: 300,
     cell: ({ row }) => {
-      const arrear = Number(row.original.additional_charges?.arrears || 0);
-      const penalty = Object.values(row.original.adherence_charges || {})
-        .filter((value): value is number => typeof value === 'number')
-        .reduce((sum, value) => sum + value, 0);
+      const arrear = Number(row.original.additional_charges?.arrears ?? 0);
+      const adherence = row.original.adherence_charges;
       return (
-        <div className="flex gap-1">
-          {arrear !== 0 && (
-            <Badge variant={arrear > 0 ? 'destructive' : 'success'}  >
-              Arrear: {formatRupees(arrear)}
-            </Badge>
-          )}
-          {Number(penalty) > 0 && (
-            <Badge variant="destructive">
-              Penalty: {formatRupees(penalty)}
-            </Badge>
-          )}
+        <div className="flex flex-wrap gap-1">
+          <Badge variant={arrear > 0 ? 'destructive' : arrear < 0 ? 'success' : 'outline'}>
+            Arrear: {formatRupees(arrear)}
+          </Badge>
+          {ADHERENCE_LINE_KEYS.map((key) => {
+            const raw = (adherence as unknown as Record<string, number> | null | undefined)?.[key];
+            if (typeof raw !== 'number' || raw === 0) return null;
+            const isCredit = key === 'tod_rebate' || key === 'power_factor_incentive';
+            return (
+              <Badge key={key} variant={isCredit ? 'outline' : 'destructive'} className="max-w-[140px] truncate">
+                {key.replace(/_/g, ' ')}: {formatRupees(raw)}
+              </Badge>
+            );
+          })}
         </div>
       );
     }

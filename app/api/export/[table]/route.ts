@@ -32,7 +32,10 @@ import {
 import { fetchSubmeterReadings } from '@/services/submeter-readings';
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { convertKeysToTitleCase } from '@/lib/utils/string-format';
+import {
+  convertChargeSplitExportKeysToTitleCase,
+  convertKeysToTitleCase,
+} from '@/lib/utils/string-format';
 import type { SearchParamsProps } from '@/types';
 import * as XLSX from 'xlsx';
 
@@ -410,7 +413,7 @@ export async function GET(
 
     if (table === 'bill_report' && exportChargeLines?.length) {
       const chargesSplitSheet = XLSX.utils.json_to_sheet(
-        convertKeysToTitleCase(exportChargeLines)
+        convertChargeSplitExportKeysToTitleCase(exportChargeLines)
       );
       XLSX.utils.book_append_sheet(workbook, chargesSplitSheet, 'charges split');
     }

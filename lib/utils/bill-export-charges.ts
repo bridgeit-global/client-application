@@ -1,3 +1,4 @@
+import { ddmmyy } from '@/lib/utils/date-format';
 import { formatRupees } from '@/lib/utils/number-format';
 import type { AllBillTableProps } from '@/types/bills-type';
 
@@ -110,5 +111,20 @@ export function buildMeterReadingExportRows(
     start_reading: r.start_reading ?? '',
     end_reading: r.end_reading ?? '',
     multiplication_factor: r.multiplication_factor ?? '',
+  }));
+}
+
+/** One row per bill for XLSX "Connection Info": site, account, bill date, sanction/tariff from connection. */
+export function buildBillConnectionInfoExportRows(
+  bills: AllBillTableProps[],
+  siteKey: string
+): Record<string, string | number | null>[] {
+  return bills.map((bill) => ({
+    [siteKey]: String(bill.connections?.site_id ?? ''),
+    account_number: String(bill.connections?.account_number ?? ''),
+    bill_date: bill.bill_date ? ddmmyy(bill.bill_date) : '',
+    sanction_load: bill.connections?.sanction_load ?? '',
+    sanction_type: bill.connections?.sanction_type ?? '',
+    tariff: bill.connections?.tariff ?? '',
   }));
 }

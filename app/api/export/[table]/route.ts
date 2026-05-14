@@ -204,6 +204,9 @@ export async function GET(
     let exportMeterReadingsBillReport:
       | Record<string, string | number | null>[]
       | undefined;
+    let exportConnectionInfoBillReport:
+      | Record<string, string | number | null>[]
+      | undefined;
     if (table === 'registration_failed') {
       const filterBody = searchParams?.filter
         ? JSON?.parse(searchParams?.filter)
@@ -301,6 +304,7 @@ export async function GET(
         export_data,
         export_charge_lines,
         export_meter_readings,
+        export_connection_info,
         error,
       } = await fetchBillHistoryReport(searchParams, {
         is_export: true
@@ -308,6 +312,7 @@ export async function GET(
       fetchData = export_data || [];
       exportChargeLines = export_charge_lines;
       exportMeterReadingsBillReport = export_meter_readings;
+      exportConnectionInfoBillReport = export_connection_info;
       fetchError = error;
     } else if (table === 'payment_report') {
       const { export_data, error } = await fetchPaymentHistoryReport(searchParams, {
@@ -393,6 +398,13 @@ export async function GET(
 
     // Append the worksheet to the workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, table);
+
+    if (table === 'bill_report' && exportConnectionInfoBillReport?.length) {
+      const connectionInfoSheet = XLSX.utils.json_to_sheet(
+        convertKeysToTitleCase(exportConnectionInfoBillReport)
+      );
+      XLSX.utils.book_append_sheet(workbook, connectionInfoSheet, 'Connection Info');
+    }
 
     // For bill-related exports, add meter readings sheet (and bill_report extras)
     const billExportTables = ['all_bill', 'new_bills', 'bills_in_batches', 'postpaid_paid', 'bill_report'];

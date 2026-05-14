@@ -13,6 +13,7 @@ import { DlqMessagesTableProps } from '@/types/dlq-messages-type';
 import { PAY_TYPE_LIST } from '@/constants/bill';
 import { fetchOrganization } from './organization';
 import {
+  buildBillConnectionInfoExportRows,
   buildChargeSplitWideExportRows,
   buildMeterReadingExportRows,
   getEnergyBasedUnitCostLabel,
@@ -25,6 +26,8 @@ type Result<TData> = {
   export_charge_lines?: Record<string, string | number | null>[];
   /** Meter reading rows for bill_report XLSX "Meter Readings" tab */
   export_meter_readings?: Record<string, string | number | null>[];
+  /** One row per bill for bill_report XLSX "Connection Info" tab */
+  export_connection_info?: Record<string, string | number | null>[];
   totalCount: number;
   pageCount: number;
   error?: SupabaseError;
@@ -436,12 +439,14 @@ export const fetchBillHistoryReport = cache(
       const export_meter_readings = bills.flatMap((b) =>
         buildMeterReadingExportRows(b, siteIdKey)
       );
+      const export_connection_info = buildBillConnectionInfoExportRows(bills, siteIdKey);
 
       return {
         data: [],
         export_data: convertKeysToTitleCase(modifiedData),
         export_charge_lines,
         export_meter_readings,
+        export_connection_info,
         totalCount: 0,
         pageCount: 0
       };

@@ -207,7 +207,10 @@ function buildBillHistoryReportFilteredQuery(
         core_charges(*),
         regulatory_charges(*),
         meter_readings(*),
-        connections!inner(*,biller_list!inner(*),sites!inner(*))`,
+        connections!inner(*,biller_list!inner(*),
+        sites!inner(*)),
+        bill_level_connection_info(*)
+        `,
       opts?.exportKeysetOrder ? {} : { count: 'estimated' }
     )
     .eq('is_valid', true)
@@ -358,7 +361,7 @@ export const fetchBillHistoryReport = cache(
       let lastBillId: string | undefined;
       let exportError: SupabaseError | undefined;
 
-      for (;;) {
+      for (; ;) {
         let chunkQuery = buildBillHistoryReportFilteredQuery(
           supabase,
           searchParams,

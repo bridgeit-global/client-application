@@ -114,17 +114,25 @@ export function buildMeterReadingExportRows(
   }));
 }
 
-/** One row per bill for XLSX "Connection Info": site, account, bill date, sanction/tariff from connection. */
+/** One row per bill for XLSX "Connection Info": site, account, bill date, bill-level connection snapshot. */
 export function buildBillConnectionInfoExportRows(
   bills: AllBillTableProps[],
   siteKey: string
 ): Record<string, string | number | null>[] {
-  return bills.map((bill) => ({
-    [siteKey]: String(bill.connections?.site_id ?? ''),
-    account_number: String(bill.connections?.account_number ?? ''),
-    bill_date: bill.bill_date ? ddmmyy(bill.bill_date) : '',
-    sanction_load: bill.connections?.sanction_load ?? '',
-    sanction_type: bill.connections?.sanction_type ?? '',
-    tariff: bill.connections?.tariff ?? '',
-  }));
+  return bills.map((bill) => {
+    const info = bill.bill_level_connection_info;
+    return {
+      [siteKey]: String(bill.connections?.site_id ?? ''),
+      account_number: String(bill.connections?.account_number ?? ''),
+      bill_date: bill.bill_date ? ddmmyy(bill.bill_date) : '',
+      sanction_load: info?.sanction_load ?? bill.connections?.sanction_load ?? '',
+      sanction_type: info?.sanction_type ?? bill.connections?.sanction_type ?? '',
+      tariff: info?.tariff ?? bill.connections?.tariff ?? '',
+      connection_type: info?.connection_type ?? '',
+      connection_date: info?.connection_date ? ddmmyy(info.connection_date) : '',
+      security_deposit: info?.security_deposit ?? '',
+      latitude: info?.latitude ?? '',
+      longitude: info?.longitude ?? '',
+    };
+  });
 }

@@ -23,6 +23,8 @@ export type BillsProps = TableRow<'bills'>;
 
 // export type DerivedPaidBill = TableRow<'derived_paid_bill_summary'>
 
+export type BillLevelConnectionInfoTableProps = TableRow<'bill_level_connection_info'>;
+
 export type AllBillTableProps = BillsProps & {
   // derived_paid_bill_summary: DerivedPaidBill
   connections: ConnectionsProps & {
@@ -43,6 +45,7 @@ export type AllBillTableProps = BillsProps & {
   adherence_charges: AdherenceChargesProps;
   additional_charges: AdditionalChargesProps;
   meter_readings: MeterReadingsProps[];
+  bill_level_connection_info?: BillLevelConnectionInfoTableProps | null;
 };
 
 export type SingleBillProps = BillsProps & {

@@ -127,12 +127,7 @@ export function buildBillConnectionInfoExportRows(
       bill_date: bill.bill_date ? ddmmyy(bill.bill_date) : '',
       sanction_load: info?.sanction_load ?? bill.connections?.sanction_load ?? '',
       sanction_type: info?.sanction_type ?? bill.connections?.sanction_type ?? '',
-      tariff: info?.tariff ?? bill.connections?.tariff ?? '',
-      connection_type: info?.connection_type ?? '',
-      connection_date: info?.connection_date ? ddmmyy(info.connection_date) : '',
-      security_deposit: info?.security_deposit ?? '',
-      latitude: info?.latitude ?? '',
-      longitude: info?.longitude ?? '',
+      tariff: info?.tariff ?? bill.connections?.tariff ?? ''
     };
   });
 }

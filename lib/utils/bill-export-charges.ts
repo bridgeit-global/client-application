@@ -1,6 +1,7 @@
 import { ddmmyy } from '@/lib/utils/date-format';
 import { formatRupees } from '@/lib/utils/number-format';
 import type { AllBillTableProps } from '@/types/bills-type';
+import type { MeterReadingsProps } from '@/types/meter-readings-type';
 
 const CHARGE_META_KEYS = new Set(['id', 'created_at', 'updated_at']);
 
@@ -91,6 +92,14 @@ export function buildChargeSplitWideExportRows(
   });
 }
 
+/** PostgREST embeds are usually arrays; normalize so export always sees every reading. */
+export function normalizeMeterReadings(
+  readings: MeterReadingsProps | MeterReadingsProps[] | null | undefined
+): MeterReadingsProps[] {
+  if (!readings) return [];
+  return Array.isArray(readings) ? readings : [readings];
+}
+
 export function buildMeterReadingExportRows(
   bill: AllBillTableProps,
   siteKey: string
@@ -98,13 +107,14 @@ export function buildMeterReadingExportRows(
   const siteId = String(bill.connections?.site_id ?? '');
   const accountNumber = String(bill.connections?.account_number ?? '');
   const billDateIso = bill.bill_date?.slice(0, 10) ?? '';
-  const readings = bill.meter_readings;
-  if (!readings?.length) return [];
+  const readings = normalizeMeterReadings(bill.meter_readings);
+  if (!readings.length) return [];
 
   return readings.map((r) => ({
     [siteKey]: siteId,
     account_number: accountNumber,
     bill_date_iso: billDateIso,
+    meter_no: r.meter_no ?? '',
     type: r.type ?? '',
     start_date: r.start_date ?? '',
     end_date: r.end_date ?? '',

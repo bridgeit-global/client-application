@@ -17,7 +17,9 @@ import {
   buildChargeSplitWideExportRows,
   buildMeterReadingExportRows,
   getEnergyBasedUnitCostLabel,
+  normalizeMeterReadings,
 } from '@/lib/utils/bill-export-charges';
+import type { MeterReadingsProps } from '@/types/meter-readings-type';
 
 type Result<TData> = {
   data: TData[];
@@ -160,8 +162,37 @@ export const fetchRegistrationReport = cache(
 
 /** Rows per request for bill_report export (keep small: nested embeds are heavy per row). */
 const BILL_REPORT_EXPORT_CHUNK = 100;
+const METER_READINGS_BY_BILL_ID_CHUNK = 500;
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Load every meter_readings row for export (one bill can have multiple readings). */
+async function fetchMeterReadingsByBillIds(
+  supabase: SupabaseServerClient,
+  billIds: string[]
+): Promise<Map<string, MeterReadingsProps[]>> {
+  const byBillId = new Map<string, MeterReadingsProps[]>();
+  if (!billIds.length) return byBillId;
+
+  for (let i = 0; i < billIds.length; i += METER_READINGS_BY_BILL_ID_CHUNK) {
+    const chunk = billIds.slice(i, i + METER_READINGS_BY_BILL_ID_CHUNK);
+    const { data, error } = await supabase
+      .from('meter_readings')
+      .select('*')
+      .in('bill_id', chunk)
+      .order('meter_no', { ascending: true });
+
+    if (error) throw error;
+
+    for (const row of data ?? []) {
+      const list = byBillId.get(row.bill_id) ?? [];
+      list.push(row as MeterReadingsProps);
+      byBillId.set(row.bill_id, list);
+    }
+  }
+
+  return byBillId;
+}
 
 function buildBillHistoryReportFilteredQuery(
   supabase: SupabaseServerClient,
@@ -410,37 +441,45 @@ export const fetchBillHistoryReport = cache(
         account_number: String(site.connections?.account_number || ''),
         biller_board: site.connections?.biller_list?.board_name || '',
         pay_type: PAY_TYPE_LIST.find((b) => String(b.value) === String(site.connections?.paytype))?.name || '',
+        bill_number: site.bill_number,
         bill_date: ddmmyy(site.bill_date),
-        bill_date_iso: site.bill_date?.slice(0, 10) || '',
         due_date: ddmmyy(getDueDate(site.discount_date, site.due_date)),
         bill_amount: site.bill_amount,
-        bill_type: site.bill_type,
-        bill_type_reason: Object.keys(site?.bill_type_reason || {}).filter(key => !(site?.bill_type_reason as Record<string, boolean>)[key]).map(key => camelCaseToTitleCase(key) + ' discrepancy').join(', '),
         payment_status: !site.connections?.is_active && !site.payment_status ? 'Carried Forward' : site.payment_status ? 'Paid' : 'Unpaid',
-        bill_status: site.connections?.is_active ? 'Active' : 'Inactive',
         billed_unit: site.billed_unit,
         start_date: ddmmyy(site.start_date),
         end_date: ddmmyy(site.end_date),
         unit_cost: getEnergyBasedUnitCostLabel(site) ?? '—',
-        swap_cost: site.swap_cost,
-        state: site.connections?.biller_list?.state || '',
-        lpsc: site.adherence_charges?.lpsc,
-        arrears: site.additional_charges?.arrears,
-        potential_rebate: site.rebate_potential,
-        accrued_rebate: site.rebate_accrued,
         fetch_date: ddmmyy(site.created_at),
-        bill_number: site.bill_number,
-        address: site.connections?.address || '',
-        consumer_name: site.connections?.name || '',
-        batch_id: site.batch_id,
-        sanction_load: site.connections?.sanction_load ?? '',
-        sanction_type: site.connections?.sanction_type ?? '',
-        next_bill_date: site.next_bill_date ? ddmmyy(site.next_bill_date) : '',
       }));
 
       const export_charge_lines = buildChargeSplitWideExportRows(bills, siteIdKey);
+
+      let meterReadingsByBillId: Map<string, MeterReadingsProps[]>;
+      try {
+        meterReadingsByBillId = await fetchMeterReadingsByBillIds(
+          supabase,
+          bills.map((b) => b.id)
+        );
+      } catch (error) {
+        return {
+          data: [],
+          totalCount: 0,
+          pageCount: 0,
+          error: error as SupabaseError
+        };
+      }
+
       const export_meter_readings = bills.flatMap((b) =>
-        buildMeterReadingExportRows(b, siteIdKey)
+        buildMeterReadingExportRows(
+          {
+            ...b,
+            meter_readings:
+              meterReadingsByBillId.get(b.id) ??
+              normalizeMeterReadings(b.meter_readings),
+          },
+          siteIdKey
+        )
       );
       const export_connection_info = buildBillConnectionInfoExportRows(bills, siteIdKey);
 

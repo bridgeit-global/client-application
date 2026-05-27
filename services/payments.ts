@@ -1026,31 +1026,35 @@ export const fetchBatchPayment = cache(
       };
     }
 
+    type BatchListClientPayment = NonNullable<typeof clientPayments>[number];
+    type BatchListGatewayTxn = NonNullable<typeof gatewayTransactions>[number];
+    type BatchListRefundTxn = NonNullable<typeof refundTransactions>[number];
+
     const clientPaymentsByBatch = (clientPayments ?? []).reduce<
-      Record<string, ClientPaymentsProps[]>
+      Record<string, BatchListClientPayment[]>
     >((acc, payment) => {
       const key = payment.batch_id;
       if (!acc[key]) acc[key] = [];
-      acc[key].push(payment as ClientPaymentsProps);
+      acc[key].push(payment);
       return acc;
     }, {});
 
     const gatewayByBatch = (gatewayTransactions ?? []).reduce<
-      Record<string, PaymentGatewayTransactionsProps[]>
+      Record<string, BatchListGatewayTxn[]>
     >((acc, txn) => {
       const key = txn.batch_id;
       if (!acc[key]) acc[key] = [];
-      acc[key].push(txn as PaymentGatewayTransactionsProps);
+      acc[key].push(txn);
       return acc;
     }, {});
 
     const refundsByBatch = (refundTransactions ?? []).reduce<
-      Record<string, RefundPaymentTransactionsProps[]>
+      Record<string, BatchListRefundTxn[]>
     >((acc, txn) => {
       const key = txn.batch_id ?? '';
       if (!key) return acc;
       if (!acc[key]) acc[key] = [];
-      acc[key].push(txn as RefundPaymentTransactionsProps);
+      acc[key].push(txn);
       return acc;
     }, {});
 

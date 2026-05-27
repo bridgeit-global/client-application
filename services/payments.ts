@@ -895,6 +895,13 @@ export const fetchPaymentGatewayTransactions = async (
   };
 };
 
+const BATCH_PAYMENT_SORT_COLUMNS = new Set([
+  'created_at',
+  'batch_status',
+  'batch_id',
+  'batch_amount'
+]);
+
 export const fetchBatchPayment = cache(
   async (
     searchParams: SearchParamsProps,
@@ -905,36 +912,38 @@ export const fetchBatchPayment = cache(
       page = 1,
       limit = 10,
       batch_id,
+      created_at_start,
+      created_at_end,
       sort,
       order = 'asc'
     } = searchParams;
 
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
+
+    // Fetch batches without nested 1:N embeds (avoids cartesian explosion + statement timeouts).
     let query = supabase
       .from('batches')
-      .select(
-        `*,
-        client_payments(*,bills(approved_amount),prepaid_recharge(recharge_amount)),
-        payment_gateway_transactions(*),
-        refund_payment_transactions(*)`,
-        {
-          count: 'estimated'
-        }
-      )
-      .not('batch_status', 'eq', 'unpaid')
+      .select('*', { count: 'estimated' })
+      .neq('batch_status', 'unpaid');
 
-    // Apply sorting if sort parameter is provided
-    if (sort) {
-      query = query.order(sort, { ascending: order === 'asc' });
-    } else {
-      // Keep the default sorting by due_date if no sort parameter
-      query = query.order('created_at', { ascending: false });
-    }
+    const sortColumn =
+      sort && BATCH_PAYMENT_SORT_COLUMNS.has(sort) ? sort : 'created_at';
+    query = query.order(sortColumn, {
+      ascending: sort && BATCH_PAYMENT_SORT_COLUMNS.has(sort)
+        ? order === 'asc'
+        : false
+    });
 
     if (batch_id) {
       const value = processValues(batch_id);
       query = query.in('batch_id', value);
+    }
+
+    if (created_at_start && created_at_end) {
+      query = query
+        .gte('created_at', created_at_start)
+        .lte('created_at', created_at_end);
     }
 
     if (options?.is_export) {
@@ -947,36 +956,20 @@ export const fetchBatchPayment = cache(
           error: error
         };
       }
-      const { site_name } = await fetchOrganization();
-
-      const modifiedData = data.map((site) => {
-        return {
-          [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.connections?.sites?.type,
-          account_number: String(site.connections.account_number),
-          biller_board: site.connections.biller_list.board_name,
-          state: site.connections.biller_list.state,
-          pay_type: PAY_TYPE_LIST.find((b) => b.value == site.connections.paytype)
-            ?.name,
-          due_date: ddmmyy(getDueDate(site.discount_date, site.due_date)),
-          bill_amount: site.bill_amount
-        };
-      });
 
       return {
         data: [],
-        export_data: convertKeysToTitleCase(modifiedData),
+        export_data: convertKeysToTitleCase(data ?? []),
         totalCount: 0,
         pageCount: 0
       };
     }
 
-    // Pagination
     query = query.range(offset, offset + pageLimit - 1);
 
-    const { data, count, error } = await query;
+    const { data: batches, count, error } = await query;
     if (error) {
-      console.error('error', error);
+      console.error('fetchBatchPayment batches error:', error.message, error.code);
       return {
         data: [],
         totalCount: 0,
@@ -984,10 +977,95 @@ export const fetchBatchPayment = cache(
         error: error
       };
     }
+
+    if (!batches?.length) {
+      const totalCount = count || 0;
+      return {
+        data: [],
+        totalCount,
+        pageCount: Math.ceil(totalCount / pageLimit)
+      };
+    }
+
+    const batchIds = batches.map((batch) => batch.batch_id);
+
+    const [
+      { data: clientPayments, error: clientPaymentsError },
+      { data: gatewayTransactions, error: gatewayError },
+      { data: refundTransactions, error: refundError }
+    ] = await Promise.all([
+      supabase
+        .from('client_payments')
+        .select(
+          'batch_id, bill_id, recharge_id, approval_status, approved_amount, bill_amount, client_paid_amount, paid_amount, status, bills(approved_amount)'
+        )
+        .in('batch_id', batchIds),
+      supabase
+        .from('payment_gateway_transactions')
+        .select('batch_id, transaction_reference, payment_status, amount, payment_method')
+        .in('batch_id', batchIds),
+      supabase
+        .from('refund_payment_transactions')
+        .select('batch_id, amount')
+        .in('batch_id', batchIds)
+    ]);
+
+    const relatedError =
+      clientPaymentsError || gatewayError || refundError;
+    if (relatedError) {
+      console.error(
+        'fetchBatchPayment related data error:',
+        relatedError.message,
+        relatedError.code
+      );
+      return {
+        data: [],
+        totalCount: 0,
+        pageCount: 0,
+        error: relatedError
+      };
+    }
+
+    const clientPaymentsByBatch = (clientPayments ?? []).reduce<
+      Record<string, ClientPaymentsProps[]>
+    >((acc, payment) => {
+      const key = payment.batch_id;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(payment as ClientPaymentsProps);
+      return acc;
+    }, {});
+
+    const gatewayByBatch = (gatewayTransactions ?? []).reduce<
+      Record<string, PaymentGatewayTransactionsProps[]>
+    >((acc, txn) => {
+      const key = txn.batch_id;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(txn as PaymentGatewayTransactionsProps);
+      return acc;
+    }, {});
+
+    const refundsByBatch = (refundTransactions ?? []).reduce<
+      Record<string, RefundPaymentTransactionsProps[]>
+    >((acc, txn) => {
+      const key = txn.batch_id ?? '';
+      if (!key) return acc;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(txn as RefundPaymentTransactionsProps);
+      return acc;
+    }, {});
+
+    const data = batches.map((batch) => ({
+      ...batch,
+      client_payments: clientPaymentsByBatch[batch.batch_id] ?? [],
+      payment_gateway_transactions:
+        gatewayByBatch[batch.batch_id] ?? [],
+      refund_payment_transactions: refundsByBatch[batch.batch_id] ?? []
+    })) as BatchTableProps[];
+
     const totalCount = count || 0;
     const pageCount = Math.ceil(totalCount / pageLimit);
     return {
-      data: data,
+      data,
       totalCount,
       pageCount
     };

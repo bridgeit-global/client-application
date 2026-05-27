@@ -14,12 +14,156 @@ import { filterIncreaseAmountRecords } from '@/lib/utils';
 import ViewBatchButton from '@/components/buttons/view-batch-button';
 import { UploadBatchReceiptModal } from '@/components/modal/upload-batch-receipt-modal';
 import { useEffect, useState } from 'react';
-import { useUtilizeAndThresholdAmount } from '@/hooks/use-utilize-amount';
 import { snakeToTitle } from '@/lib/utils/string-format';
 import { PDFViewer } from '@/components/modal/pdf-viewer-modal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+
+function BatchPaymentStatusCell({ row }: { row: { original: BatchTableProps } }) {
+  const batch = row.original;
+  const batchStatus = batch.batch_status;
+  const gatewayTransactions = batch.payment_gateway_transactions ?? [];
+  const clientPayments = batch.client_payments ?? [];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  if (batchStatus === 'settled') {
+    return <Badge variant="success">Settled</Badge>;
+  }
+
+  if (batchStatus === 'processing') {
+    return <Badge variant="outline">Processing</Badge>;
+  }
+
+  if (batchStatus === 'paid') {
+    return <Badge variant="success">Paid</Badge>;
+  }
+
+  if (gatewayTransactions.length > 0) {
+    const pendingTxn = gatewayTransactions.some(
+      (txn) =>
+        txn.payment_status === 'pending' || txn.payment_status == null
+    );
+    if (pendingTxn) {
+      return <Badge variant="outline">Processing</Badge>;
+    }
+    const gatewayStatus = gatewayTransactions[0]?.payment_status;
+    return (
+      <Badge variant="outline">
+        {gatewayStatus ? snakeToTitle(gatewayStatus) : 'Processing'}
+      </Badge>
+    );
+  }
+
+  const paidPayments = clientPayments.filter(
+    (payment: ClientPaymentsProps) => payment.status === 'paid'
+  );
+  const amount =
+    paidPayments.reduce((acc, payment) => acc + (payment.paid_amount || 0), 0) ||
+    0;
+
+  if (batchStatus !== 'client_paid') {
+    return (
+      <Badge variant="outline">
+        {snakeToTitle(batchStatus || 'processing')}
+      </Badge>
+    );
+  }
+
+  if (isLoading) {
+    return <Skeleton className="h-8 w-20" />;
+  }
+
+  const payBills = async ({
+    batchId,
+    transactionReference,
+    paymentMode,
+    remarks,
+    transactionDate
+  }: {
+    batchId: string;
+    transactionReference: string;
+    paymentMode: string;
+    remarks: string;
+    transactionDate: string;
+  }) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/batch/pay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          batchId,
+          transactionReference,
+          paymentMode,
+          remarks,
+          amount,
+          transactionDate
+        })
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || 'Failed to process payment');
+      router.refresh();
+      toast({
+        title: 'Success',
+        description: 'Payment made successfully',
+        variant: 'success'
+      });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to process payment';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (amount > 0) {
+    return (
+      <div className="flex items-center gap-2">
+        <UploadBatchReceiptModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          id={batch.batch_id || ''}
+          amount={amount}
+          payBills={({
+            transactionReference,
+            paymentMode,
+            remarks,
+            transactionDate
+          }) =>
+            payBills({
+              batchId: batch.batch_id || '',
+              transactionReference,
+              paymentMode,
+              remarks,
+              transactionDate:
+                transactionDate || new Date().toISOString().slice(0, 10)
+            })
+          }
+        />
+        <Button
+          size="sm"
+          onClick={() => setIsModalOpen(true)}
+          disabled={isLoading}
+        >
+          Pay Now
+        </Button>
+      </div>
+    );
+  }
+
+  return <Badge variant="outline">Client Paid</Badge>;
+}
 
 export const columns: ColumnDef<BatchTableProps>[] = [
   {
@@ -27,7 +171,7 @@ export const columns: ColumnDef<BatchTableProps>[] = [
     header: ({ table }) => {
       const selectableRows = table.getFilteredRowModel().rows;
       // Only rows with batch_status === 'client_paid' are selectable
-      const clientPaidRows = selectableRows.filter(row => row.original.batch_status === 'client_paid' && row.original.payment_gateway_transactions.length === 0);
+      const clientPaidRows = selectableRows.filter(row => row.original.batch_status === 'client_paid' && (row.original.payment_gateway_transactions ?? []).length === 0);
       const isAllSelectableRowsSelected = clientPaidRows.length > 0 && clientPaidRows.every(row => row.getIsSelected());
       const isSomeSelected = clientPaidRows.some(row => row.getIsSelected());
 
@@ -48,7 +192,7 @@ export const columns: ColumnDef<BatchTableProps>[] = [
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
-        disabled={row.original.batch_status !== 'client_paid' || row.original.payment_gateway_transactions.length > 0}
+        disabled={row.original.batch_status !== 'client_paid' || (row.original.payment_gateway_transactions ?? []).length > 0}
       />
     ),
     enableResizing: false,
@@ -58,7 +202,7 @@ export const columns: ColumnDef<BatchTableProps>[] = [
     header: 'Batch Id',
     size: 200,
     cell: ({ row }) => {
-      const increaseAmountRecords = filterIncreaseAmountRecords(row.original.client_payments);
+      const increaseAmountRecords = filterIncreaseAmountRecords(row.original.client_payments ?? []);
       return (
         <div className='flex items-center'>
           <ViewBatchButton link={`/portal/batch-payment/${row.original.batch_id}`} batchId={row.original.batch_id} />
@@ -70,8 +214,9 @@ export const columns: ColumnDef<BatchTableProps>[] = [
   {
     header: 'No Of Items',
     cell: ({ row }) => {
-      const billsCount = row.original.client_payments.filter((payment: ClientPaymentsProps) => payment.bill_id !== null).length;
-      const prepaidCount = row.original.client_payments.filter((payment: ClientPaymentsProps) => payment.bill_id === null).length;
+      const payments = row.original.client_payments ?? [];
+      const billsCount = payments.filter((payment: ClientPaymentsProps) => payment.bill_id !== null).length;
+      const prepaidCount = payments.filter((payment: ClientPaymentsProps) => payment.bill_id === null).length;
       const total = billsCount + prepaidCount;
       const items = [
         { label: 'Bills', count: billsCount },
@@ -100,8 +245,9 @@ export const columns: ColumnDef<BatchTableProps>[] = [
   {
     header: 'Approved Amount',
     cell: ({ row }) => {
-      const bills = row.original.client_payments.filter((payment: ClientPaymentsProps) => payment.bill_id !== null);
-      const prepaidRecharge = row.original.client_payments.filter((payment: ClientPaymentsProps) => payment.bill_id === null);
+      const payments = row.original.client_payments ?? [];
+      const bills = payments.filter((payment: ClientPaymentsProps) => payment.bill_id !== null);
+      const prepaidRecharge = payments.filter((payment: ClientPaymentsProps) => payment.bill_id === null);
       const billsTotal = bills.reduce((acc, bill) => acc + (bill.approved_amount || 0), 0);
       const rechargeTotal = prepaidRecharge.reduce((acc, recharge) => acc + (recharge.approved_amount || 0), 0);
       const total = billsTotal + rechargeTotal;
@@ -125,14 +271,19 @@ export const columns: ColumnDef<BatchTableProps>[] = [
   {
     header: 'Paid Amount',
     cell: ({ row }) => {
-      let clientPayments = row.original.client_payments.filter((payment: ClientPaymentsProps) => payment.status === 'paid');
+      const clientPayments = (row.original.client_payments ?? []).filter((payment: ClientPaymentsProps) => payment.status === 'paid');
       return <div className="text-left font-semibold">{formatRupees(clientPayments.reduce((acc, payment) => acc + (payment.paid_amount || 0), 0))}</div>;
     }
   },
   {
     header: 'Refund Amount',
     cell: ({ row }) => {
-      return row.original.refund_payment_transactions && <div className="text-left">{formatRupees(row.original.refund_payment_transactions?.reduce((acc, payment) => acc + (payment.amount || 0), 0))}</div>;
+      const refunds = row.original.refund_payment_transactions ?? [];
+      return refunds.length > 0 ? (
+        <div className="text-left">
+          {formatRupees(refunds.reduce((acc, payment) => acc + (payment.amount || 0), 0))}
+        </div>
+      ) : null;
     }
   },
   {
@@ -159,106 +310,7 @@ export const columns: ColumnDef<BatchTableProps>[] = [
   },
   {
     header: 'Status',
-    cell: ({ row }) => {
-
-      if (row.original.batch_status === 'settled') {
-        return <Badge variant={'success'} >Settled</Badge>
-      }
-
-
-      if (row.original.batch_status !== 'client_paid' || row.original.payment_gateway_transactions.length > 0) {
-        return <Badge variant={'outline'} >Processing</Badge>
-      }
-
-      const { thresholdAmount, isLoading: isThresholdLoading } = useUtilizeAndThresholdAmount();
-      const [isModalOpen, setIsModalOpen] = useState(false)
-      const [isLoading, setIsLoading] = useState(false)
-      const router = useRouter();
-
-      if (isThresholdLoading || isLoading) {
-        return <Skeleton className="h-8 w-20" />;
-      }
-
-      if (thresholdAmount === 0) {
-        return <Badge variant={'success'} >Paid</Badge>
-      }
-
-      const clientPayments = row.original.client_payments.filter((payment: ClientPaymentsProps) => payment.status === 'paid');
-      const amount = clientPayments.reduce((acc, payment) => acc + (payment.paid_amount || 0), 0) || 0
-
-      const payBills = async ({
-        batchId,
-        transactionReference,
-        paymentMode,
-        remarks,
-        transactionDate,
-      }: {
-        batchId: string;
-        transactionReference: string;
-        paymentMode: string;
-        remarks: string;
-        transactionDate: string;
-      }) => {
-        try {
-          setIsLoading(true);
-          const response = await fetch('/api/batch/pay', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              batchId,
-              transactionReference,
-              paymentMode,
-              remarks,
-              amount,
-              transactionDate,
-            }),
-          });
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.error || 'Failed to process payment');
-          router.refresh();
-          toast({
-            title: 'Success',
-            description: 'Payment made successfully',
-            variant: 'success',
-          });
-        } catch (error: any) {
-          toast({
-            title: 'Error',
-            description: error.message || 'Failed to process payment',
-            variant: 'destructive',
-          });
-        } finally {
-          setIsLoading(false);
-        }
-
-      }
-      return <div className='flex items-center gap-2'>
-        {row.original.payment_gateway_transactions.length === 0 && amount > 0 && row.original.batch_status === 'client_paid' ? (
-          <>
-            <UploadBatchReceiptModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              id={row.original.batch_id || ''}
-              amount={amount}
-              payBills={({ transactionReference, paymentMode, remarks, transactionDate }) => payBills({
-                batchId: row.original.batch_id || '',
-                transactionReference,
-                paymentMode,
-                remarks,
-                transactionDate: transactionDate || new Date().toISOString().slice(0, 10),
-              })}
-            />
-            <Button size={'sm'} onClick={() => setIsModalOpen(true)} disabled={isLoading}>Pay Now</Button>
-          </>
-        ) : (
-          <Badge variant={'outline'} >Processing</Badge>
-        )
-        }
-      </div>
-    },
-
+    cell: ({ row }) => <BatchPaymentStatusCell row={row} />,
     accessorKey: 'batch_status'
   },
   // {

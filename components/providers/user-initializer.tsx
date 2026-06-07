@@ -47,28 +47,27 @@ export function UserInitializer() {
             if (shouldUpdateUser) {
                 console.log('✅ UserInitializer: Updating user store with fresh data');
                 setUser(supabaseUser);
-
-                // Also fetch and set organization data if org_id exists
-                if (supabaseUser.user_metadata?.org_id) {
-                    try {
-                        const { data: orgData, error: orgError } = await supabase
-                            .from('organizations')
-                            .select('*')
-                            .eq('id', supabaseUser.user_metadata.org_id)
-                            .single();
-
-                        if (orgError) {
-                            console.error('❌ UserInitializer: Error fetching organization:', orgError);
-                        } else if (orgData) {
-                            console.log('🏢 UserInitializer: Organization data loaded');
-                            setOrganization(orgData);
-                        }
-                    } catch (error) {
-                        console.error('❌ UserInitializer: Exception fetching organization:', error);
-                    }
-                }
             } else {
                 console.log('ℹ️ UserInitializer: User store already has correct data');
+            }
+
+            if (supabaseUser.user_metadata?.org_id) {
+                try {
+                    const { data: orgData, error: orgError } = await supabase
+                        .from('organizations')
+                        .select('*')
+                        .eq('id', supabaseUser.user_metadata.org_id)
+                        .single();
+
+                    if (orgError) {
+                        console.error('❌ UserInitializer: Error fetching organization:', orgError);
+                    } else if (orgData) {
+                        console.log('🏢 UserInitializer: Organization data loaded');
+                        setOrganization(orgData);
+                    }
+                } catch (error) {
+                    console.error('❌ UserInitializer: Exception fetching organization:', error);
+                }
             }
         };
 

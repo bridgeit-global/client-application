@@ -1430,6 +1430,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          api_rate_limit: number
           batch_threshold_amount: number
           cin: string | null
           company_address: string | null
@@ -1438,6 +1439,7 @@ export type Database = {
           email: Json | null
           gst: string | null
           id: string
+          is_payment_due: boolean
           logo_url: string | null
           name: string
           pan: string | null
@@ -1445,6 +1447,7 @@ export type Database = {
           webhook_config: Json | null
         }
         Insert: {
+          api_rate_limit?: number
           batch_threshold_amount?: number
           cin?: string | null
           company_address?: string | null
@@ -1453,6 +1456,7 @@ export type Database = {
           email?: Json | null
           gst?: string | null
           id?: string
+          is_payment_due?: boolean
           logo_url?: string | null
           name: string
           pan?: string | null
@@ -1460,6 +1464,7 @@ export type Database = {
           webhook_config?: Json | null
         }
         Update: {
+          api_rate_limit?: number
           batch_threshold_amount?: number
           cin?: string | null
           company_address?: string | null
@@ -1468,6 +1473,7 @@ export type Database = {
           email?: Json | null
           gst?: string | null
           id?: string
+          is_payment_due?: boolean
           logo_url?: string | null
           name?: string
           pan?: string | null
@@ -2394,6 +2400,17 @@ export type Database = {
           total_approved: number
           threshold: number
           pending_amount: number
+        }[]
+      }
+      prepaid_report_latest_recharges: {
+        Args: {
+          connection_ids: string[]
+        }
+        Returns: {
+          connection_id: string
+          recharge_amount: number
+          recharge_status: string
+          created_at: string
         }[]
       }
       recalc_active_bill: {

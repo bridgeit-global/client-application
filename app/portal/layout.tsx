@@ -4,6 +4,7 @@ import { PortalSidebar } from '@/components/sidebar/portal-sidebar';
 import { MainWithScrollHeader } from '@/components/layout/main-with-scroll-header';
 import { UserInitializer } from '@/components/providers/user-initializer';
 import { BatchFab } from '@/components/batch/batch-fab';
+import { PaymentDueBanner } from '@/components/portal/payment-due-banner';
 
 export default async function RootLayout({
   children
@@ -15,7 +16,7 @@ export default async function RootLayout({
       <UserInitializer />
       <SidebarProvider>
         <PortalSidebar />
-        <MainWithScrollHeader footer={<Footer />}>
+        <MainWithScrollHeader footer={<Footer />} topBanner={<PaymentDueBanner />}>
           {children}
         </MainWithScrollHeader>
         {/* Floating Action Button for batch management - shows only on relevant pages */}

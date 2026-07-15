@@ -27,6 +27,9 @@ export const DATABASE_ERROR_MESSAGES: Record<string, string> = {
   '40002': 'A transaction conflict has occurred. Please try again with your request.',
   '40P01': 'The system is currently busy processing other requests. Please wait a moment and try again.',
 
+  // Timeout errors
+  '57014': 'This request is taking longer than expected and was cancelled. Please try again in a moment.',
+
   // Resource and object errors
   '42P01': 'The requested resource does not exist in our system. Please verify the information and try again.',
   '42P02': 'The requested object does not exist. Please check the information and try again.',
@@ -66,6 +69,15 @@ export function handleDatabaseError(error: PostgrestError) {
 export function isConstraintViolation(error: PostgrestError): boolean {
   const code = error.code;
   return ['23505', '23503', '23502', '23514', '22P02', '22P08', '22P12'].includes(code || '');
+}
+
+/**
+ * Checks if an error is transient and safe to automatically retry
+ * (e.g. statement timeouts, connection drops, transaction conflicts)
+ */
+export function isRetryableError(error: PostgrestError | { code?: string } | null | undefined): boolean {
+  const code = error?.code;
+  return ['57014', '40001', '40002', '40P01', '08000', '08003', '08006'].includes(code || '');
 }
 
 /**
@@ -159,6 +171,10 @@ export function getErrorWithSuggestions(error: PostgrestError): { message: strin
       suggestions.push('Check your internet connection');
       suggestions.push('Try refreshing the page');
       suggestions.push('Contact support if the issue persists');
+      break;
+    case '57014':
+      suggestions.push('Wait a few seconds and try again');
+      suggestions.push('Contact support if the issue keeps happening');
       break;
     default:
       suggestions.push('Try the operation again');

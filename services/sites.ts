@@ -407,16 +407,20 @@ export const fetchAllSites = cache(
       zone_id,
       status,
       account_number,
-      paytype
+      paytype,
+      biller_id
     } = searchParams;
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
     const accountNumberValues = account_number
       ? processValues(account_number)
       : [];
+    const billerIdValues = biller_id ? processValues(biller_id) : [];
     const hasAccountNumberFilter = accountNumberValues.length > 0;
     const hasPaytypeFilter = paytype !== undefined && paytype !== '';
-    const useInnerConnectionJoin = hasAccountNumberFilter || hasPaytypeFilter;
+    const hasBillerFilter = billerIdValues.length > 0;
+    const useInnerConnectionJoin =
+      hasAccountNumberFilter || hasPaytypeFilter || hasBillerFilter;
     const connectionsSelect = useInnerConnectionJoin
       ? 'connections!inner(account_number,paytype,is_deleted,biller_list!inner(*))'
       : 'connections(account_number,paytype,is_deleted,biller_list!inner(*))';
@@ -471,6 +475,10 @@ export const fetchAllSites = cache(
       if (!Number.isNaN(paytypeNum)) {
         query = query.eq('connections.paytype', paytypeNum);
       }
+    }
+
+    if (hasBillerFilter) {
+      query = query.in('connections.biller_list.alias', billerIdValues);
     }
 
     if (is_export) {

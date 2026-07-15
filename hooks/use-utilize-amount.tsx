@@ -1,6 +1,6 @@
 import { useUserStore } from "@/lib/store/user-store";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useAsyncOperation } from "./use-supabase-error";
 
 interface UtilizeData {
@@ -10,33 +10,36 @@ interface UtilizeData {
 
 export function useUtilizeAndThresholdAmount() {
     const { user } = useUserStore();
-    const { loading: isLoading, data, execute } = useAsyncOperation<UtilizeData>();
+    const { loading: isLoading, error, data, execute } = useAsyncOperation<UtilizeData>();
+    const orgId = user?.user_metadata?.org_id;
+
+    const fetchAmounts = useCallback(() => {
+        if (!orgId) return;
+
+        // Do not auto-retry statement timeouts (57014): each attempt can hold the
+        // DB for up to statement_timeout and retries amplify load. User Retry only.
+        execute(async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase
+                .rpc('is_approved_amount_within_threshold')
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data as unknown as UtilizeData;
+        });
+    }, [orgId, execute]);
 
     useEffect(() => {
-        console.log('🔄 useEffect triggered in useUtilizeAndThresholdAmount');
-        console.log('👤 User object:', user);
-        console.log('🏢 org_id:', user?.user_metadata?.org_id);
-        
-        if (user?.user_metadata?.org_id) {
-            console.log('✅ org_id found, executing RPC call...');
-            execute(async () => {
-                const supabase = createClient();
-                const { data, error } = await supabase.rpc('is_approved_amount_within_threshold').select().single();
-
-                console.log('📊 is_approved_amount data:', data)
-                console.log('❌ is_approved_amount error:', error)
-
-                if (error) throw error;
-                return data as unknown as UtilizeData;
-            });
-        } else {
-            console.log('⚠️ No org_id found, skipping RPC call');
-        }
-    }, [user?.user_metadata?.org_id]);
+        fetchAmounts();
+    }, [fetchAmounts]);
 
     return {
         utilizeAmount: data?.total_approved || 0,
         thresholdAmount: data?.threshold || 0,
-        isLoading
+        isLoading,
+        error,
+        hasLoaded: !!data,
+        refetch: fetchAmounts
     };
 }

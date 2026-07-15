@@ -51,6 +51,7 @@ import { Label } from '@/components/ui/label';
 import { PortalFilterSheet } from '@/components/portal/PortalFilterSheet';
 import IconButton from '@/components/buttons/icon-button';
 import { StationTypeSelector } from '@/components/input/station-type-selector';
+import { BillerBoardSelector } from '@/components/input/biller-board-selector';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { SiteFormModal } from '@/components/modal/register-modal/site-form-modal';
@@ -89,6 +90,7 @@ type ExplorerFilterDraft = {
   created_at_end: string;
   account_number: string;
   paytype: string;
+  biller_id: string;
 };
 
 type InfrastructureExplorerProps = {
@@ -134,7 +136,8 @@ export function InfrastructureExplorer({
     created_at_start: '',
     created_at_end: '',
     account_number: '',
-    paytype: ''
+    paytype: '',
+    biller_id: ''
   });
   const [connectionCache, setConnectionCache] = useState<
     Record<string, Connection[] | null | undefined>
@@ -228,7 +231,8 @@ export function InfrastructureExplorer({
       created_at_start: searchParams.get('created_at_start') ?? '',
       created_at_end: searchParams.get('created_at_end') ?? '',
       account_number: searchParams.get('account_number') ?? '',
-      paytype: searchParams.get('paytype') ?? ''
+      paytype: searchParams.get('paytype') ?? '',
+      biller_id: searchParams.get('biller_id') ?? ''
     });
   }, [resolvedSearchKey]);
 
@@ -248,7 +252,8 @@ export function InfrastructureExplorer({
       'zone_id',
       'type',
       'account_number',
-      'paytype'
+      'paytype',
+      'biller_id'
     ] as const;
     for (const key of simpleKeys) {
       const v = searchParams.get(key);
@@ -261,7 +266,9 @@ export function InfrastructureExplorer({
       const label =
         key === 'site_id'
           ? `${siteLabel} ID`
-          : snakeToTitle(key);
+          : key === 'biller_id'
+            ? 'Biller board'
+            : snakeToTitle(key);
       items.push({ key, label, value: display });
     }
     const ds = searchParams.get('created_at_start');
@@ -289,6 +296,7 @@ export function InfrastructureExplorer({
         created_at_end: filterDraft.created_at_end.trim() || null,
         account_number: filterDraft.account_number.trim() || null,
         paytype: filterDraft.paytype.trim() || null,
+        biller_id: filterDraft.biller_id.trim() || null,
         page: '1'
       };
       const qs = createQueryString(searchParams, updates);
@@ -309,6 +317,7 @@ export function InfrastructureExplorer({
       created_at_end: null,
       account_number: null,
       paytype: null,
+      biller_id: null,
       status: '1',
       page: '1',
       limit: limitKept
@@ -704,6 +713,21 @@ export function InfrastructureExplorer({
                     setFilterDraft((prev) => ({
                       ...prev,
                       type: types.length ? types.join(',') : ''
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <BillerBoardSelector
+                  value={
+                    filterDraft.biller_id
+                      ? filterDraft.biller_id.split(',').filter(Boolean)
+                      : []
+                  }
+                  onChange={(value) =>
+                    setFilterDraft((prev) => ({
+                      ...prev,
+                      biller_id: value.join(',')
                     }))
                   }
                 />

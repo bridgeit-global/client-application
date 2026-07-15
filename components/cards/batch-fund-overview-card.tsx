@@ -13,13 +13,14 @@ import { toast } from "../ui/use-toast";
 import { Button } from "../ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { DecreaseThresholdModal } from "../modal/decrease-threshold-modal";
-import { Info } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { getContextualErrorMessage, handleDatabaseError, logAndHandleDatabaseError } from "@/lib/utils/supabase-error";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 export function BatchFundsOverviewCard() {
     const supabase = createClient();
     const { user } = useUserStore();
-    const { thresholdAmount, utilizeAmount, isLoading: isUtilizeAmountLoading } = useUtilizeAndThresholdAmount();
+    const { thresholdAmount, utilizeAmount, isLoading: isUtilizeAmountLoading, error: utilizeAmountError, refetch: refetchUtilizeAmount } = useUtilizeAndThresholdAmount();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDecreaseModalOpen, setIsDecreaseModalOpen] = useState(false);
     const [isIncreasing, setIsIncreasing] = useState(false);
@@ -121,12 +122,33 @@ export function BatchFundsOverviewCard() {
         }
     }
 
-    return (
-        isUtilizeAmountLoading ? (
+    if (isUtilizeAmountLoading) {
+        return (
             <div className="flex justify-center items-center h-full">
                 <Skeleton className="h-12 w-full" />
             </div>
-        ) : <div className="mb-4">
+        );
+    }
+
+    if (utilizeAmountError) {
+        return (
+            <div className="mb-4">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Failed to load Funds Overview</AlertTitle>
+                    <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span>{utilizeAmountError}</span>
+                        <Button variant="outline" size="sm" onClick={refetchUtilizeAmount}>
+                            Retry
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mb-4">
             <Card className="border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100">
                 <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">
                     <div className="flex items-center gap-2 w-full sm:w-auto">

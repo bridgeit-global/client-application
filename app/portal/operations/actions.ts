@@ -67,6 +67,23 @@ export async function getBatchPayments(searchParams: SearchParamsProps) {
   return fetchBatchPayment(searchParams);
 }
 
+export async function getSettlementRequiredBatchCount(): Promise<{
+  count: number;
+  error?: string;
+}> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from('batches')
+    .select('batch_id', { count: 'exact', head: true })
+    .eq('batch_status', 'client_paid');
+
+  if (error) {
+    return { count: 0, error: error.message };
+  }
+
+  return { count: count ?? 0 };
+}
+
 export async function getBillsPaid(searchParams: SearchParamsProps) {
   return fetchPostpaidPaid(searchParams);
 }

@@ -4,15 +4,21 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
+/**
+ * Syncs Next.js RSC cache with auth transitions only.
+ * Do not refresh on INITIAL_SESSION / TOKEN_REFRESHED — those fire often
+ * (and can loop with middleware cookie refresh), remounting pages that
+ * re-run server actions (e.g. Operations panels).
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
+    const supabase = createClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.access_token !== undefined) {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         router.refresh();
       }
     });
@@ -20,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, supabase]);
+  }, [router]);
 
   return <>{children}</>;
 }

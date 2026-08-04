@@ -105,7 +105,7 @@ const PATH_MAPPING: Record<string, Record<string, string>> = {
     new: "portal/operations?tab=bill-new",
     approved: "portal/operations?tab=bill-approved",
     payment: "portal/bills/payment",
-    paid: "portal/operations?tab=payment-bills-paid",
+    paid: "portal/payment/bill-paid",
     rejected: "portal/report/bill?bill_status=rejected",
     batch: "portal/batch-item"
   },
@@ -113,7 +113,7 @@ const PATH_MAPPING: Record<string, Record<string, string>> = {
     new: "portal/operations?tab=recharge-low-balance",
     approved: "portal/operations?tab=recharge-approved",
     payment: "portal/recharges/payment",
-    paid: "portal/operations?tab=payment-recharges-paid",
+    paid: "portal/payment/recharge-paid",
     rejected: "portal/report/recharge",
     batch: "portal/batch-item"
   }

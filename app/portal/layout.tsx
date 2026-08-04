@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Footer } from '@/components/layout/footer';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { PortalSidebar } from '@/components/sidebar/portal-sidebar';
@@ -20,7 +21,9 @@ export default async function RootLayout({
           {children}
         </MainWithScrollHeader>
         {/* Floating Action Button for batch management - shows only on relevant pages */}
-        <BatchFab />
+        <Suspense fallback={null}>
+          <BatchFab />
+        </Suspense>
       </SidebarProvider>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 
 /**
@@ -23,6 +23,8 @@ export const BATCH_ROUTE_PREFIXES = [
   '/portal/operations',
 ] as const;
 
+const OPERATIONS_BATCH_TABS = new Set(['batch-batches', 'batch-payments']);
+
 export interface BatchContextInfo {
   /** Whether the current page supports batch cart functionality */
   isBatchRelevantPage: boolean;
@@ -44,15 +46,26 @@ export interface BatchContextInfo {
  */
 export function useBatchContext(): BatchContextInfo {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return useMemo(() => {
     const isOperationsPage = pathname.startsWith('/portal/operations');
+    // Default matches OperationsView when ?tab is absent
+    const opsTab = isOperationsPage
+      ? searchParams.get('tab') ?? 'bill-new'
+      : null;
+
     const isApprovedBillsPage =
-      pathname === '/portal/bills/approved' || isOperationsPage;
+      pathname === '/portal/bills/approved' ||
+      (isOperationsPage && opsTab === 'bill-approved');
+
     const isApprovedRechargesPage =
-      pathname === '/portal/recharges/approved' || isOperationsPage;
+      pathname === '/portal/recharges/approved' ||
+      (isOperationsPage && opsTab === 'recharge-approved');
+
     const isBatchPage =
-      pathname.startsWith('/portal/batch') || isOperationsPage;
+      pathname.startsWith('/portal/batch') ||
+      (isOperationsPage && opsTab != null && OPERATIONS_BATCH_TABS.has(opsTab));
 
     const isBatchRelevantPage =
       isApprovedBillsPage ||
@@ -60,14 +73,14 @@ export function useBatchContext(): BatchContextInfo {
       isBatchPage;
 
     let contextLabel = 'Batch Management';
-    if (pathname === '/portal/bills/approved') {
+    if (isApprovedBillsPage) {
       contextLabel = 'Bill Batch';
-    } else if (pathname === '/portal/recharges/approved') {
+    } else if (isApprovedRechargesPage) {
       contextLabel = 'Recharge Batch';
+    } else if (isBatchPage) {
+      contextLabel = 'Batch Management';
     } else if (isOperationsPage) {
       contextLabel = 'Operations';
-    } else if (pathname.startsWith('/portal/batch')) {
-      contextLabel = 'Batch Management';
     }
 
     return {
@@ -78,7 +91,7 @@ export function useBatchContext(): BatchContextInfo {
       pathname,
       contextLabel,
     };
-  }, [pathname]);
+  }, [pathname, searchParams]);
 }
 
 /**

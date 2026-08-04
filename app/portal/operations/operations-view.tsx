@@ -13,8 +13,6 @@ import { RechargeLowBalancePanel } from './panels/recharge-low-balance-panel';
 import { RechargeApprovedPanel } from './panels/recharge-approved-panel';
 import { BatchesPanel } from './panels/batches-panel';
 import { BatchPaymentsPanel } from './panels/batch-payments-panel';
-import { BillsPaidPanel, RechargesPaidPanel } from './panels/paid-panels';
-import { StatementPanel } from './panels/statement-panel';
 
 export type OperationsTabId =
   | 'bill-new'
@@ -22,12 +20,9 @@ export type OperationsTabId =
   | 'recharge-low-balance'
   | 'recharge-approved'
   | 'batch-batches'
-  | 'batch-payments'
-  | 'payment-bills-paid'
-  | 'payment-recharges-paid'
-  | 'payment-statement';
+  | 'batch-payments';
 
-type SectionId = 'new' | 'approved' | 'batch' | 'payment';
+type SectionId = 'new' | 'approved' | 'batch';
 
 const TAB_TO_SECTION: Record<OperationsTabId, SectionId> = {
   'bill-new': 'new',
@@ -35,17 +30,13 @@ const TAB_TO_SECTION: Record<OperationsTabId, SectionId> = {
   'bill-approved': 'approved',
   'recharge-approved': 'approved',
   'batch-batches': 'batch',
-  'batch-payments': 'batch',
-  'payment-bills-paid': 'payment',
-  'payment-recharges-paid': 'payment',
-  'payment-statement': 'payment'
+  'batch-payments': 'batch'
 };
 
 const SECTION_DEFAULT_TAB: Record<SectionId, OperationsTabId> = {
   new: 'bill-new',
   approved: 'bill-approved',
-  batch: 'batch-batches',
-  payment: 'payment-bills-paid'
+  batch: 'batch-batches'
 };
 
 const VALID_TABS = new Set<string>(Object.keys(TAB_TO_SECTION));
@@ -209,12 +200,6 @@ export function OperationsView() {
         return <BatchesPanel enabled={enabled} />;
       case 'batch-payments':
         return <BatchPaymentsPanel enabled={enabled} />;
-      case 'payment-bills-paid':
-        return <BillsPaidPanel enabled={enabled} />;
-      case 'payment-recharges-paid':
-        return <RechargesPaidPanel enabled={enabled} />;
-      case 'payment-statement':
-        return <StatementPanel enabled={enabled} />;
       default:
         return null;
     }
@@ -224,7 +209,7 @@ export function OperationsView() {
     <div className="space-y-8 pb-10">
       <Heading
         title="Operations"
-        description="New and low balance items flow into approvals, then batches, then payments. Sections load as you scroll."
+        description="New and low balance items flow into approvals, then batches. Settle batch payments when required. Sections load as you scroll."
       />
 
       <OperationalInsightsPanel />
@@ -234,8 +219,7 @@ export function OperationsView() {
           [
             { id: 'new', label: 'New' },
             { id: 'approved', label: 'Approved' },
-            { id: 'batch', label: 'Batch' },
-            { id: 'payment', label: 'Payment' }
+            { id: 'batch', label: 'Batch' }
           ] as const
         ).map((item) => (
           <button
@@ -287,7 +271,7 @@ export function OperationsView() {
       <OperationsSection
         sectionId="batch"
         title="Batch"
-        description="Manage batches and batch payments"
+        description="Manage batches, funds overview, and settle payments when required"
         tabs={[
           { id: 'batch-batches', label: 'Batches' },
           { id: 'batch-payments', label: 'Payments' }
@@ -295,21 +279,6 @@ export function OperationsView() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         forceVisible={forcedSection === 'batch'}
-        renderPanel={renderPanel}
-      />
-
-      <OperationsSection
-        sectionId="payment"
-        title="Payment"
-        description="Paid bills, paid recharges, and wallet statement"
-        tabs={[
-          { id: 'payment-bills-paid', label: 'Bills Paid' },
-          { id: 'payment-recharges-paid', label: 'Recharges Paid' },
-          { id: 'payment-statement', label: 'Statement' }
-        ]}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        forceVisible={forcedSection === 'payment'}
         renderPanel={renderPanel}
       />
     </div>

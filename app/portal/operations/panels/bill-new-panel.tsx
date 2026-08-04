@@ -41,7 +41,7 @@ export function BillNewPanel({ enabled }: Props) {
     queryKey,
     clearFilters,
     applyFilters
-  } = useOperationsQuery();
+  } = useOperationsQuery({}, { forTab: 'bill-new' });
 
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
     filterBody.bill_category

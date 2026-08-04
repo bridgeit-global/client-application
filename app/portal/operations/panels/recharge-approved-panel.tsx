@@ -41,7 +41,7 @@ export function RechargeApprovedPanel({ enabled }: Props) {
     queryKey,
     clearFilters,
     applyFilters
-  } = useOperationsQuery();
+  } = useOperationsQuery({}, { forTab: 'recharge-approved' });
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => getApprovedRecharges(searchParams),

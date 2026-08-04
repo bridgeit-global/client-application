@@ -37,7 +37,7 @@ export function BatchPaymentsPanel({ enabled }: Props) {
     queryKey,
     clearFilters,
     applyFilters
-  } = useOperationsQuery();
+  } = useOperationsQuery({}, { forTab: 'batch-payments' });
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => getBatchPayments(searchParams),

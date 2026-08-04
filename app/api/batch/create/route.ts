@@ -92,6 +92,26 @@ export async function POST(req: NextRequest) {
             throw handledError.message;
           }
         }
+
+        // Touch the batch after items are linked so the batch-updates webhook
+        // re-runs advice generation with bills/recharges present. The insert
+        // webhook can fire on an empty batch; this update is the supported
+        // path for a non-empty advice email (empty send is blocked server-side).
+        if (bill_ids.length > 0 || recharge_ids.length > 0) {
+          const { error: touch_error } = await supabase
+            .from('batches')
+            .update({
+              updated_by: user?.id || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('batch_id', batch_data.batch_id);
+
+          console.log('touch_error', touch_error);
+          if (touch_error) {
+            const handledError = handleDatabaseError(touch_error);
+            throw handledError.message;
+          }
+        }
       }
 
       return NextResponse.json({

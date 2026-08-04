@@ -49,6 +49,7 @@ export function BatchesPanel({ enabled }: Props) {
       <BatchFundsOverviewCard />
       <OperationsTablePanel
         enabled={enabled}
+        tabId="batch-batches"
         title="Batches"
         description="Check now!"
         columns={columns}

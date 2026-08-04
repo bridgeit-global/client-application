@@ -29,6 +29,8 @@ type FetchResult<T> = {
 
 type OperationsTablePanelProps<T> = {
   enabled: boolean;
+  /** Operations tab id — used to scope Calendar URL filter deep-links. */
+  tabId?: string;
   title: string;
   description?: string;
   columns: ColumnDef<T, any>[];
@@ -51,6 +53,7 @@ type OperationsTablePanelProps<T> = {
 
 export function OperationsTablePanel<T>({
   enabled,
+  tabId,
   title,
   description,
   columns,
@@ -72,7 +75,7 @@ export function OperationsTablePanel<T>({
     queryKey,
     clearFilters,
     applyFilters
-  } = useOperationsQuery();
+  } = useOperationsQuery({}, { forTab: tabId });
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => fetcher(searchParams),

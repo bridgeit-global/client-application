@@ -177,13 +177,13 @@ export function OperationsView() {
     (tab: OperationsTabId) => {
       setActiveTab(tab);
       setForcedSection(TAB_TO_SECTION[tab]);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('tab', tab);
-      router.replace(`/portal/operations?${params.toString()}`, {
+      // Drop panel filter query params when switching tabs so date deep-links
+      // from Calendar only seed the destination panel, not sibling tabs.
+      router.replace(`/portal/operations?tab=${tab}`, {
         scroll: false
       });
     },
-    [router, searchParams]
+    [router]
   );
 
   const renderPanel = (tab: OperationsTabId, enabled: boolean) => {

@@ -161,10 +161,10 @@ export function BatchFundsOverviewCard() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <span>
-                                        <b>Utilized</b>: Amount already used/approved.<br />
+                                        <b>Utilized</b>: Credit used on batches processed without a wallet payment (excludes settled and pay-first batches).<br />
                                         <b>Limit</b>: Maximum allowed for your organization.<br />
-                                        <b>Available to Process</b>: Funds you can still utilize.<br />
-                                        If you exceed the threshold, you may not be able to approve more batches.
+                                        <b>Available to Process</b>: Credit left to process more batches without a transaction.<br />
+                                        If you exceed the limit, you must add payment details to process a batch.
                                     </span>
                                 </TooltipContent>
                             </Tooltip>

@@ -53,23 +53,9 @@ export async function POST(req: NextRequest) {
     console.log('billIds', billIds);
     console.log('rechargeIds', rechargeIds);
 
-    // Update batch metadata
-    const { error: batchUpdateError } = await supabase
-      .from('batches')
-      .update({
-        updated_by: user?.id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('batch_id', batchId);
-
-    console.log('batchUpdateError', batchUpdateError);
-
-    if (batchUpdateError) {
-      const handledError = handleDatabaseError(batchUpdateError);
-      return NextResponse.json({ error: `Failed to update batch: ${handledError.message}` }, { status: 500 });
-    }
-
-    // Update bills in chunks
+    // Link items first, then touch the batch. Updating the batch before
+    // items are linked races the batch-updates → batch-create webhook and
+    // can skip Batch Advice (empty after retries). Same pattern as create.
     if (billIds.length > 0) {
       const { error: billError } = await updateInChunks(
         supabase,
@@ -86,7 +72,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Update recharges in chunks
     if (rechargeIds.length > 0) {
       const { error: rechargeError } = await updateInChunks(
         supabase,
@@ -101,6 +86,22 @@ export async function POST(req: NextRequest) {
         const handledError = handleDatabaseError(rechargeError);
         return NextResponse.json({ error: `Failed to add recharges: ${handledError.message}` }, { status: 500 });
       }
+    }
+
+    // Touch after link so unpaid advice webhook sees bills/recharges.
+    const { error: batchUpdateError } = await supabase
+      .from('batches')
+      .update({
+        updated_by: user?.id || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('batch_id', batchId);
+
+    console.log('batchUpdateError', batchUpdateError);
+
+    if (batchUpdateError) {
+      const handledError = handleDatabaseError(batchUpdateError);
+      return NextResponse.json({ error: `Failed to update batch: ${handledError.message}` }, { status: 500 });
     }
 
     return NextResponse.json({

@@ -4,7 +4,7 @@ import { ddmmyy } from '@/lib/utils/date-format';
 import { ConnectionTableProps } from '@/types/connections-type';
 import IsActiveBadge from '@/components/badges/is-active-badge';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 export const columns: ColumnDef<ConnectionTableProps>[] = [
   {
     id: 'id',

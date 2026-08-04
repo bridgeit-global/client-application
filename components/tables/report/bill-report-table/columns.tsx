@@ -18,7 +18,7 @@ import StatusBadge from '@/components/badges/status-badge';
 import IsActiveBadge from '@/components/badges/is-active-badge';
 import { Button } from '@/components/ui/button';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 
 const ADHERENCE_LINE_KEYS = [
   'lpsc',

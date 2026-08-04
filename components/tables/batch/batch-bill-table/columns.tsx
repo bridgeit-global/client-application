@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
 import PaidBadge from '@/components/badges/paid-badge';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import TodaysPayableAmountCell from '@/components/table-cells/todays-payable-amount-cell';
 import React from 'react';
 import { BillStatusBadge } from '@/components/badges/bill-status-badge';

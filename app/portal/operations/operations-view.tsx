@@ -152,26 +152,33 @@ function OperationsSection({
 export function OperationsView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = parseTab(searchParams.get('tab'));
+  const tabFromUrl = parseTab(searchParams.get('tab'));
 
   const [activeTab, setActiveTab] = useState<OperationsTabId>(
-    initialTab ?? 'bill-new'
+    tabFromUrl ?? 'bill-new'
   );
   const [forcedSection, setForcedSection] = useState<SectionId | null>(
-    initialTab ? TAB_TO_SECTION[initialTab] : 'new'
+    tabFromUrl ? TAB_TO_SECTION[tabFromUrl] : 'new'
   );
 
-  // Deep-link: scroll to section once on mount when ?tab= is present
+  // Deep-link / same-page nav: keep tab + force section in sync with ?tab=,
+  // then scroll the Batch (or other) section into view. Query-only navigations
+  // do not remount this page, so mount-only state/effects are not enough.
   useEffect(() => {
-    if (!initialTab) return;
-    const section = TAB_TO_SECTION[initialTab];
-    const timer = setTimeout(() => {
-      document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-    return () => clearTimeout(timer);
-    // only on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!tabFromUrl) return;
+
+    setActiveTab(tabFromUrl);
+    setForcedSection(TAB_TO_SECTION[tabFromUrl]);
+
+    const sectionId = TAB_TO_SECTION[tabFromUrl];
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(sectionId)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [tabFromUrl]);
 
   const handleTabChange = useCallback(
     (tab: OperationsTabId) => {

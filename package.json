@@ -12,7 +12,7 @@
     "url": "https://bridgeit.in"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "sh -c 'if [ -z \"$CI\" ]; then pnpm run test; fi' && next build --webpack",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",

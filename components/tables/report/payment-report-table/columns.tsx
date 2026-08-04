@@ -7,7 +7,7 @@ import ReceiptIndianRupee from '@/components/icons/receipt-indian-rupee';
 import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer-modal-with-presigned';
 import PayTypeBadge from '@/components/badges/pay-type-badge';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 export const columns: ColumnDef<PaymentTableProps>[] = [
 
   {

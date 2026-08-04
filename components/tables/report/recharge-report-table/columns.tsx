@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import StatusBadge from '@/components/badges/status-badge';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 
 export const columns: ColumnDef<PrepaidRechargeTableProps>[] = [
 

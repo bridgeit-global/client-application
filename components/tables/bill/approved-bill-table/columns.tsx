@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { BatchHeaderAction, BatchRowAction } from '@/components/batch/batch-row-action';
 import React from 'react';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import TodaysPayableAmountCell from '@/components/table-cells/todays-payable-amount-cell';
 import ViewBillButton from '@/components/buttons/view-bill-button';
 import { useSiteName } from '@/lib/utils/site';

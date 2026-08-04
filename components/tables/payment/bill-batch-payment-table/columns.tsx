@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ddmmyy } from '@/lib/utils/date-format';
 import { ClientPaymentsProps } from '@/types/payments-type';
 import { ArrowDownRight, Check, X } from 'lucide-react';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import ClientPaymentApprovalStatus from '@/components/badges/client-payment-approval-status';
 import { Button } from '@/components/ui/button';
 import { useIncreaseAmountModalStore } from '@/lib/store/increase-amount-modal-store';

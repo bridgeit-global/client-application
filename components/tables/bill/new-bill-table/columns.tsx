@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import TodaysPayableAmountCell from '@/components/table-cells/todays-payable-amount-cell';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import ViewBillButton from '@/components/buttons/view-bill-button';
 import { useSiteName } from '@/lib/utils/site';
 export const columns: ColumnDef<AllBillTableProps>[] = [

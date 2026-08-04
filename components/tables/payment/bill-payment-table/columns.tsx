@@ -5,7 +5,7 @@ import BatchBillBadge from '@/components/badges/batch-bill-badge';
 import { formatRupees } from '@/lib/utils/number-format';
 import { ddmmyy } from '@/lib/utils/date-format';
 import { PaymentActions } from './payment-actions';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import ClientPaymentApprovalStatus from '@/components/badges/client-payment-approval-status';
 import { useSiteName } from '@/lib/utils/site';
 import ViewBatchButton from '@/components/buttons/view-batch-button';

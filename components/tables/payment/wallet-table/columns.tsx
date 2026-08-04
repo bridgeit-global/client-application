@@ -7,7 +7,7 @@ import { formatDateWithTime } from "@/lib/utils/date-format"
 import { Button } from "@/components/ui/button"
 import ViewBatchButton from "@/components/buttons/view-batch-button"
 import { useSiteName } from "@/lib/utils/site"
-import { SiteAccountBoardCell } from "@/components/table-cells/site-account-board-cell"
+import { SiteAccountBoardCell } from "@/components/table-cells/site-board-cell"
 
 // Define columns for the wallet transactions table (Bank Statement Format)
 

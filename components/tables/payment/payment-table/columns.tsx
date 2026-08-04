@@ -10,7 +10,7 @@ import { ddmmyy } from '@/lib/utils/date-format';
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { Button } from '@/components/ui/button';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import { useSiteName } from '@/lib/utils/site';
 export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [
   {

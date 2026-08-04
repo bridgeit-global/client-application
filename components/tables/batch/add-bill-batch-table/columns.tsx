@@ -7,7 +7,7 @@ import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
 import { ddmmyy } from '@/lib/utils/date-format';
 import { AddRechargeInBatchButton } from '@/components/buttons/add-recharge-in-batch-button';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import TodaysPayableAmountCell from '@/components/table-cells/todays-payable-amount-cell';
 import ViewBillButton from '@/components/buttons/view-bill-button';
 import { useSiteName } from '@/lib/utils/site';

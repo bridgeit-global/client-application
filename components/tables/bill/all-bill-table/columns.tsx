@@ -10,7 +10,7 @@ import BillTypeCell from '@/components/table-cells/bill-type-cell';
 import { Badge } from '@/components/ui/badge';
 import PayTypeBadge from '@/components/badges/pay-type-badge';
 import { ddmmyy } from '@/lib/utils/date-format';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 export const columns: ColumnDef<AllBillTableProps>[] = [
   {
     id: 'id',

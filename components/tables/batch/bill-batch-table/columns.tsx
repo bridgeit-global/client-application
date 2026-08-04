@@ -14,7 +14,7 @@ import TodaysPayableAmountCell from '@/components/table-cells/todays-payable-amo
 import { BillStatusBadge } from '@/components/badges/bill-status-badge';
 import { BatchBillCellAction } from '../../../badges/batch-bill-cell-action';
 import ViewBillButton from '@/components/buttons/view-bill-button';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import { useSiteName } from '@/lib/utils/site';
 export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [
   {

@@ -21,7 +21,7 @@ import StatusBadge from '../badges/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import DisconnectionDateCell from '../table-cells/disconnection-date-cell';
-import { SiteAccountBoardCell } from '../table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '../table-cells/site-board-cell';
 interface BillDetailsProps {
     bill: SingleBillProps | null;
 }

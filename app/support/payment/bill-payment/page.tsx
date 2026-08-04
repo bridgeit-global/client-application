@@ -8,7 +8,13 @@ type paramsProps = {
 
 export default async function page(props: paramsProps) {
   const searchParams = await props.searchParams;
-  const { pageCount, data, totalCount } = await fetchBillPayments(searchParams);
+  // Default to unpaid so the Payments page opens on actionable items.
+  const paramsWithDefaults = {
+    ...searchParams,
+    status: searchParams.status ?? 'unpaid'
+  };
+  const { pageCount, data, totalCount } =
+    await fetchBillPayments(paramsWithDefaults);
   return (
     <BillPaymentTable
       pageCount={pageCount}

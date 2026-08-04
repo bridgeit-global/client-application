@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 export const columns: ColumnDef<LowBalanceConnectionTableProps>[] = [
 
   {

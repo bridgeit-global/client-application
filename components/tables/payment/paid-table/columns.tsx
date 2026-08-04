@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowDown } from 'lucide-react';
 import { ArrowUpDown } from 'lucide-react';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import { snakeToTitle } from '@/lib/utils/string-format';
 import { useSiteName } from '@/lib/utils/site';
 export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [

@@ -18,7 +18,7 @@ import { ArrowUp } from 'lucide-react';
 import { ArrowDown } from 'lucide-react';
 import { ArrowUpDown } from 'lucide-react';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 export const columns: ColumnDef<AllBillTableProps>[] = [
 
   {

@@ -10,7 +10,7 @@ import DocumentViewerModalWithPresigned from '@/components/modal/document-viewer
 import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { useSiteName } from '@/lib/utils/site';
 import { SubmeterCartHeaderActions, SubmeterCartColumnActions } from '@/components/submeter-cart-action';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 export const postpaidColumns: ColumnDef<AllBillTableProps>[] = [
   {
     id: 'select',

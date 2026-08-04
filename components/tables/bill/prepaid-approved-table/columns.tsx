@@ -4,7 +4,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import { ColumnDef } from '@tanstack/react-table';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
 import { BatchHeaderAction, BatchRowAction } from '@/components/batch/batch-row-action';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import { useSiteName } from '@/lib/utils/site';
 
 export const columns: ColumnDef<PrepaidRechargeTableProps>[] = [

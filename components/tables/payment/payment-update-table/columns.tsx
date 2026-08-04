@@ -14,7 +14,7 @@ import { DueDateCell } from '@/components/table-cells/due-date-cell';
 import { AllBillTableProps } from '@/types/bills-type';
 import { CellAction } from './cell-action';
 import { useSiteName } from '@/lib/utils/site';
-import { SiteAccountBoardCell } from '@/components/table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
 const supabase = createClient();
 

@@ -33,6 +33,8 @@ interface DataTableProps {
   searchParams?: SearchParamsProps;
 }
 
+const DEFAULT_STATUS = 'unpaid';
+
 export function BillPaymentTable({
   data,
   pageCount,
@@ -42,10 +44,13 @@ export function BillPaymentTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const params = Object.fromEntries(searchParams.entries());
-  const [filterBody, setFilterBody] = useState(params);
+  const [filterBody, setFilterBody] = useState({
+    ...params,
+    status: params.status ?? DEFAULT_STATUS
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    params.status
+    params.status ?? DEFAULT_STATUS
   );
 
   const handleCategoryChange = (value: string | undefined) => {
@@ -133,12 +138,11 @@ export function BillPaymentTable({
     setIsLoading(true);
     // Reset pagination first
     setPagination({ pageIndex: 0, pageSize: fallbackPerPage });
-    // Clear the filter body, selected category and sorting
-    setFilterBody({});
-    setSelectedCategory(undefined);
-    // Navigate to clean URL with only pagination params
+    // Clear sheet filters; keep unpaid as the page default status
+    setFilterBody({ status: DEFAULT_STATUS });
+    setSelectedCategory(DEFAULT_STATUS);
     router.push(
-      `${pathname}?page=1&limit=${fallbackPerPage}`,
+      `${pathname}?page=1&limit=${fallbackPerPage}&status=${DEFAULT_STATUS}`,
       { scroll: false }
     );
     setIsLoading(false);

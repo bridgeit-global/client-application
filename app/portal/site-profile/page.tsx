@@ -14,7 +14,7 @@ import IsActiveBadge from "@/components/badges/is-active-badge"
 import { getLatestBill, getLatestRecharge } from "@/lib/utils/bill"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { fetchOrganization } from "@/services/organization"
-import { SiteAccountBoardCell } from "@/components/table-cells/site-account-board-cell"
+import { SiteAccountBoardCell } from "@/components/table-cells/site-board-cell"
 import { useSiteName } from "@/lib/utils/site"
 import { SiteProfileMap } from "@/components/maps/site-profile-map"
 

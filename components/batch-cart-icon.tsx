@@ -30,7 +30,7 @@ import { useSiteName } from '@/lib/utils/site';
 import { AllBillTableProps } from '@/types/bills-type';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
 import { DueDateCell } from './table-cells/due-date-cell';
-import { SiteAccountBoardCell } from './table-cells/site-account-board-cell';
+import { SiteAccountBoardCell } from './table-cells/site-board-cell';
 import TodaysPayableAmountCell from './table-cells/todays-payable-amount-cell';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
@@ -506,7 +506,10 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
                 fetchData?.();
                 getExistingBatch(); // Refresh existing batches
                 const responseData = await response.json();
-                router.push(`/portal/batch?batch_id=${responseData.batch_id}`);
+                // Full navigation avoids Turbopack HMR stale-module crashes on the batch page.
+                window.location.assign(
+                  `/portal/batch?batch_id=${responseData.batch_id}`
+                );
             } else {
                 const error = await response.json();
                 toast({

@@ -1,5 +1,32 @@
 import { format } from 'date-fns';
 
+/**
+ * Local calendar date as `yyyy-MM-dd`. Prefer this over `toISOString().slice(0, 10)`,
+ * which uses UTC and can be yesterday in IST (UTC+5:30) before ~05:30.
+ */
+export function toLocalDateString(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * True when the stored calendar day (`yyyy-MM-dd` or ISO timestamp prefix) is
+ * before today's local calendar day.
+ */
+export function isCalendarDateExpired(
+  dateValue: string | Date | null | undefined
+): boolean {
+  if (!dateValue) return false;
+  const datePart =
+    typeof dateValue === 'string'
+      ? dateValue.slice(0, 10)
+      : toLocalDateString(dateValue);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return false;
+  return toLocalDateString() > datePart;
+}
+
 export const ddmmyy = (date: string | Date | null): string => {
   if (!date) {
     return 'N/A';

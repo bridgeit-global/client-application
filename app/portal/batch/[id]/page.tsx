@@ -1,5 +1,6 @@
 
 import { getNewBillCount } from "@/lib/utils/bill"
+import { isCalendarDateExpired } from "@/lib/utils/date-format"
 import { fetchBillsInBatches, fetchRechargesInBatches } from "@/services/batches"
 import type { SearchParamsProps } from "@/types"
 import { getAfterDueAmount } from '@/lib/utils';
@@ -50,12 +51,7 @@ export default async function Page(
             note: batch?.batch_name ? `Batch "${batch.batch_name}" created` : null
         }]
     }
-    let isBatchExpired = false;
-    let batchExpiryDate: Date | null = null;
-    if (batch && batch.validate_at) {
-        batchExpiryDate = new Date(batch.validate_at);
-        isBatchExpired = new Date(new Date().setHours(0, 0, 0, 0)) > batchExpiryDate;
-    }
+    const isBatchExpired = isCalendarDateExpired(batch?.validate_at);
 
     const increasedAmountCount = (allData || []).filter(bill => {
         const dueDate = new Date(bill.due_date);

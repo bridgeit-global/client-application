@@ -13,7 +13,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import IconButton from '@/components/buttons/icon-button';
 import { AlertModal } from '@/components/modal/alert-modal';
 import { UploadBatchReceiptModal } from '@/components/modal/upload-batch-receipt-modal';
-import { ddmmyy } from '@/lib/utils/date-format';
+import { ddmmyy, toLocalDateString } from '@/lib/utils/date-format';
 import ViewBatchButton from '@/components/buttons/view-batch-button';
 import ExportButton from '@/components/buttons/export-button';
 
@@ -104,22 +104,27 @@ const BatchAction = ({
         const supabase = createClient();
         const { error } = await supabase
             .from('batches')
-            .update({ validate_at: new Date().toISOString(), updated_by: user?.id || null })
+            .update({
+                validate_at: toLocalDateString(),
+                updated_by: user?.id || null
+            })
             .eq('batch_id', batchId);
 
         if (error) {
             toast({
                 title: 'Error',
-                description: error.message
+                description: error.message,
+                variant: 'destructive'
             });
             return;
         }
 
-        router.refresh();
         toast({
             title: 'Success',
-            description: 'Batch validity renewed successfully'
+            description: 'Batch validity renewed successfully',
+            variant: 'success'
         });
+        router.refresh();
     };
 
     const handlePay = async () => {

@@ -505,11 +505,8 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
                 closeModal();
                 fetchData?.();
                 getExistingBatch(); // Refresh existing batches
-                const responseData = await response.json();
-                // Full navigation avoids Turbopack HMR stale-module crashes on the batch page.
-                window.location.assign(
-                  `/portal/batch?batch_id=${responseData.batch_id}`
-                );
+                // Stay in Operations and scroll to the Batch section.
+                router.push('/portal/operations?tab=batch-batches');
             } else {
                 const error = await response.json();
                 toast({
@@ -583,7 +580,8 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
             closeModal();
             fetchData?.();
             getExistingBatch(); // Refresh existing batches
-            router.push(`/portal/batch/${batchId}`);
+            // Stay in Operations and scroll to the Batch section.
+            router.push('/portal/operations?tab=batch-batches');
         } catch (error: any) {
             console.error('Error adding items to batch:', error);
             toast({

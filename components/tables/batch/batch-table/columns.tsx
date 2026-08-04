@@ -1,10 +1,13 @@
 'use client';
 import { ColumnDef, Row } from '@tanstack/react-table';
-import { ddmmyy } from '@/lib/utils/date-format';
+import {
+  ddmmyy,
+  isCalendarDateExpired,
+  toLocalDateString
+} from '@/lib/utils/date-format';
 import { formatRupees } from '@/lib/utils/number-format';
 import { BatchTableProps } from '@/types/batches-type';
 import { Badge } from '@/components/ui/badge';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import IconButton from '@/components/buttons/icon-button';
@@ -71,14 +74,8 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
   const allData = row.original.bills || row.original.prepaid_recharge;
   const isPaidCount = allData.filter((bill: any) => bill.payment_status === true).length;
 
-  // 1. Batch validity check
-  const batch = row.original;
-  let isBatchExpired = false;
-  let batchExpiryDate: Date | null = null;
-  if (batch && batch.validate_at) {
-    batchExpiryDate = new Date(batch.validate_at);
-    isBatchExpired = new Date(new Date().setHours(0, 0, 0, 0)) > batchExpiryDate;
-  }
+  // 1. Batch validity check (local calendar day — avoid UTC off-by-one)
+  const isBatchExpired = isCalendarDateExpired(row.original?.validate_at);
 
   // 2. Count bills that need attention: only those where today's payable exceeds approved amount
   const unresolvedBillCount = (row.original.bills || []).filter((bill: any) => {
@@ -91,7 +88,6 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
 
   //hooks
   const supabase = createClient();
-  const router = useRouter();
   const { toast } = useToast();
   const { user } = useUserStore();
   const { thresholdAmount, utilizeAmount, isLoading: isUtilizeLoading } = useUtilizeAndThresholdAmount();
@@ -124,9 +120,14 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
   const handleRenew = async () => {
     setRenewLoading(true);
     try {
+      // Store local calendar date so early-morning IST renewals are not
+      // truncated to yesterday when the column is `date` / UTC-normalized.
       const { error } = await supabase
         .from('batches')
-        .update({ validate_at: new Date().toISOString(), updated_by: user?.id || null })
+        .update({
+          validate_at: toLocalDateString(),
+          updated_by: user?.id || null
+        })
         .eq('batch_id', row.original.batch_id);
 
       if (error) {
@@ -135,16 +136,20 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
 
       toast({
         title: 'Success',
-        description: 'Batch validity renewed successfully'
+        description: 'Batch validity renewed successfully',
+        variant: 'success'
       });
+      setShowRenewConfirm(false);
+      // Full navigation refreshes Operations client-fetched batch rows.
+      window.location.assign('/portal/operations?tab=batch-batches');
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message
+        description: error.message,
+        variant: 'destructive'
       });
     } finally {
       setRenewLoading(false);
-      window.location.reload(); // Reload the page to show the updated batch status
     }
   };
 
@@ -314,12 +319,7 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
     <AlertModal
       isOpen={showRenewConfirm}
       onClose={() => setShowRenewConfirm(false)}
-      onConfirm={async () => {
-        setRenewLoading(true);
-        await handleRenew();
-        setRenewLoading(false);
-        setShowRenewConfirm(false);
-      }}
+      onConfirm={handleRenew}
       loading={renewLoading}
       title="Renew Batch Validity"
       description="Are you sure you want to renew the batch validity?"

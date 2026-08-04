@@ -28,8 +28,8 @@ const WORKFLOW_STEPS = [
     {
         icon: FileText,
         title: 'Select Approved Bills',
-        description: 'Go to Bills > Approved to select bills for batch payment',
-        link: '/portal/bills/approved',
+        description: 'Go to Operations > Bill > Approved to select bills for batch payment',
+        link: '/portal/operations?tab=bill-approved',
         linkText: 'Go to Approved Bills',
         color: 'text-blue-500',
         bgColor: 'bg-blue-50 dark:bg-blue-950/30',
@@ -37,8 +37,8 @@ const WORKFLOW_STEPS = [
     {
         icon: Wallet,
         title: 'Or Select Recharges',
-        description: 'Go to Recharges > Approved to select prepaid recharges',
-        link: '/portal/recharges/approved',
+        description: 'Go to Operations > Recharge > Approved to select prepaid recharges',
+        link: '/portal/operations?tab=recharge-approved',
         linkText: 'Go to Approved Recharges',
         color: 'text-emerald-500',
         bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
@@ -119,13 +119,13 @@ export function BatchWorkflowGuide({ className, compact = false, onDismiss }: Ba
                 </CardHeader>
                 <CardContent className="pt-0">
                     <div className="flex flex-wrap gap-2">
-                        <Link href="/portal/bills/approved">
+                        <Link href="/portal/operations?tab=bill-approved">
                             <Button variant="outline" size="sm" className="text-xs">
                                 <FileText className="h-3 w-3 mr-1" />
                                 Approved Bills
                             </Button>
                         </Link>
-                        <Link href="/portal/recharges/approved">
+                        <Link href="/portal/operations?tab=recharge-approved">
                             <Button variant="outline" size="sm" className="text-xs">
                                 <Wallet className="h-3 w-3 mr-1" />
                                 Approved Recharges
@@ -213,13 +213,13 @@ export function BatchWorkflowGuide({ className, compact = false, onDismiss }: Ba
                         Start by selecting items you want to pay together
                     </p>
                     <div className="flex gap-2">
-                        <Link href="/portal/bills/approved">
+                        <Link href="/portal/operations?tab=bill-approved">
                             <Button size="sm">
                                 <FileText className="h-4 w-4 mr-2" />
                                 Go to Approved Bills
                             </Button>
                         </Link>
-                        <Link href="/portal/recharges/approved">
+                        <Link href="/portal/operations?tab=recharge-approved">
                             <Button variant="outline" size="sm">
                                 <Wallet className="h-4 w-4 mr-2" />
                                 Go to Approved Recharges

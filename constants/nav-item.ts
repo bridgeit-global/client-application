@@ -21,104 +21,12 @@ export const getNavItems = (site_name: string): NavItem[] => {
         },
 
         {
-            title: 'Bill',
-            url: '/portal/bills',
+            title: 'Operations',
+            url: '/portal/operations',
             icon: 'billManage',
-            isCollapsible: true,
-            shortcut: ['b', 't'],
-            items: [
-                {
-                    title: 'New',
-                    url: '/portal/bills/new',
-                    icon: 'billManage',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                },
-                {
-                    title: 'Approved',
-                    url: '/portal/bills/approved',
-                    icon: 'billManage',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                },
-            ]
-
-        },
-        {
-            title: 'Recharge',
-            url: '/portal/recharges',
-            icon: 'payment',
-            isCollapsible: true,
-            shortcut: ['r', 't'],
-            items: [
-                {
-                    title: 'Low Balance',
-                    url: '/portal/recharges/low-balance',
-                    icon: 'payment',
-                    isCollapsible: false,
-                    shortcut: ['r', 't'],
-                },
-                {
-                    title: 'Approved',
-                    url: '/portal/recharges/approved',
-                    icon: 'payment',
-                    isCollapsible: false,
-                    shortcut: ['r', 't'],
-                },
-            ]
-        },
-        {
-            title: 'Batch',
-            url: '/portal/batch',
-            icon: 'batch',
-            isCollapsible: true,
-            shortcut: ['b', 'm'],
-            items: [
-                {
-                    title: 'Batches',
-                    url: '/portal/batch',
-                    icon: 'batch',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                },
-                {
-                    title: 'Payments',
-                    url: '/portal/batch-payment',
-                    icon: 'batch',
-                    isCollapsible: false,
-                    shortcut: ['b', 't'],
-                },
-            ]
-        },
-        {
-            title: 'Payment',
-            url: '/portal/payment',
-            icon: 'payment',
-            isCollapsible: true,
-            shortcut: ['p', 't'],
-            items: [
-                {
-                    title: 'Bills Paid',
-                    url: '/portal/payment/bill-paid',
-                    icon: 'payment',
-                    isCollapsible: false,
-                    shortcut: ['p', 't'],
-                },
-                {
-                    title: 'Recharges Paid',
-                    url: '/portal/payment/recharge-paid',
-                    icon: 'payment',
-                    isCollapsible: false,
-                    shortcut: ['p', 't'],
-                },
-                {
-                    title: 'Statement',
-                    url: '/portal/payment/statement',
-                    icon: 'wallet',
-                    isCollapsible: false,
-                    shortcut: ['p', 't'],
-                },
-            ]
+            isCollapsible: false,
+            shortcut: ['o', 'p'],
+            items: []
         },
         {
             title: 'Report',

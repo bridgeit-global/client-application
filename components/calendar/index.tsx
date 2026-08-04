@@ -102,18 +102,18 @@ const FIELD_MAPPING = {
 // Update PATH_MAPPING to include prepaid paths
 const PATH_MAPPING: Record<string, Record<string, string>> = {
   postpaid: {
-    new: "portal/bills/new",
-    approved: "portal/bills/approved",
+    new: "portal/operations?tab=bill-new",
+    approved: "portal/operations?tab=bill-approved",
     payment: "portal/bills/payment",
-    paid: "portal/bills/paid",
+    paid: "portal/operations?tab=payment-bills-paid",
     rejected: "portal/report/bill?bill_status=rejected",
     batch: "portal/batch-item"
   },
   prepaid: {
-    new: "portal/recharges/low-balance",
-    approved: "portal/recharges/approved",
+    new: "portal/operations?tab=recharge-low-balance",
+    approved: "portal/operations?tab=recharge-approved",
     payment: "portal/recharges/payment",
-    paid: "portal/recharges/paid",
+    paid: "portal/operations?tab=payment-recharges-paid",
     rejected: "portal/report/recharge",
     batch: "portal/batch-item"
   }
@@ -121,6 +121,20 @@ const PATH_MAPPING: Record<string, Record<string, string>> = {
 
 const getPathByStatusAndType = (status: string, type: string): string | undefined => {
   return PATH_MAPPING[type]?.[status];
+};
+
+/** Build an absolute portal path, merging extra query params into any existing ones. */
+const buildPortalHref = (
+  link: string,
+  extraParams: Record<string, string>
+): string => {
+  const [path, existingQuery = ''] = link.split('?');
+  const params = new URLSearchParams(existingQuery);
+  Object.entries(extraParams).forEach(([key, value]) => {
+    params.set(key, value);
+  });
+  const qs = params.toString();
+  return qs ? `/${path}?${qs}` : `/${path}`;
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -271,7 +285,12 @@ const DateRangeModal = ({ isOpen, onClose, selectedRange, billsData, sectionDeta
     if (!link) return;
 
     const dateParam = sectionDetails.type === 'prepaid' ? 'recharge_date' : dateType;
-    const fullLink = `/${link}?page=1&limit=10&${dateParam}_start=${format(selectedRange.start, 'yyyy-MM-dd')}&${dateParam}_end=${format(selectedRange.end, 'yyyy-MM-dd')}`;
+    const fullLink = buildPortalHref(link, {
+      page: '1',
+      limit: '10',
+      [`${dateParam}_start`]: format(selectedRange.start, 'yyyy-MM-dd'),
+      [`${dateParam}_end`]: format(selectedRange.end, 'yyyy-MM-dd')
+    });
     window.location.href = fullLink;
   };
 
@@ -423,10 +442,17 @@ function Calendar({ billsData, sectionDetails }: CalendarProps) {
         page: 1,
         limit: 10
       }
-      const fullLink = `/${link}?postpaid=${JSON.stringify(filterBody)}`;
+      const fullLink = buildPortalHref(link, {
+        postpaid: JSON.stringify(filterBody)
+      });
       window.location.href = fullLink;
     } else {
-      const fullLink = `/${link}?page=1&limit=10&${dateParam}_start=${filterDate.start}&${dateParam}_end=${filterDate.end}`;
+      const fullLink = buildPortalHref(link, {
+        page: '1',
+        limit: '10',
+        [`${dateParam}_start`]: filterDate.start,
+        [`${dateParam}_end`]: filterDate.end
+      });
       window.location.href = fullLink;
     }
 

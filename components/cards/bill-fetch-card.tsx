@@ -69,7 +69,7 @@ function BillFetchCard({
               </CardContent>
             </Card>
             <Card
-              onClick={() => router.push('/portal/payment')}
+              onClick={() => router.push('/portal/operations?tab=payment-statement')}
               className="hover:bg-yellow-50"
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

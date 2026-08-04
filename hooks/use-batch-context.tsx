@@ -10,6 +10,7 @@ export const BATCH_RELEVANT_ROUTES = [
   '/portal/bills/approved',
   '/portal/recharges/approved',
   '/portal/batch',
+  '/portal/operations',
 ] as const;
 
 /**
@@ -19,6 +20,7 @@ export const BATCH_ROUTE_PREFIXES = [
   '/portal/bills/approved',
   '/portal/recharges/approved',
   '/portal/batch',
+  '/portal/operations',
 ] as const;
 
 export interface BatchContextInfo {
@@ -44,21 +46,27 @@ export function useBatchContext(): BatchContextInfo {
   const pathname = usePathname();
 
   return useMemo(() => {
-    const isApprovedBillsPage = pathname === '/portal/bills/approved';
-    const isApprovedRechargesPage = pathname === '/portal/recharges/approved';
-    const isBatchPage = pathname.startsWith('/portal/batch');
+    const isOperationsPage = pathname.startsWith('/portal/operations');
+    const isApprovedBillsPage =
+      pathname === '/portal/bills/approved' || isOperationsPage;
+    const isApprovedRechargesPage =
+      pathname === '/portal/recharges/approved' || isOperationsPage;
+    const isBatchPage =
+      pathname.startsWith('/portal/batch') || isOperationsPage;
 
-    const isBatchRelevantPage = 
-      isApprovedBillsPage || 
-      isApprovedRechargesPage || 
+    const isBatchRelevantPage =
+      isApprovedBillsPage ||
+      isApprovedRechargesPage ||
       isBatchPage;
 
     let contextLabel = 'Batch Management';
-    if (isApprovedBillsPage) {
+    if (pathname === '/portal/bills/approved') {
       contextLabel = 'Bill Batch';
-    } else if (isApprovedRechargesPage) {
+    } else if (pathname === '/portal/recharges/approved') {
       contextLabel = 'Recharge Batch';
-    } else if (isBatchPage) {
+    } else if (isOperationsPage) {
+      contextLabel = 'Operations';
+    } else if (pathname.startsWith('/portal/batch')) {
       contextLabel = 'Batch Management';
     }
 

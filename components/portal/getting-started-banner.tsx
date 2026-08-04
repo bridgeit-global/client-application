@@ -68,7 +68,7 @@ export function GettingStartedBanner() {
             <Link href="/portal/site/postpaid/create">Add connection</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/portal/bills/new">Bills</Link>
+            <Link href="/portal/operations?tab=bill-new">Bills</Link>
           </Button>
         </div>
       </AlertDescription>

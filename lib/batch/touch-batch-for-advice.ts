@@ -1,3 +1,5 @@
+import { PostgrestError } from '@supabase/supabase-js';
+
 /**
  * Bump unpaid-batch audit fields so the batches webhook can re-run Batch Advice
  * after items are linked — without writing URL columns (those are edge-owned and
@@ -11,7 +13,7 @@ export async function touchBatchForAdvice(
   supabase: { from: (table: string) => any },
   batchId: string,
   updatedBy: string | null
-): Promise<{ error: { message: string } | null }> {
+): Promise<{ error: PostgrestError | null }> {
   const { error } = await supabase
     .from('batches')
     .update({

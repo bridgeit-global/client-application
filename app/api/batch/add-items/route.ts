@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
 import { touchBatchForAdvice } from '@/lib/batch/touch-batch-for-advice';
+import { PostgrestError } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Chunk size for processing updates to avoid timeouts
@@ -16,7 +17,7 @@ async function updateInChunks<T>(
   ids: T[],
   updateData: Record<string, unknown>,
   idField: string = 'id'
-): Promise<{ error: unknown }> {
+): Promise<{ error: PostgrestError | null }> {
   if (ids.length === 0) {
     return { error: null };
   }

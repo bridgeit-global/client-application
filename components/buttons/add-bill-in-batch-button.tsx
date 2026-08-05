@@ -27,11 +27,12 @@ async function resolveValidateAtForBill(
   const today = toLocalDateString();
   const dueDay = dueDate.slice(0, 10);
 
+  // validate_at is a calendar date (yyyy-MM-dd), not a full timestamp.
   if (dueDay <= today) {
-    return new Date().toISOString();
+    return today;
   }
   if (batch?.validate_at && dueDay <= batch.validate_at.slice(0, 10)) {
-    return new Date(dueDate).toISOString();
+    return dueDay;
   }
   return null;
 }

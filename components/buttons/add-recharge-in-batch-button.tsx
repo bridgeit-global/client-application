@@ -29,11 +29,12 @@ async function resolveValidateAtForRecharge(
   const today = toLocalDateString();
   const rechargeDay = rechargeDate.slice(0, 10);
 
+  // validate_at is a calendar date (yyyy-MM-dd), not a full timestamp.
   if (rechargeDay <= today) {
-    return new Date().toISOString();
+    return today;
   }
   if (batch?.validate_at && rechargeDay <= batch.validate_at.slice(0, 10)) {
-    return new Date(rechargeDate).toISOString();
+    return rechargeDay;
   }
   return null;
 }

@@ -19,6 +19,12 @@ interface TransactionErrors {
     transactionId?: string;
 }
 
+/** Payment methods we no longer accept on new transactions. */
+const DISALLOWED_PAYMENT_METHODS = new Set(['cash']);
+
+const isAllowedPaymentMethod = (name: string) =>
+    !DISALLOWED_PAYMENT_METHODS.has(name.trim().toLowerCase());
+
 export function useTransactionInput({
     transactionId = '',
     paymentMethod = '',
@@ -62,7 +68,9 @@ export function useTransactionInput({
 
         // Parse regex string (e.g. "/^[A-Z0-9]{12,22}$/" or "/^[A-Z0-9]{12,20}$/i") into RegExp
         setPaymentMethods(
-            data.map(item => {
+            data
+                .filter((item) => isAllowedPaymentMethod(item.name ?? ''))
+                .map(item => {
                 // item.value is a string like "/^[A-Z0-9]{12,22}$/i"
                 // Extract pattern and flags
                 let pattern = item.value;
@@ -95,6 +103,9 @@ export function useTransactionInput({
     const validatePaymentMethod = (value: string) => {
         if (required && !value) {
             return "Payment method is required";
+        }
+        if (value && !isAllowedPaymentMethod(value)) {
+            return "Cash payments are no longer accepted";
         }
         return "";
     };

@@ -34,9 +34,19 @@ export function AddTransactionIdModal({ id, amount }: RefundPaymentTransactionsP
     });
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
-    const { validateTransactionId } = useTransactionInput({});
+    const { validateTransactionId, validatePaymentMethod } = useTransactionInput({});
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const paymentMethodError = validatePaymentMethod(paymentMethod);
+        if (paymentMethodError) {
+            toast({
+                variant: "destructive",
+                title: "Validation Error",
+                description: paymentMethodError,
+            });
+            return;
+        }
 
         const isErrorTransactionId = validateTransactionId(transactionId, paymentMethod);
         if (isErrorTransactionId) {

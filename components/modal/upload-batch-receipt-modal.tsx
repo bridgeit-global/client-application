@@ -54,7 +54,7 @@ export function UploadBatchReceiptModal({
   description
 }: UploadBatchReceiptModalProps) {
   const { toast } = useToast();
-  const { validateTransactionId } = useTransactionInput({});
+  const { validateTransactionId, validatePaymentMethod } = useTransactionInput({});
   // State management
   const [formData, setFormData] = useState<PaymentFormData>({
     transactionReference: '',
@@ -99,6 +99,15 @@ export function UploadBatchReceiptModal({
 
   const handleSubmit = useCallback(async () => {
     const finalAmount = amount || Number(formData.amount);
+    const paymentMethodError = validatePaymentMethod(formData.paymentMode);
+    if (paymentMethodError) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: paymentMethodError,
+      });
+      return;
+    }
     const isErrorTransactionId = validateTransactionId(formData.transactionReference, formData.paymentMode);
     if (isErrorTransactionId) {
       toast({
@@ -116,7 +125,7 @@ export function UploadBatchReceiptModal({
       transactionDate: formData.transactionDate || new Date().toISOString().slice(0, 10)
     });
     onClose();
-  }, [amount, formData, payBills, onClose]);
+  }, [amount, formData, payBills, onClose, toast, validatePaymentMethod, validateTransactionId]);
 
   // Computed values
   const isFormValid = Boolean(

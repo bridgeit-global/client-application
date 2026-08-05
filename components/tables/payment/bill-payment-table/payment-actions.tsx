@@ -85,7 +85,7 @@ export function PaymentActions({ data }: PaymentActionsProps) {
   const { toast } = useToast();
   const { user } = useUserStore();
   const router = useRouter();
-  const { validateTransactionId } = useTransactionInput({});
+  const { validateTransactionId, validatePaymentMethod } = useTransactionInput({});
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isReversalDialogOpen, setIsReversalDialogOpen] = useState(false);
   const [isAmountChangeDialogOpen, setIsAmountChangeDialogOpen] = useState(false);
@@ -235,6 +235,15 @@ export function PaymentActions({ data }: PaymentActionsProps) {
         });
         return;
       }
+      const paymentMethodError = validatePaymentMethod(paymentInfo.paymentMethod);
+      if (paymentMethodError) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: paymentMethodError,
+        });
+        return;
+      }
       // Validate payment reference with method
       const isErrorTransactionId = validateTransactionId(paymentInfo.transactionId, paymentInfo.paymentMethod);
       if (isErrorTransactionId) {
@@ -376,6 +385,16 @@ export function PaymentActions({ data }: PaymentActionsProps) {
           variant: "destructive",
           title: "Validation Error",
           description: "Amount, Payment Method, and Transaction ID are required",
+        });
+        return;
+      }
+
+      const paymentMethodError = validatePaymentMethod(reversalInfo.paymentMethod);
+      if (paymentMethodError) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: paymentMethodError,
         });
         return;
       }

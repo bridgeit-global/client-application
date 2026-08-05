@@ -134,7 +134,7 @@ export const BatchPaymentActionButton = ({ table, onSettled }: BatchPaymentActio
             table.resetRowSelection();
             setIsLoading(false);
         }
-    }, [selectedData, router, toast]);
+    }, [selectedData, router, toast, onSettled, table]);
 
     // Handle modal close
     const handleModalClose = useCallback(() => {

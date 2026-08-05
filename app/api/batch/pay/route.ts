@@ -13,6 +13,12 @@ export async function POST(req: NextRequest) {
         if (!batchId || !transactionReference || !paymentMode) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
+        if (String(paymentMode).trim().toLowerCase() === 'cash') {
+            return NextResponse.json(
+                { error: 'Cash payments are no longer accepted' },
+                { status: 400 }
+            );
+        }
         const { data: bill_data, error: bill_error } = await supabase
             .from('bills')
             .select('approved_amount')

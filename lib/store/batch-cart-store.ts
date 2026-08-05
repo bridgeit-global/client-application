@@ -55,6 +55,7 @@ export const useBatchCartStore = create<BatchCartStore>()(
             clearCart: () =>
                 set((state) => ({
                     items: [],
+                    batchName: '',
                     isClearSelectedItems: !state.isClearSelectedItems
                 }))
         }),

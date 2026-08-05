@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   PaginationState,
@@ -49,6 +49,11 @@ export function useOperationsQuery(
   const urlSearchParams = useSearchParams();
   const { forTab } = options;
 
+  // Read latest URL / filterBody at call time so replaceOpsUrl / applyFilters
+  // stay stable and never write a stale tab or filter snapshot to the URL.
+  const urlSearchParamsRef = useRef(urlSearchParams);
+  urlSearchParamsRef.current = urlSearchParams;
+
   const [seed] = useState<SearchParamsProps>(() => {
     const urlTab = urlSearchParams.get('tab');
     const shouldSeedFromUrl = !forTab || !urlTab || urlTab === forTab;
@@ -66,6 +71,9 @@ export function useOperationsQuery(
       ) as Record<string, string>;
     }
   );
+  const filterBodyRef = useRef(filterBody);
+  filterBodyRef.current = filterBody;
+
   const [sorting, setSorting] = useState<SortingState>(() => {
     if (seed.sort && seed.order) {
       return [{ id: seed.sort, desc: seed.order === 'desc' }];
@@ -99,7 +107,9 @@ export function useOperationsQuery(
   const replaceOpsUrl = useCallback(
     (nextFilterBody: Record<string, string>) => {
       const params = new URLSearchParams();
-      const tab = urlSearchParams.get('tab') ?? forTab;
+      // Panel identity wins over URL so a stale searchParams snapshot cannot
+      // rewrite another tab's filters into the wrong ?tab=.
+      const tab = forTab ?? urlSearchParamsRef.current.get('tab');
       if (tab) params.set('tab', tab);
       Object.entries(nextFilterBody).forEach(([key, value]) => {
         if (value != null && value !== '') params.set(key, value);
@@ -109,7 +119,7 @@ export function useOperationsQuery(
         scroll: false
       });
     },
-    [router, urlSearchParams, forTab]
+    [router, forTab]
   );
 
   const clearFilters = useCallback(() => {
@@ -121,8 +131,8 @@ export function useOperationsQuery(
 
   const applyFilters = useCallback(() => {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-    replaceOpsUrl(filterBody);
-  }, [filterBody, replaceOpsUrl]);
+    replaceOpsUrl(filterBodyRef.current);
+  }, [replaceOpsUrl]);
 
   return {
     filterBody,

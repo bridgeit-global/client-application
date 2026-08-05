@@ -54,6 +54,8 @@ interface ExistingBatchProps {
 
 interface BatchCartIconProps {
     fetchData?: () => void;
+    /** When false, only the cart modal is mounted (header trigger removed; use BatchFab / selection toolbar). */
+    showTrigger?: boolean;
 }
 
 function SelectedBillTable({
@@ -407,7 +409,7 @@ function ExistingBatchesTable({ batches, onAddToBatch, isLoading }: ExistingBatc
     );
 }
 
-export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
+export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconProps) {
     const { user } = useUserStore();
     const supabase = createClient();
     const router = useRouter();
@@ -619,49 +621,49 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
 
     return (
         <>
-            {/* Cart Button */}
-            <div className="relative">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={openModal}
-                    className={cn(
-                        "relative w-10 h-10 sm:w-11 sm:h-11",
-                        "rounded-lg transition-all duration-200",
-                        "hover:bg-secondary/50 hover:scale-105 active:scale-95",
-                        "group shadow-sm hover:shadow-md",
-                        items.length > 0 && "ring-2 ring-primary/20"
-                    )}
-                    aria-label="View batch cart"
-                >
-                    <Archive className={cn(
-                        "w-5 h-5 sm:w-6 sm:h-6",
-                        "transition-all duration-200",
-                        "group-hover:scale-110 group-hover:text-primary"
-                    )} />
+            {showTrigger ? (
+                <div className="relative">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={openModal}
+                        className={cn(
+                            "relative w-10 h-10 sm:w-11 sm:h-11",
+                            "rounded-lg transition-all duration-200",
+                            "hover:bg-secondary/50 hover:scale-105 active:scale-95",
+                            "group shadow-sm hover:shadow-md",
+                            items.length > 0 && "ring-2 ring-primary/20"
+                        )}
+                        aria-label="View batch cart"
+                    >
+                        <Archive className={cn(
+                            "w-5 h-5 sm:w-6 sm:h-6",
+                            "transition-all duration-200",
+                            "group-hover:scale-110 group-hover:text-primary"
+                        )} />
 
-                    {/* Cart Badge */}
-                    {items.length > 0 && (
-                        <Badge
-                            variant="destructive"
-                            className={cn(
-                                "absolute -top-2 -right-2",
-                                "h-5 w-5 sm:h-6 sm:w-6",
-                                "flex items-center justify-center",
-                                "text-xs font-bold text-white",
-                                "animate-pulse",
-                                "bg-gradient-to-r from-red-500 to-red-600",
-                                "border-2 border-background",
-                                "shadow-lg"
-                            )}
-                        >
-                            {items.length > 99 ? '99+' : items.length}
-                        </Badge>
-                    )}
-                </Button>
-            </div>
+                        {items.length > 0 && (
+                            <Badge
+                                variant="destructive"
+                                className={cn(
+                                    "absolute -top-2 -right-2",
+                                    "h-5 w-5 sm:h-6 sm:w-6",
+                                    "flex items-center justify-center",
+                                    "text-xs font-bold text-white",
+                                    "animate-pulse",
+                                    "bg-gradient-to-r from-red-500 to-red-600",
+                                    "border-2 border-background",
+                                    "shadow-lg"
+                                )}
+                            >
+                                {items.length > 99 ? '99+' : items.length}
+                            </Badge>
+                        )}
+                    </Button>
+                </div>
+            ) : null}
 
-            {/* Cart Modal */}
+            {/* Cart Modal — opened by BatchFab / BatchSelectionToolbar via store */}
             <Dialog open={isModalOpen} onOpenChange={closeModal}>
                 <DialogContent className={cn(
                     "sm:max-w-4xl lg:max-w-6xl max-h-[90vh] w-[95vw]",

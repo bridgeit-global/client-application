@@ -202,6 +202,7 @@ export default function ApprovedBillTable({
 
   useEffect(() => {
     table.resetRowSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to cart clear signal
   }, [isClearSelectedItems]);
 
   return (

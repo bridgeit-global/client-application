@@ -5,6 +5,7 @@ import { PortalSidebar } from '@/components/sidebar/portal-sidebar';
 import { MainWithScrollHeader } from '@/components/layout/main-with-scroll-header';
 import { UserInitializer } from '@/components/providers/user-initializer';
 import { BatchFab } from '@/components/batch/batch-fab';
+import { BatchCartIcon } from '@/components/batch-cart-icon';
 import { PaymentDueBanner } from '@/components/portal/payment-due-banner';
 
 export default async function RootLayout({
@@ -20,9 +21,10 @@ export default async function RootLayout({
         <MainWithScrollHeader footer={<Footer />} topBanner={<PaymentDueBanner />}>
           {children}
         </MainWithScrollHeader>
-        {/* Floating Action Button for batch management - shows only on relevant pages */}
+        {/* Batch FAB + cart modal host (header cart trigger removed as duplicate). */}
         <Suspense fallback={null}>
           <BatchFab />
+          <BatchCartIcon showTrigger={false} />
         </Suspense>
       </SidebarProvider>
     </div>

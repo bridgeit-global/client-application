@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -22,6 +23,7 @@ import {
   BatchSelectionToolbar,
   QuickSelectButtons
 } from '@/components/batch/batch-selection-toolbar';
+import { useBatchCartStore } from '@/lib/store/batch-cart-store';
 import { defaultColumnSizing, getFilterDataLength } from '@/lib/utils/table';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { getApprovedRecharges } from '../actions';
@@ -31,6 +33,9 @@ import { PanelError, PanelLoading } from '../panel-states';
 type Props = { enabled: boolean };
 
 export function RechargeApprovedPanel({ enabled }: Props) {
+  const urlSearchParams = useSearchParams();
+  const isActiveTab = urlSearchParams.get('tab') === 'recharge-approved';
+  const { isClearSelectedItems } = useBatchCartStore();
   const {
     filterBody,
     setFilterBody,
@@ -63,6 +68,13 @@ export function RechargeApprovedPanel({ enabled }: Props) {
     defaultColumn: defaultColumnSizing,
     columnResizeMode: 'onChange'
   });
+
+  // Same as bill-approved: clear table selection when cart is cleared after
+  // batch create so the fixed toolbar does not linger on other Ops sections.
+  useEffect(() => {
+    table.resetRowSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to cart clear signal
+  }, [isClearSelectedItems]);
 
   const filterCount = useMemo(
     () => getFilterDataLength(filterBody),
@@ -137,15 +149,17 @@ export function RechargeApprovedPanel({ enabled }: Props) {
             totalCount={data?.totalCount ?? 0}
           />
         )}
-        <BatchSelectionToolbar
-          selectedItems={table
-            .getFilteredSelectedRowModel()
-            .rows.map((row) => row.original)}
-          totalItems={rows}
-          onClearSelection={() => table.resetRowSelection()}
-          itemType="recharge"
-          table={table}
-        />
+        {isActiveTab ? (
+          <BatchSelectionToolbar
+            selectedItems={table
+              .getFilteredSelectedRowModel()
+              .rows.map((row) => row.original)}
+            totalItems={rows}
+            onClearSelection={() => table.resetRowSelection()}
+            itemType="recharge"
+            table={table}
+          />
+        ) : null}
       </div>
     </div>
   );

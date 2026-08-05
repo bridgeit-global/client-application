@@ -1,0 +1,29 @@
+---
+description: Prevent circular app ↔ Supabase batch webhook email triggers
+globs: app/api/batch/**/*.{ts,tsx},components/buttons/*batch*.tsx,components/batch-cart-icon.tsx,lib/batch/**/*.ts
+alwaysApply: false
+---
+
+# Batch webhook triggers (no circular hell)
+
+Portal batch emails: `batches` INSERT/UPDATE → edge `batch-updates` → (unpaid/processing) `batch-create`.
+
+## Do
+
+- **Link items first**, then bump unpaid audit fields (`updated_at` / `updated_by`, optionally `validate_at`) so advice sees bills/recharges. Use `touchBatchForAdvice` or `/api/batch/add-items` when **adding to an existing unpaid batch**.
+- Prefer `/api/batch/add-items` over client-side `prepaid_recharge`/`bills` updates when adding to an existing batch.
+- Let edge functions own `batch_create_url` / `batch_advice_url` / `batch_receipt_url`.
+- **Create batch**: rely on INSERT → webhook → `batch-create` retries. Do **not** post-link touch on create (that double-sends advice once unpaid non-URL refresh is allowed).
+
+## Don't
+
+- **Don't** UPDATE `batches` *before* linking items just to “wake” the webhook (empty-advice race).
+- **Don't** write `batch_*_url` from the app (edge write-back must skip email via URL-change guard).
+- **Don't** bounce `batch_status` (e.g. unpaid→processing→unpaid) to force mail — that is a fake transition and can duplicate Processed/Advice paths.
+- **Don't** invoke `batch-create` from the app *and* also poke `batches` for the same add — pick one intentional signal.
+- **Don't** remove the edge `statusChanged` / URL-write-back skip without a replacement loop guard.
+- **Don't** touch `batches` after create solely for advice — INSERT already triggers it.
+
+## Why unpaid touch works
+
+`batch-updates` re-runs `batch-create` for **unpaid** updates when status is unchanged **and** URL columns did not change (app item-add touch). It **skips** when only URL columns changed (PDF upload write-back) and never re-sends **processing** without a real status transition.

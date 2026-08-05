@@ -1,6 +1,8 @@
 # Paste-ready Cursor agent prompts — batch payment emails
 
-Use these in the **supabase** and **utility-portal-backend** repos. Client-application already fixed the `/api/batch/add-items` empty-advice race (link items, then touch batch).
+Use these in the **supabase** and **utility-portal-backend** repos.
+
+**Client + batch-updates (2026-08):** Adding items to an unpaid batch must **link first**, then touch `updated_at`/`updated_by` (never `batch_*_url`). `batch-updates` re-runs `batch-create` for unpaid non-URL updates; it skips URL write-backs and processing-without-transition to avoid circular triggers. See `.cursor/rules/batch-webhook-triggers.mdc`.
 
 ## Context (shared)
 

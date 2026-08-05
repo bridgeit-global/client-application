@@ -285,6 +285,23 @@ const DateRangeModal = ({ isOpen, onClose, selectedRange, billsData, sectionDeta
     if (!link) return;
 
     const dateParam = sectionDetails.type === 'prepaid' ? 'recharge_date' : dateType;
+    const filterBody = {
+      page: 1,
+      limit: 10,
+      [`${dateParam}_start`]: format(selectedRange.start, 'yyyy-MM-dd'),
+      [`${dateParam}_end`]: format(selectedRange.end, 'yyyy-MM-dd')
+    };
+
+    // batch-item expects nested postpaid/prepaid JSON; other statuses use flat params.
+    if (status === 'batch') {
+      const filterKey = sectionDetails.type === 'prepaid' ? 'prepaid' : 'postpaid';
+      const fullLink = buildPortalHref(link, {
+        [filterKey]: JSON.stringify(filterBody)
+      });
+      window.location.href = fullLink;
+      return;
+    }
+
     const fullLink = buildPortalHref(link, {
       page: '1',
       limit: '10',
@@ -442,8 +459,10 @@ function Calendar({ billsData, sectionDetails }: CalendarProps) {
         page: 1,
         limit: 10
       }
+      // batch-item reads separate `postpaid` / `prepaid` JSON query params.
+      const filterKey = sectionDetails.type === 'prepaid' ? 'prepaid' : 'postpaid';
       const fullLink = buildPortalHref(link, {
-        postpaid: JSON.stringify(filterBody)
+        [filterKey]: JSON.stringify(filterBody)
       });
       window.location.href = fullLink;
     } else {

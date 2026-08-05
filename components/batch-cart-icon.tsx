@@ -20,7 +20,7 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import { ddmmyy } from '@/lib/utils/date-format';
+import { ddmmyy, isCalendarDateExpired } from '@/lib/utils/date-format';
 import { useToast } from './ui/use-toast';
 import { useBatchCartStore } from '@/lib/store/batch-cart-store';
 import type { CartItem } from '@/lib/store/batch-cart-store';
@@ -278,10 +278,12 @@ function ExistingBatchesTable({ batches, onAddToBatch, isLoading }: ExistingBatc
     };
 
     const getBatchValidityStatus = (validateAt: string) => {
-        const today = new Date();
-        const validityDate = new Date(validateAt);
-        const isExpired = today > validityDate;
-        return isExpired ? { label: 'Expired', variant: 'destructive' as const } : { label: 'Valid', variant: 'default' as const };
+        // Calendar-day compare: validity equal to today is still Valid.
+        // `new Date() > new Date('yyyy-MM-dd')` treats date-only as midnight
+        // and falsely expires same-day batches after morning.
+        return isCalendarDateExpired(validateAt)
+            ? { label: 'Expired', variant: 'destructive' as const }
+            : { label: 'Valid', variant: 'default' as const };
     };
 
     return (
@@ -553,12 +555,20 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
         try {
             setIsLoading(true);
 
-            // Separate bills and recharges
-            const bills = itemsToProcess.filter(item => 'approved_amount' in item);
-            const recharges = itemsToProcess.filter(item => 'recharge_amount' in item);
+            // Separate bills and recharges by shape (same as create).
+            // Prefer recharge_amount+recharge_date so prepaid rows never land
+            // in billIds when both keys somehow exist.
+            const recharges = itemsToProcess.filter(
+                (item) => 'recharge_amount' in item && 'recharge_date' in item
+            );
+            const bills = itemsToProcess.filter(
+                (item) =>
+                    !('recharge_amount' in item && 'recharge_date' in item) &&
+                    'approved_amount' in item
+            );
 
-            const billIds = bills.map(item => item.id);
-            const rechargeIds = recharges.map(item => item.id);
+            const billIds = bills.map((item) => item.id);
+            const rechargeIds = recharges.map((item) => item.id);
 
             // Use API route to handle updates in chunks and avoid timeouts
             const response = await fetch('/api/batch/add-items', {

@@ -1,128 +1,120 @@
 'use client';
 import { AlertModal } from '@/components/modal/alert-modal';
-import { createClient } from '@/lib/supabase/client';
 import { PrepaidRechargeTableProps } from '@/types/connections-type';
 import { Archive } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import IconButtonHover from './icon-button-hover';
 import { useToast } from '../ui/use-toast';
-import { useUser } from '@/hooks/useUser';
+import { createClient } from '@/lib/supabase/client';
+import { toLocalDateString } from '@/lib/utils/date-format';
+
+/**
+ * Resolve a new validate_at when adding a recharge, matching prior button logic.
+ * Returns null when the existing batch date should be left alone.
+ */
+async function resolveValidateAtForRecharge(
+  batchId: string,
+  rechargeDate: string | null
+): Promise<string | null> {
+  if (!rechargeDate) return null;
+
+  const supabase = createClient();
+  const { data: batch } = await supabase
+    .from('batches')
+    .select('validate_at')
+    .eq('batch_id', batchId)
+    .maybeSingle();
+
+  const today = toLocalDateString();
+  const rechargeDay = rechargeDate.slice(0, 10);
+
+  if (rechargeDay <= today) {
+    return new Date().toISOString();
+  }
+  if (batch?.validate_at && rechargeDay <= batch.validate_at.slice(0, 10)) {
+    return new Date(rechargeDate).toISOString();
+  }
+  return null;
+}
 
 export const AddRechargeInBatchButton = ({
   row
 }: {
   row: { original: PrepaidRechargeTableProps };
 }) => {
-
-  const user = useUser()
-  const supabase = createClient();
   const router = useRouter();
-  const { toast } = useToast()
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const params = useParams();
   const batchId = params.id as string;
   const [open, setOpen] = useState(false);
 
-  const addRechargeFromBatch = async ({
-    rechargeId,
-    batchId,
-    rechargeAmount,
-    rechargeDate
-  }: {
-    rechargeId: string;
-    batchId: string;
-    rechargeAmount: number | null
-    rechargeDate: string | null
-  }) => {
-    const { data: batch } = await supabase
-      .from('batches')
-      .select('*')
-      .eq('batch_id', batchId)
-      .single();
+  const addRechargeFromBatch = async () => {
+    try {
+      const validateAt = await resolveValidateAtForRecharge(
+        batchId,
+        row.original.recharge_date || null
+      );
 
-    if (!batch) {
+      // Link via API (items first, then unpaid touch) so Batch Advice fires.
+      // Do not update batches from the client before linking — that races an
+      // empty advice and/or skips the post-link webhook touch.
+      const response = await fetch('/api/batch/add-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batchId,
+          rechargeIds: [row.original.id],
+          ...(validateAt ? { validateAt } : {})
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add recharge to batch');
+      }
+
+      toast({
+        title: 'Success',
+        description: `Recharge added successfully to batch ${batchId}`,
+        variant: 'success'
+      });
+      router.refresh();
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: 'Batch not found',
+        description:
+          error instanceof Error ? error.message : 'Failed to add recharge to batch',
         variant: 'destructive'
       });
-    }
-    if (rechargeDate && new Date(rechargeDate) <= new Date()) {
-      const { error: updateError } = await supabase
-        .from('batches')
-        .update({ validate_at: new Date().toISOString(), updated_by: user?.id || null })
-        .eq('batch_id', batchId);
-
-      if (updateError) {
-        toast({
-          title: 'Error',
-          description: 'Failed to update batch validation date',
-          variant: 'destructive'
-        });
-      }
-    } else if (batch.validate_at && rechargeDate && new Date(rechargeDate) <= new Date(batch.validate_at)) {
-      const { error: updateError } = await supabase
-        .from('batches')
-        .update({ validate_at: new Date(rechargeDate).toISOString(), updated_by: user?.id || null })
-        .eq('batch_id', batchId);
-
-      if (updateError) {
-        toast({
-          title: 'Error',
-          description: 'Failed to update batch validation date',
-          variant: 'destructive'
-        });
-        return;
-      }
-    }
-
-    const { error } = await supabase
-      .from('prepaid_recharge')
-      .update({ batch_id: batchId, recharge_status: 'batch', recharge_amount: rechargeAmount, updated_by: user?.id || null })
-      .eq('id', rechargeId)
-      .select();
-
-    toast({
-      title: 'Success',
-      description: `Recharge added successfully to batch ${batchId}`,
-      variant: 'success'
-    })
-    router.refresh();
-    if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to add recharge to batch',
-        variant: 'destructive'
-      });
-      return;
     }
   };
 
-  if (batchId) {
-    return (
-      <>
-        <AlertModal
-          title={`Do you want to add the recharge to batch ${batchId}?`}
-          isOpen={open}
-          onClose={() => setOpen(false)}
-          onConfirm={() => {
-            startTransition(() => {
-              addRechargeFromBatch({ rechargeId: row.original.id, batchId: batchId, rechargeAmount: row.original.recharge_amount || 0, rechargeDate: row.original.recharge_date || null });
-            });
-            setOpen(false);
-          }}
-          loading={isPending}
-        />
-        <IconButtonHover
-          variant="ghost"
-          size="icon"
-          onClick={() => setOpen(true)}
-          icon={Archive} text={'Add this recharge to the batch.'}>
-        </IconButtonHover >
-
-      </>
-    );
+  if (!batchId) {
+    return null;
   }
-  return null;
+
+  return (
+    <>
+      <AlertModal
+        title={`Do you want to add the recharge to batch ${batchId}?`}
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        onConfirm={() => {
+          startTransition(() => {
+            void addRechargeFromBatch();
+          });
+          setOpen(false);
+        }}
+        loading={isPending}
+      />
+      <IconButtonHover
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpen(true)}
+        icon={Archive}
+        text={'Add this recharge to the batch.'}
+      />
+    </>
+  );
 };

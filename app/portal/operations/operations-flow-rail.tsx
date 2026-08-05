@@ -13,7 +13,7 @@ const STEPS: {
   label: string;
   caption: string;
 }[] = [
-  { id: 'new', label: 'New', caption: 'Bills & low balance' },
+  { id: 'new', label: 'Review', caption: 'Bills & low balance' },
   { id: 'approved', label: 'Approved', caption: 'Ready to batch' },
   { id: 'batch', label: 'Batch', caption: 'Process & settle' }
 ];
@@ -25,7 +25,7 @@ type OperationsFlowRailProps = {
 
 /**
  * Sticky stepper that frames Operations as a single pipeline:
- * New -> Approved -> Batch. Badges surface where work is waiting.
+ * Review -> Approved -> Batch. Badges surface where work is waiting.
  */
 export function OperationsFlowRail({
   activeSection,

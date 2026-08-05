@@ -15,7 +15,7 @@ export function PrepaidBatchRecommendations({
     currentDueRechargesData,
     nextSevenDaysRechargesData
 }: BatchRecommendationProps) {
-    const { addItem, openModal, setBatchName, items } = useBatchCartStore();
+    const { addAllItem, openModal, setBatchName, items } = useBatchCartStore();
 
     // Filter out recharges already in the cart for each category
     const filterOutCartItems = (data: PrepaidRechargeTableProps[] | null) =>
@@ -42,12 +42,7 @@ export function PrepaidBatchRecommendations({
         visibleCardsCount === 3 ? 3 : 4;
 
     const handleCardClick = (category: string, data: PrepaidRechargeTableProps[]) => {
-        data.forEach(item => {
-            // Only add if item is not already in the cart
-            if (!items.some(existingItem => existingItem.id === item.id)) {
-                addItem(item);
-            }
-        });
+        addAllItem(data);
         openModal();
         setBatchName(`${category.charAt(0).toUpperCase() + category.slice(1)} Recharges - ${new Date().toLocaleDateString()}`);
     };

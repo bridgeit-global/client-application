@@ -41,7 +41,6 @@ export const columns: ColumnDef<LowBalanceConnectionTableProps>[] = [
     header: 'Action',
     cell: ({ row }) => {
       const router = useRouter();
-      const currentStatus = row.original.current_status;
       const { toast } = useToast();
       const [isOpen, setIsOpen] = useState(false);
       const [amount, setAmount] = useState('');
@@ -97,12 +96,13 @@ export const columns: ColumnDef<LowBalanceConnectionTableProps>[] = [
 
           toast({
             title: 'Recharge Requested 🎉',
-            description: `Your account will be recharged with ₹${amount} on ${rechargeDate}`,
+            description: `Your account will be recharged with ₹${amount} on ${rechargeDate}. It is now in Approved → Recharges.`,
             variant: 'success'
           });
           setIsOpen(false);
           setAmount('');
           router.refresh();
+          router.push('/portal/operations?tab=recharge-approved');
         } catch (error) {
           const message =
             error instanceof Error
@@ -122,8 +122,6 @@ export const columns: ColumnDef<LowBalanceConnectionTableProps>[] = [
       return (
         <div>
           <Button
-            variant={currentStatus === true ? 'outline' : 'default'}
-            disabled={currentStatus === true}
             onClick={() => setIsOpen(true)}
             size="sm"
           >

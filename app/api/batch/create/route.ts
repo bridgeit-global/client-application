@@ -43,8 +43,22 @@ export async function POST(req: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser();
       console.log('user', user);
       const { data, batchName, validate_at } = body;
-      const recharge_ids = data.filter((e: any) => e.paytype === 0).map((e: any) => e.id);
-      const bill_ids = data.filter((e: any) => e.paytype !== 0).map((e: any) => e.id);
+      // Prefer explicit kind from the cart. Falling back to paytype alone
+      // mis-routes prepaid_recharge rows that sit on paytype≠0 connections
+      // into the bills update path (empty batch).
+      const recharge_ids = data
+        .filter(
+          (e: { kind?: string; paytype?: number }) =>
+            e.kind === 'recharge' || (e.kind == null && e.paytype === 0)
+        )
+        .map((e: { id: string }) => e.id);
+      const bill_ids = data
+        .filter(
+          (e: { kind?: string; paytype?: number }) =>
+            e.kind === 'bill' ||
+            (e.kind == null && e.paytype !== 0)
+        )
+        .map((e: { id: string }) => e.id);
 
       const { data: batch_data, error: batch_error } = await supabase
         .from('batches')

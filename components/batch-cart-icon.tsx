@@ -484,7 +484,16 @@ export function BatchCartIcon({ fetchData }: BatchCartIconProps) {
     const handleCreateBatch = async () => {
         try {
             setIsLoading(true);
-            const data = items.map((item: CartItem) => ({ id: item.id, paytype: item.connections?.paytype }));
+            const data = items.map((item: CartItem) => ({
+                id: item.id,
+                // Classify by cart item shape — more reliable than connection.paytype
+                // when prepaid_recharge rows exist on non-prepaid connections.
+                kind:
+                    'recharge_amount' in item && 'recharge_date' in item
+                        ? 'recharge'
+                        : 'bill',
+                paytype: item.connections?.paytype
+            }));
             const body = { data, batchName, validate_at };
             const response = await fetch('/api/batch/create', {
                 method: 'POST',

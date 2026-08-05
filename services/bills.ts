@@ -1282,45 +1282,35 @@ export const fetchRechargeRecommendations = cache(async (): Promise<{
   const supabase = await createClient();
   const today = new Date().toISOString().split('T')[0];
 
-  // Get total bills count
-  const { data: totalRechargesData } = await supabase
-    .from('prepaid_recharge')
-    .select('*,connections!inner(*,biller_list!inner(*))')
-    .match({
-      is_active: true,
-      recharge_status: 'approved',
-      is_deleted: false
-    })
-    .eq('connections.is_active', true);
+  // Keep filters aligned with fetchApprovedPrepaidRecharges so recommendation
+  // cards never count rows the approved table / batch create cannot use
+  // (e.g. prepaid_recharge rows on postpaid paytype≠0 connections).
+  const approvedPrepaidBase = () =>
+    supabase
+      .from('prepaid_recharge')
+      .select('*,connections!inner(*,biller_list!inner(*),sites!inner(*))')
+      .match({
+        is_active: true,
+        recharge_status: 'approved',
+        is_deleted: false
+      })
+      .eq('connections.paytype', 0)
+      .eq('connections.is_active', true);
 
+  const { data: totalRechargesData } = await approvedPrepaidBase();
 
-  // Get overdue bills count (bills with due date < today)
-  const { data: currentDueRechargesData } = await supabase
-    .from('prepaid_recharge')
-    .select('*,connections!inner(*,biller_list!inner(*))')
-    .match({
-      is_active: true,
-      is_deleted: false,
-      recharge_status: 'approved',
-    })
-    .eq('recharge_date', today)
-    .eq('connections.is_active', true);
+  const { data: currentDueRechargesData } = await approvedPrepaidBase().eq(
+    'recharge_date',
+    today
+  );
 
-  // Get next seven days bills (excluding today)
+  // Get next seven days recharges (excluding today)
   const tomorrow = addDays(new Date(today), 1).toISOString().split('T')[0];
   const sevenDaysFromToday = addDays(new Date(today), 7).toISOString().split('T')[0];
 
-  const { data: nextSevenDaysRechargesData } = await supabase
-    .from('prepaid_recharge')
-    .select('*,connections!inner(*,biller_list!inner(*))')
-    .match({
-      is_active: true,
-      is_deleted: false,
-      recharge_status: 'approved'
-    })
+  const { data: nextSevenDaysRechargesData } = await approvedPrepaidBase()
     .gte('recharge_date', tomorrow)
-    .lte('recharge_date', sevenDaysFromToday)
-    .eq('connections.is_active', true);
+    .lte('recharge_date', sevenDaysFromToday);
 
   return {
     totalRechargesData: totalRechargesData || [],

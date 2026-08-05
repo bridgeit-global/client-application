@@ -41,6 +41,9 @@ export type CreatePrepaidRechargeResult =
  * Create an approved prepaid recharge from Low Balance.
  * Client-side inserts are blocked by RLS; this verifies the connection is
  * visible to the signed-in user, then inserts with the portal service client.
+ *
+ * Multiple open recharges per connection are allowed (intent to pay). The only
+ * hard block is the DB unique key (connection_id, recharge_date, amount).
  */
 export async function createPrepaidRecharge(
   input: CreatePrepaidRechargeInput
@@ -71,7 +74,7 @@ export async function createPrepaidRecharge(
   // RLS-scoped: if the user cannot see this connection, deny.
   const { data: connection, error: connectionError } = await supabase
     .from('low_balance_connections')
-    .select('id, current_status')
+    .select('id')
     .eq('id', connectionId)
     .maybeSingle();
 
@@ -87,10 +90,24 @@ export async function createPrepaidRecharge(
       error: 'Connection not found or you do not have access.'
     };
   }
-  if (connection.current_status === true) {
+
+  // Unique (connection_id, recharge_date, recharge_amount) — only this combo
+  // blocks another request. Other open recharges on the connection are fine.
+  const { data: exactMatch, error: existingError } = await supabase
+    .from('prepaid_recharge')
+    .select('id, recharge_status')
+    .eq('connection_id', connectionId)
+    .eq('recharge_date', rechargeDate)
+    .eq('recharge_amount', rechargeAmount)
+    .maybeSingle();
+
+  if (existingError) {
+    return { ok: false, error: handleDatabaseError(existingError).message };
+  }
+  if (exactMatch) {
     return {
       ok: false,
-      error: 'A recharge is already pending for this connection.'
+      error: `A ₹${rechargeAmount} recharge on ${rechargeDate} already exists for this connection. Choose a different date or amount to create another.`
     };
   }
 

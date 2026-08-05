@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import Calendar from '@/components/calendar';
 import { StationTypeSelector } from '@/components/input/station-type-selector';
@@ -18,8 +19,8 @@ import { cn } from '@/lib/utils';
 import { formatRupees } from '@/lib/utils/number-format';
 import { useAsyncData } from '@/hooks/use-async-data';
 import type { ArrearsProps, PenaltiesProps } from '@/types/charges-type';
-import { getBillOverview, getInsightsSummary, getRechargeOverview } from '../actions';
-import { PanelCalendarLoading, PanelError } from '../panel-states';
+import { getBillOverview, getInsightsSummary, getPrepaidBalanceHealth } from '../actions';
+import { PanelCalendarLoading, PanelError, PanelHealthLoading } from '../panel-states';
 
 type InsightsTab = 'bill' | 'recharge';
 
@@ -172,37 +173,108 @@ function BillInsightsContent({ enabled }: { enabled: boolean }) {
   );
 }
 
+function HealthCard({
+  title,
+  count,
+  caption,
+  accentClassName,
+  href
+}: {
+  title: string;
+  count: number;
+  caption: string;
+  accentClassName?: string;
+  href?: string;
+}) {
+  const body = (
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:bg-accent/50">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        {href ? (
+          <span className="text-xs font-medium text-primary">View</span>
+        ) : null}
+      </div>
+      <p
+        className={cn(
+          'mt-2 text-2xl font-semibold tracking-tight',
+          accentClassName
+        )}
+      >
+        {count}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{caption}</p>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        {body}
+      </Link>
+    );
+  }
+
+  return body;
+}
+
 function RechargeInsightsContent({ enabled }: { enabled: boolean }) {
   const [type, setType] = useState<string[]>([]);
   const typeKey = type.join(',');
   const { data, isLoading, error, refetch } = useAsyncData(
-    () => getRechargeOverview(typeKey ? { type: typeKey } : {}),
-    { enabled, deps: [typeKey], cacheScope: 'ops:insights:recharge' }
+    () => getPrepaidBalanceHealth(typeKey ? { type: typeKey } : {}),
+    { enabled, deps: [typeKey], cacheScope: 'ops:insights:recharge-health' }
   );
 
   if (error) return <PanelError message={error.message} onRetry={refetch} />;
-  if (isLoading && !data) return <PanelCalendarLoading />;
+  if (isLoading && !data) return <PanelHealthLoading />;
 
-  const rows = data?.data ?? [];
+  const health = data;
+  const hasConnections = (health?.totalCount ?? 0) > 0;
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <StatusLegend type="prepaid" />
+        <p className="text-sm text-muted-foreground">
+          Prepaid balance health across active connections
+        </p>
         <StationTypeSelector
           value={type}
           onChange={(types) => setType(types)}
           className="ml-auto"
         />
       </div>
-      <Calendar
-        billsData={rows}
-        sectionDetails={{ status: 'all', type: 'prepaid' }}
-      />
-      <p className="text-xs text-muted-foreground">{RANGE_HINT}</p>
-      {rows.length === 0 ? (
+
+      {hasConnections ? (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <HealthCard
+            title="Nearing low balance"
+            count={health?.nearingCount ?? 0}
+            caption="Below 1.5× threshold"
+            accentClassName="text-amber-600 dark:text-amber-500"
+            href="/portal/operations?tab=recharge-low-balance"
+          />
+          <HealthCard
+            title="Safe"
+            count={health?.safeCount ?? 0}
+            caption="At or above 1.5× threshold"
+            accentClassName="text-emerald-600 dark:text-emerald-500"
+          />
+          <HealthCard
+            title="Fetch issues"
+            count={health?.fetchIssueCount ?? 0}
+            caption="No fetch, stale 3+ days, or no threshold"
+            accentClassName="text-destructive"
+          />
+        </div>
+      ) : (
         <p className="text-sm text-muted-foreground">
-          No recharges for the selected filters.
+          No prepaid connections.
+        </p>
+      )}
+
+      {hasConnections ? (
+        <p className="text-xs text-muted-foreground">
+          {health?.totalCount ?? 0} prepaid connections
         </p>
       ) : null}
     </>
@@ -257,7 +329,7 @@ export function OperationalInsightsPanel() {
                   <CalendarDays className="h-5 w-5" aria-hidden />
                 </span>
                 <CardTitle className="text-lg font-semibold tracking-tight md:text-xl">
-                  Operational Insights
+                  Insights
                 </CardTitle>
               </div>
               <div className="flex flex-wrap items-center gap-2 md:justify-end">

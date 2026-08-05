@@ -36,6 +36,23 @@ export function PanelCalendarLoading() {
   );
 }
 
+/** Card-shaped placeholder for the prepaid balance-health summary. */
+export function PanelHealthLoading() {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label="Loading balance health">
+      <div className="flex items-center justify-between gap-2">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-9 w-48" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PanelError({
   message,
   onRetry

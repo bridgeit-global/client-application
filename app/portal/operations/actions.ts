@@ -24,6 +24,7 @@ import {
 } from '@/lib/supabase/server';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
 import { toLocalDateString } from '@/lib/utils/date-format';
+import { processValues } from '@/lib/utils';
 import { SearchParamsProps } from '@/types';
 
 export type CreatePrepaidRechargeInput = {
@@ -226,6 +227,125 @@ export async function getApprovedBills(searchParams: SearchParamsProps) {
 
 export async function getRechargeOverview(searchParams: SearchParamsProps) {
   return fetchPrepaidAllBills(searchParams);
+}
+
+export type PrepaidBalanceHealth = {
+  totalCount: number;
+  nearingCount: number;
+  safeCount: number;
+  fetchIssueCount: number;
+  noBalanceCount: number;
+  staleCount: number;
+  missingThresholdCount: number;
+};
+
+const NEARING_RATIO = 1.5;
+const STALE_DAYS = 3;
+
+type PrepaidHealthRow = {
+  id: string;
+  prepaid_info:
+    | { threshold_amount: number | null }
+    | { threshold_amount: number | null }[]
+    | null;
+  prepaid_balances: { fetch_date: string; balance_amount: number }[] | null;
+};
+
+/**
+ * Classify one prepaid connection into Nearing / Safe / Fetch issues.
+ * Fetch issues are checked first and are mutually exclusive with the balance
+ * buckets so counts sum to the filtered prepaid total.
+ */
+function classifyPrepaidHealth(
+  connection: PrepaidHealthRow,
+  staleCutoff: string
+): 'nearing' | 'safe' | 'no_balance' | 'stale' | 'missing_threshold' {
+  const balances = connection.prepaid_balances ?? [];
+  if (balances.length === 0) return 'no_balance';
+
+  const latest = balances.reduce((a, b) =>
+    new Date(b.fetch_date) > new Date(a.fetch_date) ? b : a
+  );
+  const latestDate = (latest.fetch_date || '').slice(0, 10);
+  if (!latestDate || latestDate < staleCutoff) return 'stale';
+
+  const info = Array.isArray(connection.prepaid_info)
+    ? connection.prepaid_info[0]
+    : connection.prepaid_info;
+  const threshold = info?.threshold_amount;
+  if (threshold == null) return 'missing_threshold';
+
+  return latest.balance_amount < threshold * NEARING_RATIO ? 'nearing' : 'safe';
+}
+
+/**
+ * Balance-health rollup for the Operational Insights Recharges tab. Replaces
+ * the calendar view with Nearing / Safe / Fetch-issues counts.
+ */
+export async function getPrepaidBalanceHealth(
+  searchParams: SearchParamsProps = {}
+): Promise<PrepaidBalanceHealth> {
+  const supabase = await createClient();
+  const { type } = searchParams;
+
+  let query = supabase
+    .from('connections')
+    .select(
+      'id, prepaid_info(threshold_amount), prepaid_balances(balance_amount, fetch_date), sites!inner(type)'
+    )
+    .match({ paytype: 0, is_active: true, is_deleted: false });
+
+  if (type) {
+    const value = processValues(type);
+    if (value.length) {
+      query = query.in('sites.type', value);
+    }
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('getPrepaidBalanceHealth error', error);
+    throw new Error(handleDatabaseError(error).message);
+  }
+
+  const staleCutoffDate = new Date();
+  staleCutoffDate.setDate(staleCutoffDate.getDate() - STALE_DAYS);
+  const staleCutoff = toLocalDateString(staleCutoffDate);
+
+  const result: PrepaidBalanceHealth = {
+    totalCount: data?.length ?? 0,
+    nearingCount: 0,
+    safeCount: 0,
+    fetchIssueCount: 0,
+    noBalanceCount: 0,
+    staleCount: 0,
+    missingThresholdCount: 0
+  };
+
+  for (const row of data ?? []) {
+    switch (classifyPrepaidHealth(row as PrepaidHealthRow, staleCutoff)) {
+      case 'nearing':
+        result.nearingCount += 1;
+        break;
+      case 'safe':
+        result.safeCount += 1;
+        break;
+      case 'no_balance':
+        result.noBalanceCount += 1;
+        result.fetchIssueCount += 1;
+        break;
+      case 'stale':
+        result.staleCount += 1;
+        result.fetchIssueCount += 1;
+        break;
+      case 'missing_threshold':
+        result.missingThresholdCount += 1;
+        result.fetchIssueCount += 1;
+        break;
+    }
+  }
+
+  return result;
 }
 
 export async function getLowBalanceConnections(searchParams: SearchParamsProps) {

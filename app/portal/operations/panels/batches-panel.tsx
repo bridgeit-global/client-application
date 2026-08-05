@@ -20,7 +20,8 @@ function SettlementRequiredAlert({ enabled }: { enabled: boolean }) {
     () => getSettlementRequiredBatchCount(),
     {
       enabled,
-      deps: []
+      deps: [],
+      cacheScope: 'ops:settlement-count'
     }
   );
 

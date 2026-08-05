@@ -222,6 +222,17 @@ export const fetchBillRecords = cache(async (): Promise<CardResult> => {
 
 
 
+/** Serialize Postgrest errors for server-action responses (plain JSON only). */
+function toSerializableError(error: {
+  code?: string;
+  message?: string;
+}): SupabaseError {
+  return {
+    code: error.code ?? 'UNKNOWN',
+    message: error.message ?? 'Unknown database error'
+  };
+}
+
 export const fetchNewBills = cache(
   async (
     searchParams: SearchParamsProps,
@@ -250,100 +261,112 @@ export const fetchNewBills = cache(
     let totalAmount = 0;
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
-    let query = supabase
-      .from('bills')
-      .select(
-        '*,additional_charges(*),adherence_charges(*),connections!inner(id,site_id,biller_list!inner(*),sites!inner(type),payments(amount),account_number,paytype,is_active,bills(billed_unit,bill_type,is_valid))',
-        {
-          count: 'estimated'
-        }
-      )
-      .match({ is_active: true, is_valid: true, bill_status: 'new', payment_status: false, is_deleted: false })
-      .not('connections.paytype', 'eq', 0)
-      .eq('connections.is_active', true)
 
-    // Apply sorting if sort parameter is provided
-    if (sort) {
-      query = query.order(sort, { ascending: order === 'asc' });
-    } else {
-      // Keep the default sorting by due_date if no sort parameter
-      query = query.order('due_date', { ascending: true });
-    }
+    // List payload: columns the table / export need. Avoid `content` (large),
+    // nested `connections.bills(...)`, and `payments(...)` — they dominated
+    // payload size and query time without being used in the list UI.
+    const listSelect =
+      'id,connection_id,bill_number,bill_date,bill_amount,billed_unit,unit_cost,swap_cost,start_date,end_date,due_date,due_date_rebate,discount_date,discount_date_rebate,penalty_amount,bill_type,bill_type_reason,bill_status,is_active,is_valid,payment_status,content_type,additional_charges(arrears),adherence_charges(lpsc),connections!inner(id,site_id,account_number,paytype,is_active,biller_list!inner(alias,board_name,state),sites!inner(type))';
+
+    // Count-only: include embeds that filters may reference. head:true means
+    // no row payload — only the exact total.
+    const countSelect =
+      'id, additional_charges(id), adherence_charges(id), connections!inner(id, account_number, site_id, biller_list!inner(alias), sites!inner(type))';
 
     const todayDate = new Date().toISOString().split('T')[0];
     const sevenDaysFromToday = new Date();
     sevenDaysFromToday.setDate(sevenDaysFromToday.getDate() + 7);
+    const sevenDay = sevenDaysFromToday.toISOString().split('T')[0];
     const fourteenDaysFromToday = new Date();
     fourteenDaysFromToday.setDate(fourteenDaysFromToday.getDate() + 14);
+    const fourteenDay = fourteenDaysFromToday.toISOString().split('T')[0];
 
-    if (bill_category === 'overdue') {
-      // Bills whose due date is before today
-      query = query.lt('due_date', todayDate);
-    } else if (bill_category === 'seven_day') {
-      // Bills due within next 7 days (including today)
-      query = query
-        .gte('due_date', todayDate)
-        .lt('due_date', sevenDaysFromToday.toISOString().split('T')[0]);
-    } else if (bill_category === 'next_seven_day') {
-      // Bills due between 7 and 14 days from today
-      query = query
-        .gte('due_date', sevenDaysFromToday.toISOString().split('T')[0])
-        .lt('due_date', fourteenDaysFromToday.toISOString().split('T')[0]);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const applyNewBillFilters = (q: any) => {
+      let query = q
+        .match({
+          is_active: true,
+          is_valid: true,
+          bill_status: 'new',
+          payment_status: false,
+          is_deleted: false
+        })
+        .not('connections.paytype', 'eq', 0)
+        .eq('connections.is_active', true);
 
-    if (is_arrear == 'true') {
-      query = query.not('additional_charges', 'is', null)
-        .gt('additional_charges.arrears', 0)
-    } else if (is_arrear == 'false') {
-      query = query.not('additional_charges', 'is', null).lt('additional_charges.arrears', 0)
-    }
+      if (bill_category === 'overdue') {
+        query = query.lt('due_date', todayDate);
+      } else if (bill_category === 'seven_day') {
+        query = query.gte('due_date', todayDate).lt('due_date', sevenDay);
+      } else if (bill_category === 'next_seven_day') {
+        query = query.gte('due_date', sevenDay).lt('due_date', fourteenDay);
+      }
 
-    if (penalty) {
-      const penaltyArray = Array.isArray(penalty) ? penalty : [penalty];
-      penaltyArray.map((e) => {
-        query = query.not('adherence_charges', 'is', null).gt(`adherence_charges.${e}`, 0)
-      })
-    }
+      if (is_arrear == 'true') {
+        query = query
+          .not('additional_charges', 'is', null)
+          .gt('additional_charges.arrears', 0);
+      } else if (is_arrear == 'false') {
+        query = query
+          .not('additional_charges', 'is', null)
+          .lt('additional_charges.arrears', 0);
+      }
 
-    if (type) {
-      const value = processValues(type);
-      query = query.in('connections.sites.type', value);
-    }
+      if (penalty) {
+        const penaltyArray = Array.isArray(penalty) ? penalty : [penalty];
+        penaltyArray.forEach((e) => {
+          query = query
+            .not('adherence_charges', 'is', null)
+            .gt(`adherence_charges.${e}`, 0);
+        });
+      }
 
+      if (type) {
+        query = query.in('connections.sites.type', processValues(type));
+      }
+      if (biller_id) {
+        query = query.in(
+          'connections.biller_list.alias',
+          processValues(biller_id)
+        );
+      }
+      if (site_id) {
+        query = query.in('connections.site_id', processValues(site_id));
+      }
+      if (account_number) {
+        query = query.in(
+          'connections.account_number',
+          processValues(account_number)
+        );
+      }
+      if (bill_date_start && bill_date_end) {
+        query = query
+          .gte('bill_date', bill_date_start)
+          .lte('bill_date', bill_date_end);
+      }
+      if (due_date_start && due_date_end) {
+        query = query
+          .gte('due_date', due_date_start)
+          .lte('due_date', due_date_end);
+      }
+      if (payment_status) {
+        query = query.eq('payment_status', payment_status);
+      }
 
-    if (biller_id) {
-      const value = processValues(biller_id);
-      query = query.in('connections.biller_list.alias', value);
-    }
-
-    if (site_id) {
-      const value = processValues(site_id);
-      query = query.in('connections.site_id', value);
-    }
-
-    if (account_number) {
-      const value = processValues(account_number);
-      query = query.in('connections.account_number', value);
-    }
-
-    if (bill_date_start && bill_date_end) {
-      query = query
-        .gte('bill_date', bill_date_start)
-        .lte('bill_date', bill_date_end);
-    }
-
-    if (due_date_start && due_date_end) {
-      query = query
-        .gte('due_date', due_date_start)
-        .lte('due_date', due_date_end);
-    }
-
-    if (payment_status) {
-      query = query.eq('payment_status', payment_status);
-    }
+      return query;
+    };
 
     if (options?.is_export) {
-      const { data, error } = await query;
+      let exportQuery = applyNewBillFilters(
+        supabase.from('bills').select(listSelect)
+      );
+      if (sort) {
+        exportQuery = exportQuery.order(sort, { ascending: order === 'asc' });
+      } else {
+        exportQuery = exportQuery.order('due_date', { ascending: true });
+      }
+
+      const { data, error } = await exportQuery;
 
       if (error) {
         return {
@@ -351,36 +374,44 @@ export const fetchNewBills = cache(
           totalCount: 0,
           pageCount: 0,
           totalAmount,
-          error: error
+          error: toSerializableError(error)
         };
       }
       const { site_name } = await fetchOrganization();
 
-      const modifiedData = data.map((site) => {
-        return {
-          [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.connections.sites?.type,
-          account_number: String(site.connections.account_number),
-          biller_board: site.connections.biller_list.board_name,
-          state: site.connections.biller_list.state,
-          pay_type: 'postpaid',
-          bill_number: site.bill_number,
-          bill_date: ddmmyy(site.bill_date),
-          due_date: ddmmyy(getDueDate(site.discount_date, site.due_date)),
-          bill_amount: site.bill_amount,
-          before_due_amount: getBeforeDueAmount(site),
-          after_due_amount: getAfterDueAmount(site),
-          bill_type: site.bill_type,
-          bill_type_reason: Object.keys(site?.bill_type_reason || {}).filter(key => !(site?.bill_type_reason as Record<string, boolean>)[key]).map(key => camelCaseToTitleCase(key) + ' discrepancy').join(', '),
-          billed_unit: site.billed_unit,
-          unit_cost: getUnitCostStatus(site),
-          swap_cost: site.swap_cost,
-          start_date: ddmmyy(site.start_date),
-          end_date: ddmmyy(site.end_date),
-          arrears: site.additional_charges?.arrears,
-          penalty: site.adherence_charges?.lpsc,
-        };
-      });
+      const modifiedData = (data as unknown as AllBillTableProps[]).map(
+        (site) => {
+          return {
+            [`${site_name}_id`]: site.connections.site_id,
+            [`${site_name}_type`]: site.connections.sites?.type,
+            account_number: String(site.connections.account_number),
+            biller_board: site.connections.biller_list.board_name,
+            state: site.connections.biller_list.state,
+            pay_type: 'postpaid',
+            bill_number: site.bill_number,
+            bill_date: ddmmyy(site.bill_date),
+            due_date: ddmmyy(getDueDate(site.discount_date, site.due_date)),
+            bill_amount: site.bill_amount,
+            before_due_amount: getBeforeDueAmount(site),
+            after_due_amount: getAfterDueAmount(site),
+            bill_type: site.bill_type,
+            bill_type_reason: Object.keys(site?.bill_type_reason || {})
+              .filter(
+                (key) =>
+                  !(site?.bill_type_reason as Record<string, boolean>)[key]
+              )
+              .map((key) => camelCaseToTitleCase(key) + ' discrepancy')
+              .join(', '),
+            billed_unit: site.billed_unit,
+            unit_cost: getUnitCostStatus(site),
+            swap_cost: site.swap_cost,
+            start_date: ddmmyy(site.start_date),
+            end_date: ddmmyy(site.end_date),
+            arrears: site.additional_charges?.arrears,
+            penalty: site.adherence_charges?.lpsc
+          };
+        }
+      );
 
       return {
         data: [],
@@ -390,24 +421,46 @@ export const fetchNewBills = cache(
       };
     }
 
-    // Pagination
-    query = query.range(offset, offset + pageLimit - 1);
+    // Page rows and total count in parallel. Counting with the full nested
+    // select (especially count=estimated) was the slow part of this panel.
+    let dataQuery = applyNewBillFilters(
+      supabase.from('bills').select(listSelect)
+    );
+    if (sort) {
+      dataQuery = dataQuery.order(sort, { ascending: order === 'asc' });
+    } else {
+      dataQuery = dataQuery.order('due_date', { ascending: true });
+    }
+    dataQuery = dataQuery.range(offset, offset + pageLimit - 1);
 
-    const { data, count, error } = await query;
-    if (error) {
-      console.error('error', error);
+    let countQuery = applyNewBillFilters(
+      supabase.from('bills').select(countSelect, { count: 'exact', head: true })
+    );
+
+    const [pageResult, countResult] = await Promise.all([
+      dataQuery,
+      countQuery
+    ]);
+
+    if (pageResult.error) {
+      console.error('fetchNewBills page error', pageResult.error);
       return {
         data: [],
         totalCount: 0,
         pageCount: 0,
         totalAmount,
-        error: error
+        error: toSerializableError(pageResult.error)
       };
     }
-    const totalCount = count || 0;
+    if (countResult.error) {
+      console.error('fetchNewBills count error', countResult.error);
+      // Still return rows if the count failed — better than an empty panel.
+    }
+
+    const totalCount = countResult.count || 0;
     const pageCount = Math.ceil(totalCount / pageLimit);
     return {
-      data: data,
+      data: (pageResult.data ?? []) as unknown as AllBillTableProps[],
       totalCount,
       pageCount,
       totalAmount

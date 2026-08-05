@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAsyncData } from '@/hooks/use-async-data';
@@ -31,11 +32,28 @@ export function OperationsFlowRail({
   activeSection,
   onNavigate
 }: OperationsFlowRailProps) {
+  // Defer badge counts until after the active panel has had time to claim
+  // the connection — five concurrent count queries were starving New Bills.
+  const [badgesEnabled, setBadgesEnabled] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setBadgesEnabled(true), 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const { data: counts, refetch } = useAsyncData(
     () => getOperationsFlowCounts(),
-    { deps: [] }
+    { enabled: badgesEnabled, deps: [], cacheScope: 'ops:flow-counts' }
   );
-  useRefetchOnFocus(refetch);
+
+  // Debounce focus refetch; visibility can fire several times per switch.
+  const lastRefetchRef = useRef(0);
+  const debouncedRefetch = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefetchRef.current < 2000) return;
+    lastRefetchRef.current = now;
+    refetch();
+  }, [refetch]);
+  useRefetchOnFocus(debouncedRefetch);
 
   const countFor = (id: FlowSectionId): number => {
     if (!counts) return 0;

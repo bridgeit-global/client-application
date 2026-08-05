@@ -116,7 +116,11 @@ function OperationsSection({
       id={sectionId}
       forceVisible={forceVisible}
       onVisible={handleVisible}
-      placeholderHeight={480}
+      // No positive rootMargin — preloading Approved/Batch (heavy nested
+      // selects) while New Bills is still in flight kept that panel on
+      // skeletons for many seconds.
+      rootMargin="0px"
+      placeholderHeight={640}
       className="scroll-mt-20"
     >
       <Card className="border-border bg-card shadow-sm">
@@ -247,7 +251,7 @@ export function OperationsView() {
       <OperationalInsightsPanel />
 
       <OperationsFlowRail
-        activeSection={forcedSection ?? 'new'}
+        activeSection={TAB_TO_SECTION[activeTab]}
         onNavigate={handleSectionNavigate}
       />
 

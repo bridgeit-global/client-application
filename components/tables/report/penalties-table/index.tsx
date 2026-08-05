@@ -6,7 +6,7 @@ import React from 'react';
 type PenaltiesWithLowPf = PenaltiesProps & { low_pf_surcharge?: number };
 const getLowPfSurcharge = (p: PenaltiesProps) => (p as PenaltiesWithLowPf).low_pf_surcharge ?? 0;
 
-export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] }) {
+export default async function PenaltiesTable({ data, title = 'Penalties Table Summary' }: { data: PenaltiesProps[]; title?: string | null }) {
     // Group data by state
     const groupedByState = data.reduce((acc, item) => {
         const state = item.biller_list.state || 'Unknown';
@@ -19,7 +19,7 @@ export default async function PenaltiesTable({ data }: { data: PenaltiesProps[] 
 
     return (
         <div>
-            <h3 className="font-medium mb-3">Penalties Table Summary</h3>
+            {title ? <h3 className="font-medium mb-3">{title}</h3> : null}
             <div className="rounded-md border overflow-auto">
                 <Table>
                     <TableHeader>

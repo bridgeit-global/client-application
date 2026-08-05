@@ -44,12 +44,11 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeGate />
           <PublicBackground />
-          {/* Many pages render tables that call useSearchParams; a boundary
-              here keeps statically prerendered routes from failing the
-              build (bailout subtree defers to client rendering). */}
-          <Suspense fallback={null}>
-            {children}
-          </Suspense>
+          {/* Prefer page-level Suspense around useSearchParams consumers
+              (see portal/operations/page.tsx). A root boundary here remounted
+              the whole tree after every server-action refresh and restarted
+              Operations panel fetches in a loop. */}
+          {children}
         </AuthProvider>
       </body>
     </html>

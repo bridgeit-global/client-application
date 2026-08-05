@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Header from '@/components/layout/header'
 import PageContainer from '@/components/layout/page-container'
 import { ScrollProvider } from '@/components/providers/scroll-provider'
@@ -19,7 +19,11 @@ export function MainWithScrollHeader({
       <main className="w-full flex-1 flex flex-col overflow-hidden">
         <div className="shrink-0">
           {topBanner}
-          <Header />
+          {/* Header reads ?tab via useBatchContext (useSearchParams); the
+              boundary keeps static portal pages out of the CSR bailout. */}
+          <Suspense fallback={null}>
+            <Header />
+          </Suspense>
         </div>
         <div className="flex-1 overflow-hidden min-h-0">
           <PageContainer scrollable>{children}</PageContainer>

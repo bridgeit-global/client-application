@@ -45,7 +45,7 @@ export function RechargeApprovedPanel({ enabled }: Props) {
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => getApprovedRecharges(searchParams),
-    { enabled, deps: [queryKey] }
+    { enabled, deps: [queryKey], cacheScope: 'ops:recharge-approved' }
   );
 
   const rows = data?.data ?? [];

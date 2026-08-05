@@ -52,7 +52,7 @@ export function BillApprovedPanel({ enabled }: Props) {
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => getApprovedBills(searchParams),
-    { enabled, deps: [queryKey] }
+    { enabled, deps: [queryKey], cacheScope: 'ops:bill-approved' }
   );
 
   const rows = data?.data ?? [];

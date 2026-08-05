@@ -105,6 +105,8 @@ export const columns: ColumnDef<AllBillTableProps>[] = [
     id: 'bill',
     header: 'Bill',
     enableResizing: false,
-    cell: ({ row }) => [1, -1].includes(row.original.connections.paytype) && row.original.content && typeof row.original.content === 'string' && row.original.content.trim() !== '' ? <ViewBillButton billId={row.original.id} /> : null
+    // View is shown from content_type; the list payload no longer fetches
+    // the large `content` column, so it cannot gate this cell.
+    cell: ({ row }) => [1, -1].includes(row.original.connections.paytype) && row.original.content_type ? <ViewBillButton billId={row.original.id} /> : null
   }
 ];

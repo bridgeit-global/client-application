@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchOrganization } from '@/services/organization';
 import AIAnalystChat from './components/ai-analyst-chat';
 
+// Request-scoped page; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function Page(props: {
   searchParams: Promise<{
     site_id?: string;

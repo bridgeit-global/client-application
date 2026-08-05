@@ -18,6 +18,9 @@ import { SiteAccountBoardCell } from "@/components/table-cells/site-board-cell"
 import { useSiteName } from "@/lib/utils/site"
 import { SiteProfileMap } from "@/components/maps/site-profile-map"
 
+// Request-scoped page; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function Page(
     props: {
         searchParams: Promise<SearchParamsProps>;

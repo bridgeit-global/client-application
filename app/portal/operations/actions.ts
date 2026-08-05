@@ -23,6 +23,7 @@ import {
   createServicePortalClient
 } from '@/lib/supabase/server';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
+import { toLocalDateString } from '@/lib/utils/date-format';
 import { SearchParamsProps } from '@/types';
 
 export type CreatePrepaidRechargeInput = {
@@ -121,6 +122,96 @@ export async function getBillOverview(searchParams: SearchParamsProps) {
   return { data, arrearsData: arrearsData ?? [], penalties: penalties ?? [] };
 }
 
+export type InsightsSummary = {
+  dueThisWeekCount: number;
+  dueThisWeekAmount: number;
+  arrearsPending: number;
+  arrearsNet: number;
+  penaltiesTotal: number;
+};
+
+type ArrearsRow = {
+  positive_arrears?: number | null;
+  negative_arrears?: number | null;
+};
+
+type PenaltyRow = {
+  lpsc?: number | null;
+  tod_surcharge?: number | null;
+  sanctioned_load_penalty?: number | null;
+  power_factor_penalty?: number | null;
+  capacitor_surcharge?: number | null;
+};
+
+const penaltyRowTotal = (p: PenaltyRow): number =>
+  (p.lpsc || 0) +
+  (p.tod_surcharge || 0) +
+  (p.sanctioned_load_penalty || 0) +
+  (p.power_factor_penalty || 0) +
+  (p.capacitor_surcharge || 0);
+
+/**
+ * Glanceable aggregates for the Operational Insights header chips. Fetched
+ * deferred on the client so it never competes with the first panel load.
+ */
+export async function getInsightsSummary(): Promise<InsightsSummary> {
+  const weekEnd = new Date();
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const supabase = await createClient();
+
+  const [dueResult, { data: arrearsData }, { data: penaltiesData }] =
+    await Promise.all([
+      supabase
+        .from('bills')
+        .select('bill_amount, connections!inner(id)')
+        .match({
+          is_active: true,
+          is_valid: true,
+          is_deleted: false,
+          payment_status: false
+        })
+        .in('bill_status', ['new', 'approved'])
+        .gte('due_date', toLocalDateString())
+        .lte('due_date', toLocalDateString(weekEnd))
+        .not('connections.paytype', 'eq', 0)
+        .eq('connections.is_active', true),
+      fetchArrearsReport(),
+      fetchPenaltiesReport()
+    ]);
+
+  if (dueResult.error) {
+    console.error('getInsightsSummary due-this-week error', dueResult.error);
+  }
+
+  const dueRows: { bill_amount?: number | null }[] = dueResult.data ?? [];
+  const arrearsRows: ArrearsRow[] = arrearsData ?? [];
+  const penaltyRows: PenaltyRow[] = penaltiesData ?? [];
+
+  const arrearsPending = arrearsRows.reduce(
+    (sum, row) => sum + (row.positive_arrears || 0),
+    0
+  );
+  const arrearsNet = arrearsRows.reduce(
+    (sum, row) => sum + (row.positive_arrears || 0) + (row.negative_arrears || 0),
+    0
+  );
+
+  return {
+    dueThisWeekCount: dueRows.length,
+    dueThisWeekAmount: dueRows.reduce(
+      (sum, row) => sum + (Number(row.bill_amount) || 0),
+      0
+    ),
+    arrearsPending,
+    arrearsNet,
+    penaltiesTotal: penaltyRows.reduce(
+      (sum, row) => sum + penaltyRowTotal(row),
+      0
+    )
+  };
+}
+
 export async function getNewBills(searchParams: SearchParamsProps) {
   return fetchNewBills(searchParams);
 }
@@ -181,24 +272,100 @@ export type OperationsFlowCounts = {
 };
 
 /**
+ * Count-only query for flow-rail badges. Uses head:true so no rows are
+ * transferred; the previous implementation ran the full panel select
+ * (nested connections/bills) with limit=1 just to read totalCount.
+ */
+type CountResult = {
+  count: number | null;
+  error: { message: string } | null;
+};
+
+async function countOnly(
+  buildQuery: (supabase: Awaited<ReturnType<typeof createClient>>) => PromiseLike<CountResult>
+): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await buildQuery(supabase);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+async function getNewBillsCount(): Promise<number> {
+  return countOnly((supabase) =>
+    supabase
+      .from('bills')
+      // Nested filters require the relationship in the select (!inner).
+      .select('id, connections!inner(id)', { count: 'exact', head: true })
+      .match({
+        is_active: true,
+        is_valid: true,
+        bill_status: 'new',
+        payment_status: false,
+        is_deleted: false
+      })
+      .not('connections.paytype', 'eq', 0)
+      .eq('connections.is_active', true)
+  );
+}
+
+async function getLowBalanceCount(): Promise<number> {
+  return countOnly((supabase) =>
+    supabase
+      .from('low_balance_connections')
+      .select('id', { count: 'exact', head: true })
+      .match({ is_active: true, is_deleted: false, paytype: 0 })
+  );
+}
+
+async function getApprovedBillsCount(): Promise<number> {
+  return countOnly((supabase) =>
+    supabase
+      .from('bills')
+      .select('id, connections!inner(id)', { count: 'exact', head: true })
+      .match({
+        is_active: true,
+        is_valid: true,
+        payment_status: false,
+        bill_status: 'approved',
+        is_deleted: false
+      })
+      .not('connections.paytype', 'eq', 0)
+      .eq('connections.is_active', true)
+      .eq('connections.is_deleted', false)
+  );
+}
+
+async function getApprovedRechargesCount(): Promise<number> {
+  return countOnly((supabase) =>
+    supabase
+      .from('prepaid_recharge')
+      .select('id, connections!inner(id)', { count: 'exact', head: true })
+      .eq('connections.paytype', 0)
+      .eq('connections.is_active', true)
+      .eq('recharge_status', 'approved')
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+  );
+}
+
+/**
  * Aggregated actionable counts for the Operations flow rail badges.
- * Reuses the panels' cached fetchers with limit=1 so badge counts never
- * drift from the base filters each panel applies.
+ * Count-only queries (head:true) so badges stay cheap and never pull
+ * the panels' nested list payloads.
  */
 export async function getOperationsFlowCounts(): Promise<OperationsFlowCounts> {
   const [newBills, lowBalance, approvedBills, approvedRecharges, settlement] =
     await Promise.all([
-      fetchNewBills({ page: '1', limit: '1' }),
-      fetchLowBalanceConnections({ page: '1', limit: '1' }),
-      fetchApprovedPostpaidBills({ page: '1', limit: '1' }),
-      fetchApprovedPrepaidRecharges({ page: '1', limit: '1' }),
+      getNewBillsCount(),
+      getLowBalanceCount(),
+      getApprovedBillsCount(),
+      getApprovedRechargesCount(),
       getSettlementRequiredBatchCount()
     ]);
 
   return {
-    newCount: (newBills.totalCount ?? 0) + (lowBalance.totalCount ?? 0),
-    approvedCount:
-      (approvedBills.totalCount ?? 0) + (approvedRecharges.totalCount ?? 0),
+    newCount: newBills + lowBalance,
+    approvedCount: approvedBills + approvedRecharges,
     settlementCount: settlement.count
   };
 }

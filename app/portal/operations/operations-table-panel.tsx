@@ -80,7 +80,11 @@ export function OperationsTablePanel<T>({
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => fetcher(searchParams),
-    { enabled, deps: [queryKey] }
+    {
+      enabled,
+      deps: [queryKey],
+      cacheScope: tabId ? `ops:panel:${tabId}` : undefined
+    }
   );
 
   const rows = data?.data ?? [];

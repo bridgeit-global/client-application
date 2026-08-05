@@ -7,6 +7,9 @@ type paramsProps = {
   searchParams: Promise<SearchParamsProps>;
 };
 
+// Request-scoped page; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function Page(props: paramsProps) {
   const searchParams = await props.searchParams;
   const { pageCount, data, totalCount } = await fetchAllBills(searchParams);

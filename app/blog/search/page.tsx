@@ -17,6 +17,9 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     };
 }
 
+// Query-dependent results; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q: string }> }) {
     const { q } = await searchParams;
     const query = q || "";

@@ -1,56 +1,53 @@
 /* ======================================
-   BRIDGEIT CALENDAR - PREMIUM DESIGN
-   A sophisticated, modern calendar UI
+   BRIDGEIT CALENDAR
+   Themed on portal design tokens (light + dark)
    ====================================== */
 
-/* CSS Variables for consistent theming */
 :root {
-  --cal-bg-primary: #fafbfc;
-  --cal-bg-secondary: #ffffff;
-  --cal-bg-elevated: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  --cal-border-light: rgba(0, 0, 0, 0.06);
-  --cal-border-medium: rgba(0, 0, 0, 0.08);
-  --cal-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --cal-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --cal-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --cal-bg-primary: hsl(var(--muted) / 0.4);
+  --cal-bg-secondary: hsl(var(--card));
+  --cal-bg-elevated: hsl(var(--muted) / 0.4);
+  --cal-border-light: hsl(var(--border));
+  --cal-border-medium: hsl(var(--border));
+  --cal-shadow-sm: 0 1px 2px hsl(var(--foreground) / 0.08);
   --cal-radius-sm: 8px;
   --cal-radius-md: 12px;
   --cal-radius-lg: 16px;
-  
-  /* Status colors - refined palette */
+
+  /* Semantic status hues — shared by day badges, amounts, and the ops legend */
   --status-new: #f59e0b;
   --status-new-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.06) 100%);
-  --status-new-border: rgba(245, 158, 11, 0.2);
-  
+  --status-new-border: rgba(245, 158, 11, 0.3);
+
   --status-approved: #8b5cf6;
   --status-approved-bg: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(139, 92, 246, 0.06) 100%);
-  --status-approved-border: rgba(139, 92, 246, 0.2);
-  
+  --status-approved-border: rgba(139, 92, 246, 0.3);
+
   --status-batch: #06b6d4;
   --status-batch-bg: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.06) 100%);
-  --status-batch-border: rgba(6, 182, 212, 0.2);
-  
+  --status-batch-border: rgba(6, 182, 212, 0.3);
+
   --status-payment: #64748b;
   --status-payment-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.12) 0%, rgba(100, 116, 139, 0.06) 100%);
-  --status-payment-border: rgba(100, 116, 139, 0.2);
-  
+  --status-payment-border: rgba(100, 116, 139, 0.3);
+
   --status-paid: #10b981;
   --status-paid-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.06) 100%);
-  --status-paid-border: rgba(16, 185, 129, 0.2);
-  
+  --status-paid-border: rgba(16, 185, 129, 0.3);
+
   --status-rejected: #ef4444;
   --status-rejected-bg: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(239, 68, 68, 0.06) 100%);
-  --status-rejected-border: rgba(239, 68, 68, 0.2);
-  
-  /* Primary accent */
-  --cal-accent: #3b82f6;
-  --cal-accent-light: rgba(59, 130, 246, 0.1);
-  --cal-accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  
-  /* Text colors */
-  --cal-text-primary: #1e293b;
-  --cal-text-secondary: #64748b;
-  --cal-text-muted: #94a3b8;
+  --status-rejected-border: rgba(239, 68, 68, 0.3);
+
+  /* Interactive accent — portal primary */
+  --cal-accent: hsl(var(--primary));
+  --cal-accent-foreground: hsl(var(--primary-foreground));
+  --cal-accent-light: hsl(var(--primary) / 0.12);
+
+  /* Text */
+  --cal-text-primary: hsl(var(--foreground));
+  --cal-text-secondary: hsl(var(--muted-foreground));
+  --cal-text-muted: hsl(var(--muted-foreground));
 }
 
 /* ======================================
@@ -62,8 +59,8 @@
   max-width: 100%;
   margin: 0 auto;
   background: var(--cal-bg-secondary);
-  border-radius: var(--cal-radius-lg);
-  box-shadow: var(--cal-shadow-lg);
+  border: 1px solid var(--cal-border-light);
+  border-radius: var(--cal-radius-md);
   overflow: hidden;
   font-family: var(--font-dm-sans), 'DM Sans', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -81,34 +78,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 14px 16px;
   background: var(--cal-bg-elevated);
   border-bottom: 1px solid var(--cal-border-light);
-  gap: 16px;
+  gap: 12px;
 }
 
 /* Today Button */
 .today-button {
-  background: var(--cal-accent-gradient) !important;
-  color: white !important;
+  background: var(--cal-accent) !important;
+  color: var(--cal-accent-foreground) !important;
   border: none !important;
-  padding: 10px 20px !important;
+  padding: 8px 16px !important;
   font-weight: 600 !important;
-  font-size: 14px !important;
+  font-size: 13px !important;
   letter-spacing: 0.01em !important;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25), 0 1px 2px rgba(59, 130, 246, 0.15) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: opacity 0.15s ease !important;
   border-radius: var(--cal-radius-sm) !important;
 }
 
 .today-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3), 0 2px 4px rgba(59, 130, 246, 0.2) !important;
-}
-
-.today-button:active {
-  transform: translateY(0);
+  opacity: 0.9;
 }
 
 /* Month Navigation */
@@ -116,7 +107,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .month-nav-button {
@@ -124,9 +115,9 @@
   border: 1px solid var(--cal-border-medium);
   border-radius: var(--cal-radius-sm);
   cursor: pointer;
-  padding: 8px;
+  padding: 7px;
   color: var(--cal-text-secondary);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -139,14 +130,14 @@
 }
 
 .month-nav-button svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .month-label {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  min-width: 180px;
+  min-width: 150px;
   text-align: center;
   color: var(--cal-text-primary);
   letter-spacing: -0.01em;
@@ -155,7 +146,7 @@
 /* Date Type Buttons */
 .date-type-buttons {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   background: var(--cal-bg-primary);
   padding: 4px;
   border-radius: var(--cal-radius-sm);
@@ -163,12 +154,12 @@
 }
 
 .date-type-button {
-  padding: 8px 16px !important;
+  padding: 6px 14px !important;
   border: none !important;
   border-radius: 6px !important;
   background: transparent !important;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.15s ease !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   color: var(--cal-text-secondary) !important;
@@ -176,22 +167,15 @@
 }
 
 .date-type-button:hover {
-  background: rgba(0, 0, 0, 0.04) !important;
+  background: hsl(var(--foreground) / 0.06) !important;
   color: var(--cal-text-primary) !important;
 }
 
-.date-type-button.active-due {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  color: white !important;
-  font-weight: 600 !important;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
-}
-
+.date-type-button.active-due,
 .date-type-button.active-bill {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  color: white !important;
+  background: var(--cal-accent) !important;
+  color: var(--cal-accent-foreground) !important;
   font-weight: 600 !important;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
 }
 
 /* ======================================
@@ -225,7 +209,7 @@
   display: flex !important;
   width: 100% !important;
   margin: 0 !important;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--cal-bg-primary);
   border-bottom: 1px solid var(--cal-border-light);
 }
 
@@ -233,7 +217,7 @@
   flex: 1 !important;
   width: 14.28% !important;
   margin: 0 !important;
-  padding: 14px 0 !important;
+  padding: 10px 0 !important;
   font-weight: 600 !important;
   color: var(--cal-text-secondary) !important;
   text-transform: uppercase !important;
@@ -261,8 +245,8 @@
   width: 14.28% !important;
   margin: 0 !important;
   padding: 0 !important;
-  height: 160px !important;
-  min-height: 160px !important;
+  height: 110px !important;
+  min-height: 110px !important;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -289,41 +273,40 @@
 .custom-day-cell {
   position: relative;
   height: 100%;
-  min-height: 160px;
-  padding: 8px;
+  min-height: 110px;
+  padding: 6px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.15s ease;
   display: flex;
   flex-direction: column;
   background: transparent;
 }
 
 .custom-day-cell:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(59, 130, 246, 0.06) 100%);
+  background: hsl(var(--accent) / 0.5);
 }
 
 .custom-day-cell.selected {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.12) 100%);
-  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.2);
+  background: hsl(var(--primary) / 0.08);
+  box-shadow: inset 0 0 0 2px hsl(var(--primary) / 0.35);
 }
 
 /* Day Number */
 .day-number {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--cal-text-primary);
-  margin-bottom: 8px;
-  padding: 4px 8px;
+  margin-bottom: 4px;
+  padding: 2px 6px;
   border-radius: 6px;
   width: fit-content;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .day-number.today {
-  background: var(--cal-accent-gradient);
-  color: white;
+  background: var(--cal-accent);
+  color: var(--cal-accent-foreground);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .day-number.selected:not(.today) {
@@ -338,11 +321,11 @@
 .bill-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
   overflow-y: hidden;
   padding-right: 4px;
-  max-height: calc(100% - 36px);
+  max-height: calc(100% - 26px);
   transition: overflow-y 0.2s ease;
 }
 
@@ -370,10 +353,10 @@
 
 /* Bill Status Badge - Base */
 .bill-status-badge {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: var(--cal-radius-sm);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   flex-shrink: 0;
   border: 1px solid transparent;
 }
@@ -446,18 +429,18 @@
 .bill-status-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .bill-count {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--cal-text-secondary);
   letter-spacing: 0.01em;
 }
 
 .bill-amount {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -475,109 +458,37 @@
 }
 
 /* ======================================
-   MODAL STYLES
-   ====================================== */
-
-[data-dialog-content] {
-  max-width: 32rem;
-  width: 100%;
-  border-radius: var(--cal-radius-lg) !important;
-  box-shadow: var(--cal-shadow-lg) !important;
-  border: 1px solid var(--cal-border-light) !important;
-}
-
-[data-dialog-content] > div {
-  padding: 1.5rem;
-}
-
-[data-dialog-content] h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: var(--cal-text-primary);
-}
-
-[data-dialog-content] .grid {
-  display: grid;
-  gap: 0.75rem;
-}
-
-[data-dialog-content] .grid > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--cal-border-light);
-  border-radius: var(--cal-radius-md);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--cal-bg-secondary);
-}
-
-[data-dialog-content] .grid > div:hover {
-  background: var(--cal-bg-primary);
-  border-color: var(--cal-border-medium);
-  transform: translateY(-1px);
-  box-shadow: var(--cal-shadow-sm);
-}
-
-[data-dialog-content] .grid > div > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-[data-dialog-content] .grid > div > div > span:first-child {
-  font-weight: 600;
-  color: var(--cal-text-primary);
-}
-
-[data-dialog-content] .grid > div > div > span:last-child {
-  font-size: 0.875rem;
-  color: var(--cal-text-secondary);
-}
-
-[data-dialog-content] .grid > div > span {
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-/* ======================================
    RESPONSIVE STYLES
    ====================================== */
 
 @media (max-width: 900px) {
   .custom-calendar .react-datepicker__day {
-    height: 140px !important;
-    min-height: 140px !important;
+    height: 100px !important;
+    min-height: 100px !important;
   }
 
   .custom-day-cell {
-    min-height: 140px !important;
-    padding: 6px;
+    min-height: 100px !important;
+    padding: 5px;
   }
 
   .custom-datepicker-header {
-    padding: 16px 20px;
+    padding: 12px 14px;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
   .month-label {
-    font-size: 16px;
-    min-width: 150px;
+    font-size: 15px;
+    min-width: 140px;
   }
 }
 
 @media (max-width: 640px) {
-  .calendar-container {
-    border-radius: var(--cal-radius-md);
-  }
-
   .custom-datepicker-header {
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 12px;
     align-items: stretch;
   }
 
@@ -595,21 +506,21 @@
   }
 
   .custom-calendar .react-datepicker__day {
-    height: 120px !important;
-    min-height: 120px !important;
+    height: 88px !important;
+    min-height: 88px !important;
   }
 
   .custom-day-cell {
-    min-height: 120px !important;
+    min-height: 88px !important;
     padding: 4px;
   }
 
   .bill-status-badge {
-    padding: 6px 8px;
+    padding: 4px 6px;
   }
 
   .bill-count {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .bill-amount {
@@ -617,13 +528,13 @@
   }
 
   .day-number {
-    font-size: 12px;
-    padding: 3px 6px;
+    font-size: 11px;
+    padding: 2px 5px;
   }
 
   .custom-calendar .react-datepicker__day-name {
     font-size: 10px !important;
-    padding: 10px 0 !important;
+    padding: 8px 0 !important;
   }
 }
 
@@ -634,7 +545,6 @@
 .rbc-calendar {
   background: var(--cal-bg-secondary);
   border-radius: var(--cal-radius-lg);
-  box-shadow: var(--cal-shadow-md);
   font-family: var(--font-dm-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -660,7 +570,7 @@
 .rbc-toolbar button:active,
 .rbc-toolbar button.rbc-active {
   background: var(--cal-accent);
-  color: white;
+  color: var(--cal-accent-foreground);
 }
 
 .rbc-month-view {
@@ -718,7 +628,7 @@
 }
 
 .rbc-event.rbc-selected {
-  background-color: #2563eb;
+  background-color: var(--cal-accent);
 }
 
 .rbc-off-range-bg {
@@ -741,7 +651,6 @@
   background-color: var(--cal-bg-secondary);
   border: 1px solid var(--cal-border-light);
   cursor: pointer;
-  box-shadow: var(--cal-shadow-sm);
   transition: all 0.2s ease;
 }
 
@@ -749,7 +658,6 @@
 .event-card:focus {
   background-color: var(--cal-bg-primary);
   transform: translateY(-1px);
-  box-shadow: var(--cal-shadow-md);
   outline: none;
 }
 

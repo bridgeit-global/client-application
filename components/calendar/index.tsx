@@ -313,12 +313,12 @@ const DateRangeModal = ({ isOpen, onClose, selectedRange, billsData, sectionDeta
             return (
               <div
                 key={status}
-                className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+                className="flex items-center justify-between p-4 border border-border rounded-lg cursor-pointer transition-colors hover:bg-accent"
                 onClick={() => handleStatusClick(status)}
               >
                 <div className="flex flex-col">
                   <span className="font-medium">{formattedStatus}</span>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     {group.count} {sectionDetails.type === 'prepaid' ? 'recharges' : 'bills'}
                   </span>
                 </div>

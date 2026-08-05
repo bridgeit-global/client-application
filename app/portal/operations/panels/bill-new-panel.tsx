@@ -48,8 +48,14 @@ export function BillNewPanel({ enabled }: Props) {
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => getNewBills(searchParams),
-    { enabled, deps: [queryKey] }
+    { enabled, deps: [queryKey], cacheScope: 'ops:bill-new' }
   );
+
+  const fetchError =
+    error ??
+    (data && 'error' in data && data.error
+      ? new Error(data.error.message || 'Failed to load new bills')
+      : null);
 
   const rows = data?.data ?? [];
   const table = useReactTable({
@@ -86,7 +92,8 @@ export function BillNewPanel({ enabled }: Props) {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-  if (error) return <PanelError message={error.message} onRetry={refetch} />;
+  if (fetchError)
+    return <PanelError message={fetchError.message} onRetry={refetch} />;
 
   return (
     <div className="w-full space-y-3">

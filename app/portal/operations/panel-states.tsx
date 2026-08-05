@@ -15,6 +15,27 @@ export function PanelLoading({ rows = 4 }: { rows?: number }) {
   );
 }
 
+/** Calendar-shaped placeholder so insights content does not shift on load. */
+export function PanelCalendarLoading() {
+  return (
+    <div className="space-y-3" aria-busy="true" aria-label="Loading calendar">
+      <div className="flex items-center justify-between gap-2">
+        <Skeleton className="h-9 w-20" />
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-9 w-32" />
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <Skeleton key={`day-${i}`} className="h-5" />
+        ))}
+        {Array.from({ length: 35 }).map((_, i) => (
+          <Skeleton key={`cell-${i}`} className="h-[100px]" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PanelError({
   message,
   onRetry

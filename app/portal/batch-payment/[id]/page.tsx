@@ -3,6 +3,9 @@ import { fetchBillPayments } from "@/services/payments"
 import type { SearchParamsProps } from "@/types"
 import { filterIncreaseAmountRecords } from "@/lib/utils"
 
+// Request-scoped page; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function Page(
     props: {
         searchParams: Promise<SearchParamsProps>

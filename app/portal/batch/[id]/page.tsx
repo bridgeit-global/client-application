@@ -8,6 +8,9 @@ import { BatchItemTable } from "@/components/tables/batch/batch-item-table"
 import BatchAction from "@/components/tables/batch/batch-item-table/batch-action"
 import BatchHistoryTimeline from "@/components/batch/batch-history-timeline"
 
+// Request-scoped page; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function Page(
     props: {
         searchParams: Promise<SearchParamsProps>,

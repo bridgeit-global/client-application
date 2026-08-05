@@ -3,6 +3,9 @@ import { fetchBillsInBatches, fetchRechargesInBatches } from "@/services/batches
 import type { SearchParamsProps } from "@/types"
 import { BatchItemTable } from "@/components/tables/batch/batch-item-table"
 
+// Request-scoped page; also avoids the useSearchParams prerender bailout.
+export const dynamic = 'force-dynamic';
+
 export default async function Page(
     props: {
         searchParams: Promise<SearchParamsProps>

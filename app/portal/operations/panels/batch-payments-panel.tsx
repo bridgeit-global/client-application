@@ -41,7 +41,7 @@ export function BatchPaymentsPanel({ enabled }: Props) {
 
   const { data, isLoading, error, refetch } = useAsyncData(
     () => getBatchPayments(searchParams),
-    { enabled, deps: [queryKey] }
+    { enabled, deps: [queryKey], cacheScope: 'ops:batch-payments' }
   );
 
   const rows = data?.data ?? [];

@@ -14,7 +14,7 @@ import { formatRupees } from '@/lib/utils/number-format';
 import { ArrearsProps } from "@/types/charges-type";
 
 
-export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
+export function ArrearsTable({ data, title = 'Arrears on active bills' }: { data: ArrearsProps[]; title?: string | null }) {
     // Sort the data by state and then by board_name
     const sortedData = [...data].sort((a, b) => {
         // First compare by state
@@ -69,7 +69,7 @@ export function ArrearsTable({ data }: { data: ArrearsProps[] }) {
 
     return (
         <div>
-            <h3 className="font-medium mb-3">Arrears on active bills</h3>
+            {title ? <h3 className="font-medium mb-3">{title}</h3> : null}
             <div className="rounded-md border">
                 <Table>
                     <TableHeader>

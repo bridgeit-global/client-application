@@ -31,7 +31,12 @@ export const useBatchCartStore = create<BatchCartStore>()(
             setBatchName: (name) => set({ batchName: name }),
             openModal: () => set({ isModalOpen: true }),
             closeModal: () => set({ isModalOpen: false }),
-            addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+            addItem: (item) =>
+                set((state) =>
+                    state.items.some((existing) => existing.id === item.id)
+                        ? state
+                        : { items: [...state.items, item] }
+                ),
             addAllItem: (newItems) =>
                 set((state) => ({
                     items: [

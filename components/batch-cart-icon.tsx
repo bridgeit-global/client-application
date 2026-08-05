@@ -20,7 +20,7 @@ import {
     TableHeader,
     TableRow
 } from '@/components/ui/table';
-import { ddmmyy, isCalendarDateExpired } from '@/lib/utils/date-format';
+import { ddmmyy, isCalendarDateExpired, toLocalDateString } from '@/lib/utils/date-format';
 import { useToast } from './ui/use-toast';
 import { useBatchCartStore } from '@/lib/store/batch-cart-store';
 import type { CartItem } from '@/lib/store/batch-cart-store';
@@ -417,7 +417,9 @@ export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconPr
     const { items, removeItem, clearCart, isModalOpen, openModal, closeModal, batchName, setBatchName } = useBatchCartStore();
     const [isLoading, setIsLoading] = useState(false);
     const [validate_at, setValidateAt] = useState('');
-    const today = new Date().toISOString().split('T')[0];
+    // Local calendar day — UTC toISOString().slice(0,10) is still "yesterday"
+    // in IST between 00:00 and 05:29, which made new batches look expired.
+    const today = toLocalDateString();
     const [existingBatch, setExistingBatch] = useState<any[]>([]);
     const [isLoadingBatches, setIsLoadingBatches] = useState(false);
     const [activeTab, setActiveTab] = useState('cart');
@@ -459,10 +461,10 @@ export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconPr
         return items.reduce<string>((min, item) => {
             let date: string | undefined;
 
-            if ('due_date' in item) {
-                date = item.due_date;
-            } else if ('recharge_date' in item) {
-                date = item.recharge_date;
+            if ('due_date' in item && item.due_date) {
+                date = String(item.due_date).slice(0, 10);
+            } else if ('recharge_date' in item && item.recharge_date) {
+                date = String(item.recharge_date).slice(0, 10);
             }
 
             return !min || (date && date < min) ? date || min : min;
@@ -650,7 +652,6 @@ export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconPr
                                     "h-5 w-5 sm:h-6 sm:w-6",
                                     "flex items-center justify-center",
                                     "text-xs font-bold text-white",
-                                    "animate-pulse",
                                     "bg-gradient-to-r from-red-500 to-red-600",
                                     "border-2 border-background",
                                     "shadow-lg"
@@ -664,7 +665,10 @@ export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconPr
             ) : null}
 
             {/* Cart Modal — opened by BatchFab / BatchSelectionToolbar via store */}
-            <Dialog open={isModalOpen} onOpenChange={closeModal}>
+            <Dialog
+                open={isModalOpen}
+                onOpenChange={(open) => (open ? openModal() : closeModal())}
+            >
                 <DialogContent className={cn(
                     "sm:max-w-4xl lg:max-w-6xl max-h-[90vh] w-[95vw]",
                     "p-0 overflow-hidden"

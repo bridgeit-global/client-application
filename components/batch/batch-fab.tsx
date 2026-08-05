@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Archive, Plus, ShoppingCart } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Archive, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useBatchCartStore } from '@/lib/store/batch-cart-store';
@@ -11,29 +11,74 @@ import {
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from '@/components/ui/badge';
+} from '@/components/ui/tooltip';
+import { formatRupees } from '@/lib/utils/number-format';
 
 interface BatchFabProps {
     className?: string;
 }
 
+function useCartTotal(items: ReturnType<typeof useBatchCartStore.getState>['items']) {
+    return useMemo(() => {
+        return items.reduce((acc, item) => {
+            if ('approved_amount' in item) {
+                return acc + (item.approved_amount || 0);
+            }
+            if ('recharge_amount' in item) {
+                return acc + (item.recharge_amount || 0);
+            }
+            return acc;
+        }, 0);
+    }, [items]);
+}
+
 /**
- * Floating Action Button for batch management
- * Shows only on batch-relevant pages (approved bills, approved recharges)
- * Provides quick access to view/manage batch cart
+ * One-shot attention when the cart gains items — no continuous blink.
+ */
+function useCartPop(itemCount: number) {
+    const prevCount = useRef(itemCount);
+    const [pop, setPop] = useState(false);
+
+    useEffect(() => {
+        if (itemCount > prevCount.current) {
+            setPop(true);
+            const timer = window.setTimeout(() => setPop(false), 450);
+            prevCount.current = itemCount;
+            return () => window.clearTimeout(timer);
+        }
+        prevCount.current = itemCount;
+    }, [itemCount]);
+
+    return pop;
+}
+
+/**
+ * Floating batch cart entry.
+ * Empty on Approved: quiet circular control.
+ * With items: expanded chip (count + total + CTA) — no animate-pulse.
  */
 export function BatchFab({ className }: BatchFabProps) {
-    const { isBatchRelevantPage, isBatchPage, contextLabel } = useBatchContext();
-    const { items, openModal } = useBatchCartStore();
+    const { isApprovedBillsPage, isApprovedRechargesPage, contextLabel } =
+        useBatchContext();
+    const { items, openModal, isModalOpen } = useBatchCartStore();
 
-    // Don't show FAB on batch management pages (already have full interface)
-    // Only show on approved bills/recharges pages
-    if (!isBatchRelevantPage || isBatchPage) {
+    const hasItems = items.length > 0;
+    const onApproved = isApprovedBillsPage || isApprovedRechargesPage;
+    const totalAmount = useCartTotal(items);
+    const pop = useCartPop(items.length);
+
+    // Modal already shows cart — keep the chrome quiet.
+    if (isModalOpen) {
         return null;
     }
 
-    const hasItems = items.length > 0;
+    if (!onApproved && !hasItems) {
+        return null;
+    }
+
+    const label = hasItems
+        ? `Review batch cart, ${items.length} item${items.length === 1 ? '' : 's'}, ${formatRupees(totalAmount)}`
+        : 'Open batch cart';
 
     return (
         <TooltipProvider>
@@ -43,54 +88,60 @@ export function BatchFab({ className }: BatchFabProps) {
                         onClick={openModal}
                         size="lg"
                         className={cn(
-                            "fixed bottom-6 right-6 z-50",
-                            "h-14 w-14 sm:h-16 sm:w-16",
-                            "rounded-full shadow-lg",
-                            "bg-primary hover:bg-primary/90",
-                            "transition-all duration-300 ease-in-out",
-                            "hover:scale-110 active:scale-95",
-                            "group",
-                            hasItems && "animate-pulse",
+                            // Clear sticky portal footer; stay above selection toolbar
+                            'fixed bottom-20 right-6 z-[100]',
+                            'shadow-lg border border-primary/20',
+                            'bg-primary hover:bg-primary/90 text-primary-foreground',
+                            'transition-[transform,box-shadow,width,padding] duration-300 ease-out',
+                            'hover:shadow-xl active:scale-[0.98]',
+                            'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                            hasItems
+                                ? 'h-11 sm:h-12 rounded-full px-3.5 sm:px-4 gap-2'
+                                : 'h-12 w-12 sm:h-14 sm:w-14 rounded-full p-0',
+                            pop && 'scale-105 shadow-primary/40',
                             className
                         )}
-                        aria-label={hasItems ? `View batch cart (${items.length} items)` : "Open batch cart"}
+                        aria-label={label}
                     >
-                        <div className="relative">
-                            {hasItems ? (
-                                <ShoppingCart className="h-6 w-6 sm:h-7 sm:w-7 text-primary-foreground" />
-                            ) : (
-                                <Archive className="h-6 w-6 sm:h-7 sm:w-7 text-primary-foreground" />
-                            )}
-                            
-                            {/* Item count badge */}
-                            {hasItems && (
-                                <Badge
-                                    variant="destructive"
-                                    className={cn(
-                                        "absolute -top-3 -right-3",
-                                        "h-6 w-6",
-                                        "flex items-center justify-center",
-                                        "text-xs font-bold",
-                                        "bg-white text-primary",
-                                        "border-2 border-primary",
-                                        "shadow-md"
-                                    )}
-                                >
-                                    {items.length > 99 ? '99+' : items.length}
-                                </Badge>
-                            )}
-                        </div>
+                        {hasItems ? (
+                            <>
+                                <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+                                    <ShoppingCart className="h-4 w-4" />
+                                    <span
+                                        className={cn(
+                                            'absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center',
+                                            'rounded-full bg-background px-1 text-[10px] font-bold text-primary',
+                                            'ring-2 ring-primary'
+                                        )}
+                                    >
+                                        {items.length > 99 ? '99+' : items.length}
+                                    </span>
+                                </span>
+                                <span className="flex min-w-0 flex-col items-start text-left leading-tight">
+                                    <span className="text-xs font-semibold tracking-tight sm:text-sm">
+                                        Review batch
+                                    </span>
+                                    <span className="max-w-[8rem] truncate text-[11px] font-medium text-primary-foreground/80 sm:max-w-[10rem]">
+                                        {formatRupees(totalAmount)}
+                                    </span>
+                                </span>
+                            </>
+                        ) : (
+                            <Archive className="h-5 w-5 sm:h-6 sm:w-6" />
+                        )}
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left" className="max-w-xs">
                     <div className="space-y-1">
                         <p className="font-medium">
-                            {hasItems ? `${contextLabel} (${items.length} items)` : 'Create Batch'}
+                            {hasItems
+                                ? `${contextLabel} (${items.length} item${items.length === 1 ? '' : 's'})`
+                                : 'Create batch'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            {hasItems 
-                                ? 'Click to view and manage your batch' 
-                                : 'Select items from the table to add to batch'}
+                            {hasItems
+                                ? 'Open cart to create a batch or add to an unpaid batch'
+                                : 'Select bills or recharges to add them here'}
                         </p>
                     </div>
                 </TooltipContent>
@@ -100,17 +151,23 @@ export function BatchFab({ className }: BatchFabProps) {
 }
 
 /**
- * Mini FAB variant - smaller, less prominent
+ * Mini FAB variant — quieter circular control; same no-pulse rule.
  */
 export function BatchFabMini({ className }: BatchFabProps) {
-    const { isBatchRelevantPage, isBatchPage } = useBatchContext();
-    const { items, openModal } = useBatchCartStore();
+    const { isApprovedBillsPage, isApprovedRechargesPage } = useBatchContext();
+    const { items, openModal, isModalOpen } = useBatchCartStore();
 
-    if (!isBatchRelevantPage || isBatchPage) {
+    const hasItems = items.length > 0;
+    const onApproved = isApprovedBillsPage || isApprovedRechargesPage;
+    const pop = useCartPop(items.length);
+
+    if (isModalOpen) {
         return null;
     }
 
-    const hasItems = items.length > 0;
+    if (!onApproved && !hasItems) {
+        return null;
+    }
 
     return (
         <TooltipProvider>
@@ -119,29 +176,41 @@ export function BatchFabMini({ className }: BatchFabProps) {
                     <Button
                         onClick={openModal}
                         size="sm"
-                        variant={hasItems ? "default" : "outline"}
+                        variant={hasItems ? 'default' : 'outline'}
                         className={cn(
-                            "fixed bottom-6 right-6 z-50",
-                            "h-12 w-12",
-                            "rounded-full shadow-md",
-                            "transition-all duration-200",
-                            "hover:scale-105 active:scale-95",
+                            'fixed bottom-20 right-6 z-[100]',
+                            'h-12 w-12 rounded-full shadow-md',
+                            'transition-transform duration-200',
+                            'hover:scale-105 active:scale-95',
+                            pop && 'scale-110',
                             className
                         )}
-                        aria-label={hasItems ? `View batch cart (${items.length} items)` : "Open batch cart"}
+                        aria-label={
+                            hasItems
+                                ? `View batch cart (${items.length} items)`
+                                : 'Open batch cart'
+                        }
                     >
                         <div className="relative">
-                            <Archive className="h-5 w-5" />
-                            {hasItems && (
-                                <span className="absolute -top-2 -right-2 h-4 w-4 bg-destructive rounded-full text-[10px] text-destructive-foreground flex items-center justify-center font-bold">
+                            {hasItems ? (
+                                <ShoppingCart className="h-5 w-5" />
+                            ) : (
+                                <Archive className="h-5 w-5" />
+                            )}
+                            {hasItems ? (
+                                <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-background px-0.5 text-[10px] font-bold text-primary ring-1 ring-primary">
                                     {items.length > 9 ? '9+' : items.length}
                                 </span>
-                            )}
+                            ) : null}
                         </div>
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent side="left">
-                    <p>{hasItems ? `${items.length} items in batch` : 'Batch Cart'}</p>
+                    <p>
+                        {hasItems
+                            ? `${items.length} item${items.length === 1 ? '' : 's'} in batch`
+                            : 'Batch cart'}
+                    </p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>

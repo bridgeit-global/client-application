@@ -34,6 +34,12 @@ export const ddmmyy = (date: string | Date | null): string => {
 
   if (typeof date === 'string') {
     try {
+      // Date-only values (`yyyy-MM-dd`) must not go through `new Date(...)`:
+      // that parses as UTC midnight and shifts the calendar day in IST/US.
+      const dateOnly = date.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnly) {
+        return `${dateOnly[3]}-${dateOnly[2]}-${dateOnly[1]}`;
+      }
       return format(new Date(date), 'dd-MM-yyyy');
     } catch {
       return 'Invalid Date';
@@ -106,7 +112,7 @@ export const formatDateWithTime = (dateString: string): string => {
 
 export const getDueDate = (discount_date_str: string | null, due_date_str: string) => {
   if (discount_date_str) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = toLocalDateString();
     if (discount_date_str >= todayStr) {
       return discount_date_str;
     }

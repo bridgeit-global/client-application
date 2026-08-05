@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Archive,
     CheckCircle2,
@@ -11,7 +12,6 @@ import {
     Sparkles,
     Plus,
     Minus,
-    Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,10 +56,15 @@ export function BatchSelectionToolbar({
     table,
     className
 }: BatchSelectionToolbarProps) {
-    const { items: cartItems, addItem, addAllItem, removeItem, removeAllItems, openModal } = useBatchCartStore();
+    const {
+        items: cartItems,
+        addAllItem,
+        removeAllItems,
+        openModal,
+        isModalOpen
+    } = useBatchCartStore();
 
     const selectedCount = selectedItems.length;
-    const isVisible = selectedCount > 0;
 
     // Calculate total amount of selected items
     const totalAmount = useMemo(() => {
@@ -104,20 +109,29 @@ export function BatchSelectionToolbar({
         openModal();
     };
 
-    if (!isVisible) {
+    // Row checkbox / Quick Select already put items in the cart — the FAB is
+    // enough then. Only show this bar when there is still something to add,
+    // and never on top of the open cart modal.
+    if (
+        isModalOpen ||
+        selectedCount === 0 ||
+        itemsNotInCart === 0
+    ) {
         return null;
     }
 
-    return (
+    // Portal to body so overflow-hidden page shells cannot clip this bar.
+    const toolbar = (
         <div
             className={cn(
-                "fixed bottom-20 left-1/2 -translate-x-1/2 z-40",
+                // Sit above sticky footer; leave room for BatchFab on the right
+                "fixed bottom-20 left-1/2 -translate-x-1/2 z-[90]",
                 "bg-background/95 backdrop-blur-lg",
                 "border rounded-xl shadow-2xl",
                 "px-4 py-3",
                 "flex items-center gap-4",
                 "animate-in slide-in-from-bottom-5 duration-300",
-                "max-w-[95vw]",
+                "max-w-[min(95vw,42rem)] sm:max-w-[calc(100vw-8rem)]",
                 className
             )}
         >
@@ -218,7 +232,10 @@ export function BatchSelectionToolbar({
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={onClearSelection}
+                                onClick={() => {
+                                    handleRemoveFromCart();
+                                    onClearSelection();
+                                }}
                                 className="text-muted-foreground hover:text-foreground"
                             >
                                 <X className="h-4 w-4" />
@@ -232,6 +249,12 @@ export function BatchSelectionToolbar({
             </div>
         </div>
     );
+
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    return createPortal(toolbar, document.body);
 }
 
 interface QuickSelectButtonsProps {
@@ -262,7 +285,7 @@ export function QuickSelectButtons({
     itemType,
     className
 }: QuickSelectButtonsProps) {
-    const { items: cartItems, addAllItem, openModal, setBatchName } = useBatchCartStore();
+    const { items: cartItems, addAllItem, removeAllItems, openModal, setBatchName } = useBatchCartStore();
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -347,14 +370,17 @@ export function QuickSelectButtons({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-                {/* Select All */}
+                {/* Select All — also add to cart so BatchFab appears immediately */}
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => onSelectItems(categorizedItems.selectable)}
+                                onClick={() => {
+                                    onSelectItems(categorizedItems.selectable);
+                                    addAllItem(categorizedItems.selectable);
+                                }}
                                 className="gap-1.5 h-8"
                             >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -365,7 +391,7 @@ export function QuickSelectButtons({
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            Select all {categorizedItems.selectable.length} available {itemType}s
+                            Select all {categorizedItems.selectable.length} available {itemType}s and add to batch cart
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
@@ -450,7 +476,10 @@ export function QuickSelectButtons({
                     <Button
                         size="sm"
                         variant="ghost"
-                        onClick={onClearSelection}
+                        onClick={() => {
+                            removeAllItems(selectedItems.map((item) => item.id));
+                            onClearSelection();
+                        }}
                         className="gap-1.5 h-8 text-muted-foreground"
                     >
                         <X className="h-3.5 w-3.5" />

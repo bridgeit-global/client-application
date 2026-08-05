@@ -21,16 +21,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import * as React from 'react';
 import { Icons } from '../icons';
 import { NavItem } from '@/types';
-import { createClient } from '@/lib/supabase/client';
-import { useEffect, useState } from 'react';
 
 function ContentSidebar({ items }: { items: NavItem[] }) {
-    const supabase = createClient();
-    const [sidebarItems, setSidebarItems] = useState<NavItem[]>(items);
     const { setOpenMobile, isMobile } = useSidebar();
+    const pathname = usePathname();
 
     const handleLinkClick = () => {
         if (isMobile) {
@@ -38,41 +34,11 @@ function ContentSidebar({ items }: { items: NavItem[] }) {
         }
     };
 
-    const getUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-
-        // For operator users, show only meter-reading navigation
-        if (user?.user_metadata.role === 'operator') {
-            const operatorNavItems = items.filter(item =>
-                item.url === '/portal/meter-reading' ||
-                item.url === '/portal/meter-reading-list'
-            );
-            setSidebarItems(operatorNavItems);
-        } else if (user?.user_metadata.role === 'admin') {
-            // For admin users, show all items except meter-reading pages (which are operator-only)
-            const adminItems = items.filter(item =>
-                item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
-            );
-            setSidebarItems(adminItems);
-        } else {
-            // For regular users, show all items except meter-reading pages (which are operator-only)
-            const regularUserItems = items.filter(item =>
-                item.url !== '/portal/meter-reading' && item.url !== '/portal/meter-reading-list'
-            );
-            setSidebarItems(regularUserItems);
-        }
-    }
-
-    useEffect(() => {
-        getUser();
-    }, [items]);
-
-    const pathname = usePathname();
     return (
         <SidebarContent className='overflow-x-hidden'>
             <SidebarGroup>
                 <SidebarMenu>
-                    {sidebarItems.map((item) => {
+                    {items.map((item) => {
                         const Icon = item.icon ? Icons[item.icon] : Icons.logo;
                         return item?.items && item?.items?.length > 0 ? (
                             <Collapsible

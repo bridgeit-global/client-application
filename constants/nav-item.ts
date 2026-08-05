@@ -130,22 +130,6 @@ export const getNavItems = (site_name: string): NavItem[] => {
 
             ]
         },
-        {
-            title: 'Meter Reading',
-            url: '/portal/meter-reading',
-            icon: 'report',
-            isCollapsible: false,
-            shortcut: ['m', 'r'],
-            items: []
-        },
-        {
-            title: 'Meter Reading List',
-            url: '/portal/meter-reading-list',
-            icon: 'report',
-            isCollapsible: false,
-            shortcut: ['m', 'l'],
-            items: []
-        }
 
     ];
 };

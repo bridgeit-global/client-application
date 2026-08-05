@@ -19,6 +19,74 @@ import { PDFViewer } from '@/components/modal/pdf-viewer-modal';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+
+/** Sum of amounts actually paid out to billers/utilities. */
+function getUtilityPaidTotal(batch: BatchTableProps): number {
+  return (batch.client_payments ?? [])
+    .filter((payment) => payment.status === 'paid')
+    .reduce((acc, payment) => acc + (Number(payment.paid_amount) || 0), 0);
+}
+
+/** Client payment to BridgeIT is confirmed (pay-first / wallet / gateway). */
+function hasReceivedClientPayment(batch: BatchTableProps): boolean {
+  const gatewayConfirmed = (batch.payment_gateway_transactions ?? []).some(
+    (txn) => {
+      const status = String(txn.payment_status || '').toLowerCase();
+      return status === 'approved' || status === 'success' || status === 'captured';
+    }
+  );
+  if (gatewayConfirmed) return true;
+  return (batch.client_payments ?? []).some(
+    (payment) => (Number(payment.client_paid_amount) || 0) > 0
+  );
+}
+
+/**
+ * Client-facing "payment received, BridgeIT still paying billers".
+ * PG / wallet settlement is client_paid_amount — not client_payments.status
+ * (that flag means biller disbursal). Settled with ₹0 utility paid is a
+ * legacy misleading case from the pay-first status mix-up.
+ */
+function shouldShowPaymentReceived(batch: BatchTableProps): boolean {
+  const utilityPaidTotal = getUtilityPaidTotal(batch);
+  if (utilityPaidTotal > 0) return false;
+
+  // Legacy: jumped to settled on PG approve with no biller payout
+  if (batch.batch_status === 'settled') return true;
+
+  // Pay-first / wallet: client paid BridgeIT, disbursement still open
+  if (
+    (batch.batch_status === 'client_paid' ||
+      batch.batch_status === 'processing') &&
+    hasReceivedClientPayment(batch)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function PaymentReceivedBadge() {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="info">Payment Received</Badge>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          Your payment to BridgeIT is confirmed. BridgeIT is working on paying
+          the billers.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 function BatchPaymentStatusCell({ row }: { row: { original: BatchTableProps } }) {
   const batch = row.original;
@@ -28,6 +96,10 @@ function BatchPaymentStatusCell({ row }: { row: { original: BatchTableProps } })
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  if (shouldShowPaymentReceived(batch)) {
+    return <PaymentReceivedBadge />;
+  }
 
   if (batchStatus === 'settled') {
     return <Badge variant="success">Settled</Badge>;

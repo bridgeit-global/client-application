@@ -13,7 +13,6 @@ export function RechargeLowBalancePanel({ enabled }: Props) {
     <OperationsTablePanel
       enabled={enabled}
       tabId="recharge-low-balance"
-      title="Low Balance Prepaid Connection"
       columns={columns}
       fetcher={getLowBalanceConnections}
       renderFilters={({

@@ -149,15 +149,15 @@ export function BatchFundsOverviewCard() {
 
     return (
         <div className="mb-4">
-            <Card className="border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-yellow-100">
+            <Card className="border-border bg-card">
                 <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-2">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Icon name="Wallet" className="h-6 w-6 text-yellow-600" />
-                        <CardTitle className="text-lg font-bold text-yellow-800">Funds Overview</CardTitle>
+                        <Icon name="Wallet" className="h-6 w-6 text-primary" />
+                        <CardTitle className="text-lg font-bold text-foreground">Funds Overview</CardTitle>
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Info className="w-4 h-4 cursor-pointer text-yellow-600" />
+                                    <Info className="w-4 h-4 cursor-pointer text-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <span>
@@ -172,20 +172,18 @@ export function BatchFundsOverviewCard() {
                     </div>
                     {/* Progress bar visual */}
                     <div className="w-full max-w-xs md:max-w-sm">
-                        <div className="h-3 w-full bg-yellow-200 rounded-full overflow-hidden">
+                        <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
                             <div
-                                className={`h-3 rounded-full transition-all duration-500 ${utilizeAmount < thresholdAmount * 0.7
-                                    ? 'bg-green-400'
-                                    : utilizeAmount < thresholdAmount
-                                        ? 'bg-yellow-400'
-                                        : 'bg-red-500'}`}
+                                className={`h-3 rounded-full transition-all duration-500 ${utilizeAmount < thresholdAmount
+                                    ? 'bg-primary'
+                                    : 'bg-destructive'}`}
                                 style={{ width: `${Math.min((utilizeAmount / (thresholdAmount || 1)) * 100, 100)}%` }}
                             />
                         </div>
-                        <div className="flex justify-between text-xs mt-1">
-                            <span className="text-green-700">Low</span>
-                            <span className="text-yellow-700">Limit</span>
-                            <span className="text-red-700">Max</span>
+                        <div className="flex justify-between text-xs mt-1 text-muted-foreground">
+                            <span>Low</span>
+                            <span>Limit</span>
+                            <span>Max</span>
                         </div>
                     </div>
                 </CardHeader>
@@ -195,7 +193,7 @@ export function BatchFundsOverviewCard() {
                     {/* Utilized */}
                     <div className="flex flex-col items-start gap-1 flex-1 min-w-[120px]">
                         <span className="text-sm text-muted-foreground">Utilized</span>
-                        <span className="text-2xl font-bold text-orange-600">
+                        <span className="text-2xl font-bold text-foreground">
                             {formatRupees(utilizeAmount)}
                         </span>
                     </div>
@@ -203,7 +201,7 @@ export function BatchFundsOverviewCard() {
                     {/* Available to Process */}
                     <div className="flex flex-col items-start gap-1 flex-1 min-w-[120px]">
                         <span className="text-sm text-muted-foreground">Available to Process</span>
-                        <span className={`text-3xl font-extrabold ${thresholdAmount - utilizeAmount > 0 ? 'text-green-700' : 'text-red-600'}`}
+                        <span className={`text-3xl font-extrabold ${thresholdAmount - utilizeAmount > 0 ? 'text-foreground' : 'text-destructive'}`}
                         >
                             {formatRupees(Math.max(thresholdAmount - utilizeAmount, 0))}
                         </span>
@@ -215,7 +213,7 @@ export function BatchFundsOverviewCard() {
                         {/* Limit controls right-aligned, horizontal row */}
                         <div className="flex flex-row items-center gap-2 mt-2 w-full md:justify-end">
                             <span className="text-sm text-muted-foreground">Limit</span>
-                            <span className="text-2xl font-bold text-yellow-700">
+                            <span className="text-2xl font-bold text-foreground">
                                 {formatRupees(thresholdAmount)}
                             </span>
                             <Button

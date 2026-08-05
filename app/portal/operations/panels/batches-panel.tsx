@@ -9,16 +9,25 @@ import { BatchFundsOverviewCard } from '@/components/cards/batch-fund-overview-c
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAsyncData } from '@/hooks/use-async-data';
+import { useRefetchOnFocus } from '@/hooks/use-refetch-on-focus';
 import { getBatches, getSettlementRequiredBatchCount } from '../actions';
 import { OperationsTablePanel } from '../operations-table-panel';
 
 type Props = { enabled: boolean };
 
 function SettlementRequiredAlert({ enabled }: { enabled: boolean }) {
-  const { data } = useAsyncData(() => getSettlementRequiredBatchCount(), {
-    enabled,
-    deps: []
-  });
+  const { data, refetch } = useAsyncData(
+    () => getSettlementRequiredBatchCount(),
+    {
+      enabled,
+      deps: []
+    }
+  );
+
+  // Tab switches already remount + refetch (Radix unmounts inactive tab
+  // content). Focus refetch covers background status changes (webhooks,
+  // other sessions) while this tab stays open.
+  useRefetchOnFocus(refetch);
 
   const count = data?.count ?? 0;
   if (count <= 0) return null;
@@ -50,8 +59,6 @@ export function BatchesPanel({ enabled }: Props) {
       <OperationsTablePanel
         enabled={enabled}
         tabId="batch-batches"
-        title="Batches"
-        description="Check now!"
         columns={columns}
         fetcher={getBatches}
         renderFilters={({

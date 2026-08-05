@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from '@/components/ui/toaster';
 import '@uploadthing/react/styles.css';
@@ -34,12 +35,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={dmSans.variable} style={{ height: '100%', overflowY: 'auto' }}>
-        <NextTopLoader showSpinner={false} color="#facc14" />
+        {/* nextjs-toploader calls useSearchParams internally; without a
+            boundary, statically prerendered pages fail the build. */}
+        <Suspense fallback={null}>
+          <NextTopLoader showSpinner={false} color="#facc14" />
+        </Suspense>
         <Toaster />
         <AuthProvider>
           <ThemeGate />
           <PublicBackground />
-          {children}
+          {/* Many pages render tables that call useSearchParams; a boundary
+              here keeps statically prerendered routes from failing the
+              build (bailout subtree defers to client rendering). */}
+          <Suspense fallback={null}>
+            {children}
+          </Suspense>
         </AuthProvider>
       </body>
     </html>

@@ -2,10 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heading } from '@/components/ui/heading';
+import { Button } from '@/components/ui/button';
+import { PortalPageHeader } from '@/components/portal/PortalPageHeader';
 import { LazyLoadSection } from '@/components/lazy-load-section';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  OperationsFlowRail,
+  type FlowSectionId
+} from './operations-flow-rail';
 import { OperationalInsightsPanel } from './panels/operational-insights-panel';
 import { BillNewPanel } from './panels/bill-new-panel';
 import { BillApprovedPanel } from './panels/bill-approved-panel';
@@ -22,7 +28,7 @@ export type OperationsTabId =
   | 'batch-batches'
   | 'batch-payments';
 
-type SectionId = 'new' | 'approved' | 'batch';
+type SectionId = FlowSectionId;
 
 const TAB_TO_SECTION: Record<OperationsTabId, SectionId> = {
   'bill-new': 'new',
@@ -48,22 +54,23 @@ function parseTab(value: string | null): OperationsTabId | null {
 
 type SectionTabsProps = {
   sectionId: SectionId;
-  title: string;
-  description: string;
   tabs: { id: OperationsTabId; label: string }[];
   activeTab: OperationsTabId;
   onTabChange: (tab: OperationsTabId) => void;
+  /** Quiet link to the next pipeline stage — orientation lives on the flow rail. */
+  nextStep?: { sectionId: SectionId; label: string };
+  onNavigateSection: (section: SectionId) => void;
   forceVisible: boolean;
   renderPanel: (tab: OperationsTabId, enabled: boolean) => React.ReactNode;
 };
 
 function OperationsSection({
   sectionId,
-  title,
-  description,
   tabs,
   activeTab,
   onTabChange,
+  nextStep,
+  onNavigateSection,
   forceVisible,
   renderPanel
 }: SectionTabsProps) {
@@ -113,13 +120,7 @@ function OperationsSection({
       className="scroll-mt-20"
     >
       <Card className="border-border bg-card shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-2xl md:text-3xl font-semibold tracking-tight">
-            {title}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <Tabs
             value={currentTab}
             onValueChange={(v) => onTabChange(v as OperationsTabId)}
@@ -143,6 +144,20 @@ function OperationsSection({
               );
             })}
           </Tabs>
+          {nextStep ? (
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={() => onNavigateSection(nextStep.sectionId)}
+              >
+                {nextStep.label}
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </LazyLoadSection>
@@ -193,6 +208,16 @@ export function OperationsView() {
     [router]
   );
 
+  const handleSectionNavigate = useCallback(
+    (section: SectionId) => {
+      handleTabChange(SECTION_DEFAULT_TAB[section]);
+      document
+        .getElementById(section)
+        ?.scrollIntoView({ behavior: 'smooth' });
+    },
+    [handleTabChange]
+  );
+
   const renderPanel = (tab: OperationsTabId, enabled: boolean) => {
     switch (tab) {
       case 'bill-new':
@@ -214,77 +239,55 @@ export function OperationsView() {
 
   return (
     <div className="space-y-8 pb-10">
-      <Heading
+      <PortalPageHeader
         title="Operations"
-        description="New and low balance items flow into approvals, then batches. Settle batch payments when required. Sections load as you scroll."
+        description="Approve, batch, and settle."
       />
 
       <OperationalInsightsPanel />
 
-      <nav className="sticky top-0 z-10 -mx-1 flex flex-wrap gap-2 border-b border-border bg-background/95 px-1 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        {(
-          [
-            { id: 'new', label: 'New' },
-            { id: 'approved', label: 'Approved' },
-            { id: 'batch', label: 'Batch' }
-          ] as const
-        ).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="rounded-md border border-input bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
-            onClick={() => {
-              const tab = SECTION_DEFAULT_TAB[item.id];
-              handleTabChange(tab);
-              setForcedSection(item.id);
-              document
-                .getElementById(item.id)
-                ?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      <OperationsFlowRail
+        activeSection={forcedSection ?? 'new'}
+        onNavigate={handleSectionNavigate}
+      />
 
       <OperationsSection
         sectionId="new"
-        title="New"
-        description="New bills and low balance connections awaiting action"
         tabs={[
           { id: 'bill-new', label: 'New Bills' },
           { id: 'recharge-low-balance', label: 'Low Balance' }
         ]}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        nextStep={{ sectionId: 'approved', label: 'Next: Approved' }}
+        onNavigateSection={handleSectionNavigate}
         forceVisible={forcedSection === 'new'}
         renderPanel={renderPanel}
       />
 
       <OperationsSection
         sectionId="approved"
-        title="Approved"
-        description="Approved bills and recharges ready to be batched"
         tabs={[
           { id: 'bill-approved', label: 'Bills' },
           { id: 'recharge-approved', label: 'Recharges' }
         ]}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        nextStep={{ sectionId: 'batch', label: 'Next: Batch' }}
+        onNavigateSection={handleSectionNavigate}
         forceVisible={forcedSection === 'approved'}
         renderPanel={renderPanel}
       />
 
       <OperationsSection
         sectionId="batch"
-        title="Batch"
-        description="Manage batches, funds overview, and settle payments when required"
         tabs={[
           { id: 'batch-batches', label: 'Batches' },
           { id: 'batch-payments', label: 'Payments' }
         ]}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        onNavigateSection={handleSectionNavigate}
         forceVisible={forcedSection === 'batch'}
         renderPanel={renderPanel}
       />

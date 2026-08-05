@@ -8,11 +8,9 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import CustomTable from '@/components/custom-table';
 import FilterChips from '@/components/filter-chip';
 import TableColumns from '@/components/table-columns';
-import DueDateLegend from '@/components/due-date-legend';
 import ExportButton from '@/components/buttons/export-button';
 import { Button } from '@/components/ui/button';
 import { FilterX } from 'lucide-react';
@@ -24,6 +22,7 @@ import { defaultColumnSizing, getFilterDataLength } from '@/lib/utils/table';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { getNewBills } from '../actions';
 import { useOperationsQuery } from '../use-operations-query';
+import { DueDateCategoryFilters } from '../due-date-category-filters';
 import { PanelError, PanelLoading } from '../panel-states';
 
 type Props = { enabled: boolean };
@@ -91,32 +90,11 @@ export function BillNewPanel({ enabled }: Props) {
 
   return (
     <div className="w-full space-y-3">
-      <div className="space-y-1">
-        <h3 className="text-lg md:text-xl font-semibold tracking-tight">
-          New Bills
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Manage and approve your bills efficiently
-        </p>
-      </div>
-      <DueDateLegend />
       <div className="flex flex-col gap-4 justify-between lg:flex-row lg:items-center">
-        <ToggleGroup
-          type="single"
+        <DueDateCategoryFilters
           value={selectedCategory}
           onValueChange={handleCategoryChange}
-          className="justify-start gap-2 bg-card p-2"
-        >
-          <ToggleGroupItem value="overdue" aria-label="Overdue Bills">
-            Overdue
-          </ToggleGroupItem>
-          <ToggleGroupItem value="seven_day" aria-label="Next 7 Days Bills">
-            Next 7 Days
-          </ToggleGroupItem>
-          <ToggleGroupItem value="next_seven_day" aria-label="7-14 Days Bills">
-            7-14 Days
-          </ToggleGroupItem>
-        </ToggleGroup>
+        />
         <div className="flex flex-wrap items-center gap-2">
           {table.getFilteredSelectedRowModel().rows.length > 0 ? (
             <NewBillActionButton table={table} />

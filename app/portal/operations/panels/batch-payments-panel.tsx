@@ -72,25 +72,20 @@ export function BatchPaymentsPanel({ enabled }: Props) {
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex flex-1 flex-col justify-between gap-2 md:flex-row">
-        <h3 className="text-lg md:text-xl font-semibold tracking-tight">
-          Batch Payment
-        </h3>
-        <div className="flex flex-wrap items-center gap-2">
-          <BatchPaymentActionButton table={table} />
-          <FilterAction
-            handleClearFilter={clearFilters}
-            handleApplyFilters={applyFilters}
-            filterBody={filterBody}
-            setFilterBody={setFilterBody}
-          />
-          {filterCount > 0 ? (
-            <Button variant="outline" onClick={clearFilters}>
-              {filterCount} <FilterX className="ml-2 h-4 w-4" />
-            </Button>
-          ) : null}
-          <TableColumns table={table} />
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <BatchPaymentActionButton table={table} onSettled={refetch} />
+        <FilterAction
+          handleClearFilter={clearFilters}
+          handleApplyFilters={applyFilters}
+          filterBody={filterBody}
+          setFilterBody={setFilterBody}
+        />
+        {filterCount > 0 ? (
+          <Button variant="outline" onClick={clearFilters}>
+            {filterCount} <FilterX className="ml-2 h-4 w-4" />
+          </Button>
+        ) : null}
+        <TableColumns table={table} />
       </div>
       {filterCount > 0 ? (
         <FilterChips

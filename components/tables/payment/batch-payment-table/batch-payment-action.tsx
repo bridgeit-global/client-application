@@ -26,9 +26,15 @@ interface PaymentRequest {
 
 interface BatchPaymentActionButtonProps {
     table: Table<BatchTableProps>
+    /**
+     * Called after all settlements succeed. Client-driven tables should pass
+     * their refetch here; when omitted we fall back to router.refresh() for
+     * server-driven pages.
+     */
+    onSettled?: () => void;
 }
 
-export const BatchPaymentActionButton = ({ table }: BatchPaymentActionButtonProps) => {
+export const BatchPaymentActionButton = ({ table, onSettled }: BatchPaymentActionButtonProps) => {
     const { toast } = useToast();
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,8 +105,13 @@ export const BatchPaymentActionButton = ({ table }: BatchPaymentActionButtonProp
 
             await Promise.all(paymentPromises);
 
-            // Refresh the page and show success message
-            router.refresh();
+            // Client-driven panels refetch via onSettled; server-driven pages
+            // (no callback) keep the router.refresh() behavior.
+            if (onSettled) {
+                onSettled();
+            } else {
+                router.refresh();
+            }
             toast({
                 title: 'Success',
                 description: 'All payments processed successfully',
@@ -151,7 +162,7 @@ export const BatchPaymentActionButton = ({ table }: BatchPaymentActionButtonProp
     return (
         <div className='flex items-center gap-2'>
             <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-gray-500">
+                <p className="text-sm font-semibold text-muted-foreground">
                     Total Amount: {formatRupees(totalAmount)}
                 </p>
             </div>

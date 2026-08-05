@@ -174,6 +174,35 @@ export async function getSettlementRequiredBatchCount(): Promise<{
   return { count: count ?? 0 };
 }
 
+export type OperationsFlowCounts = {
+  newCount: number;
+  approvedCount: number;
+  settlementCount: number;
+};
+
+/**
+ * Aggregated actionable counts for the Operations flow rail badges.
+ * Reuses the panels' cached fetchers with limit=1 so badge counts never
+ * drift from the base filters each panel applies.
+ */
+export async function getOperationsFlowCounts(): Promise<OperationsFlowCounts> {
+  const [newBills, lowBalance, approvedBills, approvedRecharges, settlement] =
+    await Promise.all([
+      fetchNewBills({ page: '1', limit: '1' }),
+      fetchLowBalanceConnections({ page: '1', limit: '1' }),
+      fetchApprovedPostpaidBills({ page: '1', limit: '1' }),
+      fetchApprovedPrepaidRecharges({ page: '1', limit: '1' }),
+      getSettlementRequiredBatchCount()
+    ]);
+
+  return {
+    newCount: (newBills.totalCount ?? 0) + (lowBalance.totalCount ?? 0),
+    approvedCount:
+      (approvedBills.totalCount ?? 0) + (approvedRecharges.totalCount ?? 0),
+    settlementCount: settlement.count
+  };
+}
+
 export async function getBillsPaid(searchParams: SearchParamsProps) {
   return fetchPostpaidPaid(searchParams);
 }

@@ -31,7 +31,8 @@ type OperationsTablePanelProps<T> = {
   enabled: boolean;
   /** Operations tab id — used to scope Calendar URL filter deep-links. */
   tabId?: string;
-  title: string;
+  /** Optional — prefer the section tab label over a redundant panel title. */
+  title?: string;
   description?: string;
   columns: ColumnDef<T, any>[];
   fetcher: (params: SearchParamsProps) => Promise<FetchResult<T>>;
@@ -128,16 +129,20 @@ export function OperationsTablePanel<T>({
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex flex-1 flex-col justify-between gap-2 md:flex-row">
-        <div className="space-y-1">
-          <h3 className="text-lg md:text-xl font-semibold tracking-tight">
-            {title}
-          </h3>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-1 flex-col justify-between gap-2 md:flex-row md:items-center">
+        {title || description ? (
+          <div className="space-y-1">
+            {title ? (
+              <h3 className="text-lg md:text-xl font-semibold tracking-tight">
+                {title}
+              </h3>
+            ) : null}
+            {description ? (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2 md:ml-auto">
           {toolbar?.({ table, data: rows })}
           {renderFilters({
             filterBody,

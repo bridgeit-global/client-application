@@ -44,7 +44,7 @@ export function BillPaymentTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const params = Object.fromEntries(searchParams.entries());
-  const [filterBody, setFilterBody] = useState({
+  const [filterBody, setFilterBody] = useState<Record<string, string>>({
     ...params,
     status: params.status ?? DEFAULT_STATUS
   });

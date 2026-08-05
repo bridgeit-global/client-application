@@ -8,11 +8,9 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import CustomTable from '@/components/custom-table';
 import FilterChips from '@/components/filter-chip';
 import TableColumns from '@/components/table-columns';
-import DueDateLegend from '@/components/due-date-legend';
 import { Button } from '@/components/ui/button';
 import { FilterX } from 'lucide-react';
 import { columns } from '@/components/tables/bill/approved-bill-table/columns';
@@ -28,6 +26,7 @@ import { defaultColumnSizing, getFilterDataLength } from '@/lib/utils/table';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { getApprovedBills } from '../actions';
 import { useOperationsQuery } from '../use-operations-query';
+import { DueDateCategoryFilters } from '../due-date-category-filters';
 import { PanelError, PanelLoading } from '../panel-states';
 
 type Props = { enabled: boolean };
@@ -108,21 +107,11 @@ export function BillApprovedPanel({ enabled }: Props) {
       ) : null}
 
       <div className="w-full space-y-3">
-        <h3 className="text-lg md:text-xl font-semibold tracking-tight">
-          Approved Bills
-        </h3>
-        <DueDateLegend />
         <div className="flex flex-col gap-4 justify-between lg:flex-row lg:items-center">
-          <ToggleGroup
-            type="single"
+          <DueDateCategoryFilters
             value={selectedCategory}
             onValueChange={handleCategoryChange}
-            className="justify-start gap-2 bg-card p-2"
-          >
-            <ToggleGroupItem value="overdue">Overdue</ToggleGroupItem>
-            <ToggleGroupItem value="seven_day">Next 7 Days</ToggleGroupItem>
-            <ToggleGroupItem value="next_seven_day">7-14 Days</ToggleGroupItem>
-          </ToggleGroup>
+          />
           <div className="flex flex-wrap items-center gap-2">
             {table.getFilteredSelectedRowModel().rows.length > 0 ? (
               <ApprovedBillActionButton table={table} />

@@ -21,6 +21,8 @@ import { AlertModal } from '@/components/modal/alert-modal';
 import ViewBatchButton from '@/components/buttons/view-batch-button';
 import { useUserStore } from '@/lib/store/user-store';
 import { useUtilizeAndThresholdAmount } from '@/hooks/use-utilize-amount';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
+import { useRouter } from 'next/navigation';
 
 type BillPaymentStatusProps = {
   paidCount: number | string;
@@ -65,35 +67,15 @@ export function BillPaymentStatus({
 }
 
 const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
-
-
-  if (row.original.batch_status === 'processing') {
-    return <Badge variant="outline">Processing</Badge>
-  }
-
-  const allData = row.original.bills || row.original.prepaid_recharge;
-  const isPaidCount = allData.filter((bill: any) => bill.payment_status === true).length;
-
-  // 1. Batch validity check (local calendar day — avoid UTC off-by-one)
-  const isBatchExpired = isCalendarDateExpired(row.original?.validate_at);
-
-  // 2. Count bills that need attention: only those where today's payable exceeds approved amount
-  const unresolvedBillCount = (row.original.bills || []).filter((bill: any) => {
-    if (bill.payment_status !== false) return false;
-    if (bill.approved_amount == null) return false;
-    return getTodaysAmount(bill) > bill.approved_amount;
-  }).length;
-
-  const hasUnresolvedBillsCount = isPaidCount || unresolvedBillCount;
-
-  //hooks
+  // Hooks must run unconditionally — status can flip to processing after soft refresh.
   const supabase = createClient();
   const { toast } = useToast();
+  const router = useRouter();
   const { user } = useUserStore();
-  const { thresholdAmount, utilizeAmount, isLoading: isUtilizeLoading } = useUtilizeAndThresholdAmount();
+  const { thresholdAmount, utilizeAmount, isLoading: isUtilizeLoading } =
+    useUtilizeAndThresholdAmount();
   const availableAmount = thresholdAmount - utilizeAmount;
 
-  //state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,18 +84,52 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
   const [renewLoading, setRenewLoading] = useState(false);
 
   useEffect(() => {
-    const totalBillAmount = row.original?.bills?.filter((bill: any) => bill.payment_status === false).reduce((sum: number, bill: any) => {
-      return sum + (bill.approved_amount || 0);
-    }, 0);
+    const totalBillAmount = (row.original?.bills || [])
+      .filter((bill: { payment_status?: boolean }) => bill.payment_status === false)
+      .reduce(
+        (sum: number, bill: { approved_amount?: number | null }) =>
+          sum + (bill.approved_amount || 0),
+        0
+      );
 
-    const totalRechargeAmount = row.original.prepaid_recharge.reduce((sum: number, recharge: any) => {
-      return sum + (recharge.recharge_amount || 0);
-    }, 0);
-    const totalAmount = totalBillAmount + totalRechargeAmount;
-    setTotalAmount(totalAmount);
-
-
+    const totalRechargeAmount = (row.original.prepaid_recharge || []).reduce(
+      (sum: number, recharge: { recharge_amount?: number | null }) =>
+        sum + (recharge.recharge_amount || 0),
+      0
+    );
+    setTotalAmount(totalBillAmount + totalRechargeAmount);
   }, [row.original.bills, row.original.prepaid_recharge]);
+
+  if (row.original.batch_status === 'processing') {
+    return <Badge variant="outline">Processing</Badge>;
+  }
+
+  const allData = row.original.bills || row.original.prepaid_recharge;
+  const isPaidCount = allData.filter(
+    (bill: { payment_status?: boolean }) => bill.payment_status === true
+  ).length;
+
+  // 1. Batch validity check (local calendar day — avoid UTC off-by-one)
+  const isBatchExpired = isCalendarDateExpired(row.original?.validate_at);
+
+  // 2. Count bills that need attention: only those where today's payable exceeds approved amount
+  const unresolvedBillCount = (row.original.bills || []).filter((bill) => {
+    if (bill.payment_status !== false) return false;
+    if (bill.approved_amount == null) return false;
+    return getTodaysAmount(bill) > bill.approved_amount;
+  }).length;
+
+  const hasUnresolvedBillsCount = isPaidCount || unresolvedBillCount;
+
+  const refreshAfterBatchMutation = () => {
+    invalidateOps(
+      'batches',
+      'batchPayments',
+      'settlementCount',
+      'flowCounts'
+    );
+    router.refresh();
+  };
 
   const isPostpaid = availableAmount >= totalAmount;
 
@@ -140,8 +156,7 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
         variant: 'success'
       });
       setShowRenewConfirm(false);
-      // Full navigation refreshes Operations client-fetched batch rows.
-      window.location.assign('/portal/operations?tab=batch-batches');
+      refreshAfterBatchMutation();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -189,6 +204,7 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
         description: 'Payment made successfully',
         variant: 'success',
       });
+      refreshAfterBatchMutation();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -197,7 +213,6 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
       });
     } finally {
       setIsLoading(false);
-      window.location.reload(); // Reload the page to show the updated batch status
     }
   };
 
@@ -235,6 +250,7 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
         title: 'Success',
         description: 'Batch processed successfully',
       });
+      refreshAfterBatchMutation();
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -243,7 +259,6 @@ const BatchActionCell = ({ row }: { row: Row<BatchTableProps> }) => {
       });
     } finally {
       setIsLoading(false);
-      window.location.reload(); // Reload the page to show the updated batch status
     }
   };
 

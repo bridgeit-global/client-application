@@ -20,6 +20,7 @@ import { defaultColumnSizing, getFilterDataLength } from '@/lib/utils/table';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { getBatchPayments } from '../actions';
 import { useOperationsQuery } from '../use-operations-query';
+import { invalidateOps } from '../invalidate-ops';
 import { PanelError, PanelLoading } from '../panel-states';
 
 type Props = { enabled: boolean };
@@ -73,7 +74,18 @@ export function BatchPaymentsPanel({ enabled }: Props) {
   return (
     <div className="w-full space-y-3">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <BatchPaymentActionButton table={table} onSettled={refetch} />
+        <BatchPaymentActionButton
+          table={table}
+          onSettled={() => {
+            // Refetch payments + related Ops panels (batches / settlement / badges).
+            invalidateOps(
+              'batchPayments',
+              'batches',
+              'settlementCount',
+              'flowCounts'
+            );
+          }}
+        />
         <FilterAction
           handleClearFilter={clearFilters}
           handleApplyFilters={applyFilters}

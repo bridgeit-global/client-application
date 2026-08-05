@@ -24,6 +24,9 @@ type UseAsyncDataResult<T> = {
 /** Panel-scoped cache so remounts keep prior rows instead of skeleton loops. */
 const sessionCache = new Map<string, unknown>();
 
+type InvalidateListener = (prefixes: string[]) => void;
+const invalidateListeners = new Set<InvalidateListener>();
+
 function buildCacheKey(scope: string | undefined, deps: unknown[]): string | null {
   if (!scope) return null;
   try {
@@ -31,6 +34,35 @@ function buildCacheKey(scope: string | undefined, deps: unknown[]): string | nul
   } catch {
     return `${scope}:${String(deps)}`;
   }
+}
+
+function matchesScopePrefix(keyOrScope: string, prefix: string): boolean {
+  return keyOrScope === prefix || keyOrScope.startsWith(`${prefix}:`);
+}
+
+function scopeMatchesPrefixes(scope: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => matchesScopePrefix(scope, prefix));
+}
+
+/**
+ * Clear session-cached entries whose keys start with any of `scopePrefixes`,
+ * and notify mounted `useAsyncData` hooks so they refetch when enabled.
+ *
+ * Cache keys are `${cacheScope}:${depsJson}`; matching is by prefix so
+ * `ops:bill-approved` clears every filter variant for that panel.
+ */
+export function invalidateAsyncData(scopePrefixes: string[]): void {
+  if (scopePrefixes.length === 0) return;
+
+  Array.from(sessionCache.keys()).forEach((key) => {
+    if (scopePrefixes.some((prefix) => matchesScopePrefix(key, prefix))) {
+      sessionCache.delete(key);
+    }
+  });
+
+  Array.from(invalidateListeners).forEach((listener) => {
+    listener(scopePrefixes);
+  });
 }
 
 /**
@@ -60,6 +92,29 @@ export function useAsyncData<T>(
     Boolean(cacheKey && sessionCache.has(cacheKey))
   );
   const requestIdRef = useRef(0);
+  const cacheScopeRef = useRef(cacheScope);
+  cacheScopeRef.current = cacheScope;
+
+  const refetch = useCallback(() => {
+    setRefetchToken((t) => t + 1);
+  }, []);
+
+  // Subscribe so mutations can clear cache + bump mounted panels.
+  useEffect(() => {
+    if (!cacheScope) return;
+
+    const listener: InvalidateListener = (prefixes) => {
+      const scope = cacheScopeRef.current;
+      if (!scope || !scopeMatchesPrefixes(scope, prefixes)) return;
+      // Keep prior rows; sessionCache was already cleared by invalidateAsyncData.
+      setRefetchToken((t) => t + 1);
+    };
+
+    invalidateListeners.add(listener);
+    return () => {
+      invalidateListeners.delete(listener);
+    };
+  }, [cacheScope]);
 
   useEffect(() => {
     if (!enabled) {
@@ -69,8 +124,8 @@ export function useAsyncData<T>(
 
     const requestId = ++requestIdRef.current;
     const hasCached = Boolean(cacheKey && sessionCache.has(cacheKey));
-    // Keep prior rows visible while revalidating after a Suspense remount.
-    if (!hasCached) setIsLoading(true);
+    // Skeleton only on first load; remounts/invalidations keep prior rows.
+    if (!hasCached && !hasLoadedRef.current) setIsLoading(true);
     setError(null);
 
     fetcherRef
@@ -91,10 +146,6 @@ export function useAsyncData<T>(
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, refetchToken, cacheKey, ...deps]);
-
-  const refetch = useCallback(() => {
-    setRefetchToken((t) => t + 1);
-  }, []);
 
   return {
     data,

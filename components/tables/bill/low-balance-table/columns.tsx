@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useSiteName } from '@/lib/utils/site';
 import { SiteAccountBoardCell } from '@/components/table-cells/site-board-cell';
 import { createPrepaidRecharge } from '@/app/portal/operations/actions';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
 
 /** Local calendar date as yyyy-MM-dd (avoids UTC shift from toISOString). */
 function toLocalYmd(date: Date): string {
@@ -101,6 +102,11 @@ export const columns: ColumnDef<LowBalanceConnectionTableProps>[] = [
           });
           setIsOpen(false);
           setAmount('');
+          invalidateOps(
+            'rechargeLowBalance',
+            'rechargeApproved',
+            'flowCounts'
+          );
           router.refresh();
           router.push('/portal/operations?tab=recharge-approved');
         } catch (error) {

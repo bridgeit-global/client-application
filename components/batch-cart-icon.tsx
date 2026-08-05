@@ -38,8 +38,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
 import { useUserStore } from '@/lib/store/user-store';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
 
 type CartItemType = AllBillTableProps | PrepaidRechargeTableProps;
+
+/** Refresh Ops approved/batches panels after cart create or add-items. */
+function invalidateAfterBatchMutation() {
+    invalidateOps(
+        'billApproved',
+        'rechargeApproved',
+        'batches',
+        'settlementCount',
+        'flowCounts'
+    );
+}
 
 interface BillTableProps {
     items: CartItemType[];
@@ -518,6 +530,7 @@ export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconPr
 
                 clearCart();
                 closeModal();
+                invalidateAfterBatchMutation();
                 fetchData?.();
                 getExistingBatch(); // Refresh existing batches
                 // Stay in Operations and scroll to the Batch section.
@@ -601,6 +614,7 @@ export function BatchCartIcon({ fetchData, showTrigger = true }: BatchCartIconPr
 
             clearCart();
             closeModal();
+            invalidateAfterBatchMutation();
             fetchData?.();
             getExistingBatch(); // Refresh existing batches
             // Stay in Operations and scroll to the Batch section.

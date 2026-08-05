@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClientPaymentsProps, PaymentGatewayTransactionsProps } from '@/types/payments-type';
@@ -180,6 +181,12 @@ function BatchPaymentStatusCell({ row }: { row: { original: BatchTableProps } })
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error || 'Failed to process payment');
+      invalidateOps(
+        'batchPayments',
+        'batches',
+        'settlementCount',
+        'flowCounts'
+      );
       router.refresh();
       toast({
         title: 'Success',

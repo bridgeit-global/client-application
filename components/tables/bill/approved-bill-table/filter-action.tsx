@@ -21,6 +21,7 @@ import { useBatchCartStore } from '@/lib/store/batch-cart-store';
 import { SURCHARGE_OPTIONS } from '@/constants/surcharge-options';
 import { useSiteName } from '@/lib/utils/site';
 import { PortalFilterSheet } from '@/components/portal/PortalFilterSheet';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
 type Props = {
   filterBody: any;
   setFilterBody: any;
@@ -224,6 +225,8 @@ export const ApprovedBillActionButton = ({ table }: any) => {
         variant: 'destructive',
         description: `Error Un-approving Bills`
       });
+    } else {
+      invalidateOps('billApproved', 'billNew', 'flowCounts');
     }
     router.refresh();
     table?.resetRowSelection();

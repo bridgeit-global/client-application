@@ -23,6 +23,7 @@ import { createClient } from '@/lib/supabase/client';
 import { StationTypeSelector } from '@/components/input/station-type-selector';
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -243,6 +244,7 @@ export const NewBillActionButton = ({ table }: any) => {
         description: `Bills approved successfully`
       });
 
+      invalidateOps('billNew', 'billApproved', 'flowCounts');
       router.refresh();
       table?.resetRowSelection();
     } catch (error: any) {

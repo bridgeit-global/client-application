@@ -17,6 +17,7 @@ import { useBatchCartStore } from '@/lib/store/batch-cart-store';
 import { useToast } from '@/components/ui/use-toast';
 import { useRouter } from 'next/navigation';
 import { useSiteName } from '@/lib/utils/site';
+import { invalidateOps } from '@/app/portal/operations/invalidate-ops';
 type Props = {
   filterBody: any;
   setFilterBody: any;
@@ -177,6 +178,8 @@ export const ApprovedBillActionButton = ({ table }: any) => {
         variant: 'destructive',
         description: `Error Un-approving Bills`
       });
+    } else {
+      invalidateOps('rechargeApproved', 'flowCounts');
     }
     router.refresh();
     table?.resetRowSelection();

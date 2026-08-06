@@ -10,6 +10,7 @@ import type { ClientPaymentsProps } from "@/types/payments-type"
 import type { AllBillTableProps } from "@/types/bills-type"
 import type { PrepaidRechargeTableProps } from "@/types/connections-type"
 import type { BatchesProps } from "@/types/batches-type"
+import { buildBatchHistoryItems } from "@/lib/batch/build-batch-history-items"
 
 // Request-scoped page; also avoids the useSearchParams prerender bailout.
 export const dynamic = 'force-dynamic'
@@ -130,6 +131,9 @@ export default async function Page(
   }
 
   const increaseAmountRecords = filterIncreaseAmountRecords(allBills)
+  const historyItems = await buildBatchHistoryItems(
+    (data?.[0]?.batches as any) || scopedBatch
+  )
   return (
     <BillBatchPaymentTable
       allBills={allBills || []}
@@ -141,6 +145,7 @@ export default async function Page(
       pageCount={pageCount}
       totalCount={totalCount}
       pendingGatewayPayment={pendingGatewayPayment}
+      historyItems={historyItems}
     />
   )
 }

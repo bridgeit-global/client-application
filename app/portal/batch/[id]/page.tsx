@@ -8,6 +8,7 @@ import { BatchItemTable } from "@/components/tables/batch/batch-item-table"
 import BatchAction from "@/components/tables/batch/batch-item-table/batch-action"
 import BatchHistoryTimeline from "@/components/batch/batch-history-timeline"
 import { getBatchForCurrentOrg } from "@/lib/batch/get-batch-for-current-org"
+import { buildBatchHistoryItems } from "@/lib/batch/build-batch-history-items"
 import { notFound } from "next/navigation"
 
 // Request-scoped page; also avoids the useSearchParams prerender bailout.
@@ -40,27 +41,7 @@ export default async function Page(
     const newBillCount = getNewBillCount(allData || [], 'postpaid')
 
     const batch = (allData && allData.length > 0 ? allData[0].batches : null) || scopedBatch;
-    let historyItems = Array.isArray(batch?.user_actions)
-        ? (batch?.user_actions as any[]).map((u: any) => ({
-            action: u?.action || 'updated',
-            user_id: u?.user_id || '',
-            status_to: u?.status_to || batch?.batch_status || 'unpaid',
-            status_from: u?.status_from ?? undefined,
-            timestamp: u?.timestamp || u?.created_at || batch?.created_at || new Date().toISOString(),
-            note: u?.note || null
-        }))
-        : []
-
-    if ((historyItems?.length || 0) === 0 && batch) {
-        historyItems = [{
-            action: 'created',
-            user_id: batch?.created_by || '',
-            status_to: 'unpaid',
-            status_from: null,
-            timestamp: batch?.created_at || new Date().toISOString(),
-            note: batch?.batch_name ? `Batch "${batch.batch_name}" created` : null
-        }]
-    }
+    const historyItems = await buildBatchHistoryItems(batch)
     const isBatchExpired = isCalendarDateExpired(batch?.validate_at);
 
     const increasedAmountCount = (allData || []).filter(bill => {

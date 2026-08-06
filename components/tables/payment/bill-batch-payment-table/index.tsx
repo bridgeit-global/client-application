@@ -23,6 +23,7 @@ import TableColumns from '@/components/table-columns';
 import ApproveIncreaseAmountDialog from './approval-increase-amount-dialog';
 import { useIncreaseAmountModalStore } from '@/lib/store/increase-amount-modal-store';
 import BatchHistoryTimeline from '@/components/batch/batch-history-timeline';
+import type { BatchHistoryItem } from '@/lib/batch/batch-history-types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type DataTableProps = {
@@ -44,6 +45,7 @@ type DataTableProps = {
   allBills: ClientPaymentsProps[];
   /** True when showing membership fallback before PG approve creates client_payments. */
   pendingGatewayPayment?: boolean;
+  historyItems?: BatchHistoryItem[];
 };
 
 export function BillBatchPaymentTable({
@@ -54,8 +56,8 @@ export function BillBatchPaymentTable({
   increaseAmountRecords,
   allBills,
   batchId,
-  batch,
-  pendingGatewayPayment = false
+  pendingGatewayPayment = false,
+  historyItems = []
 }: DataTableProps) {
   const { isModalOpen, setIsModalOpen } = useIncreaseAmountModalStore();
   const router = useRouter();
@@ -158,25 +160,18 @@ export function BillBatchPaymentTable({
 
     allBills.forEach((row) => {
       const billAmount = Number(row.bill_amount) || 0;
+      const billRefunds = row?.bills?.refund_payment_transactions ?? [];
+      const rechargeRefunds =
+        row?.prepaid_recharge?.refund_payment_transactions ?? [];
       const refundAmount =
-        row?.bills?.refund_payment_transactions?.length > 0
-          ? Number(
-              row?.bills?.refund_payment_transactions?.reduce(
-                (acc, payment) => acc + (payment.amount || 0),
-                0
-              )
-            )
-          : 0 +
-            Number(
-              row.prepaid_recharge?.refund_payment_transactions?.length > 0
-                ? Number(
-                    row.prepaid_recharge?.refund_payment_transactions?.reduce(
-                      (acc, payment) => acc + (payment.amount || 0),
-                      0
-                    )
-                  )
-                : 0
-            );
+        billRefunds.reduce(
+          (acc, payment) => acc + (Number(payment.amount) || 0),
+          0
+        ) +
+        rechargeRefunds.reduce(
+          (acc, payment) => acc + (Number(payment.amount) || 0),
+          0
+        );
 
       const actualPaidAmount =
         row.status === 'paid' ? Number(row.paid_amount) : 0;
@@ -211,38 +206,6 @@ export function BillBatchPaymentTable({
           : 0
     };
   }, [allBills]);
-
-  const historySource = data[0]?.batches || batch;
-  let historyItems = Array.isArray(historySource?.user_actions)
-    ? (historySource?.user_actions as any[]).map((u: any) => ({
-        action: u?.action || 'updated',
-        user_id: u?.user_id || '',
-        status_to:
-          u?.status_to || historySource?.batch_status || 'unpaid',
-        status_from: u?.status_from ?? undefined,
-        timestamp:
-          u?.timestamp ||
-          u?.created_at ||
-          historySource?.created_at ||
-          new Date().toISOString(),
-        note: u?.note || null
-      }))
-    : [];
-
-  if ((historyItems?.length || 0) === 0 && historySource) {
-    historyItems = [
-      {
-        action: 'created',
-        user_id: (historySource as { created_by?: string })?.created_by || '',
-        status_to: 'unpaid',
-        status_from: null,
-        timestamp: historySource?.created_at || new Date().toISOString(),
-        note: historySource?.batch_name
-          ? `Batch "${historySource.batch_name}" created`
-          : null
-      }
-    ];
-  }
 
   return (
     <>

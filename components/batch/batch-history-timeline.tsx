@@ -1,22 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { formatDateWithTime, timeAgo } from '@/lib/utils/date-format'
 import { CheckCircle2, Clock3, AlertCircle, ArrowRightLeft, PlusCircle } from 'lucide-react'
 import { snakeToTitle } from '@/lib/utils/string-format'
-import { useAllUsers } from '@/hooks/use-all-users'
+import type { BatchHistoryItem } from '@/lib/batch/batch-history-types'
 
-export type BatchHistoryItem = {
-    action: 'created' | 'status_changed' | string
-    user_id: string
-    status_to: string
-    timestamp: string
-    status_from?: string | null
-    note?: string | null
-}
+export type { BatchHistoryItem }
 
 type Props = {
     items: BatchHistoryItem[]
@@ -77,11 +70,21 @@ function TimeAgo({ timestamp }: { timestamp: string }) {
 }
 
 export function BatchHistoryTimeline({ items, className, title = 'Batch History' }: Props) {
-    const users = useAllUsers()
-    const sorted = [...items].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    const getUserName = (userId: string) => {
-        const user = users.find(user => user.id === userId)
-        return `${user?.first_name} ${user?.last_name}` || userId
+    const sorted = useMemo(
+        () =>
+            [...items].sort(
+                (a, b) =>
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            ),
+        [items]
+    )
+
+    const getUserName = (item: BatchHistoryItem) => {
+        const fromServer = item.user_name?.trim()
+        if (fromServer) return fromServer
+        if (!item.user_id) return 'Unknown user'
+        // Prefer not to flash raw UUIDs when the server already tried to resolve.
+        return 'Unknown user'
     }
 
     return (
@@ -97,7 +100,7 @@ export function BatchHistoryTimeline({ items, className, title = 'Batch History'
                     <ol className="relative ml-3 border-l border-border">
                         {sorted.map((item, idx) => {
                             const isCreated = item.action === 'created'
-                            const userName = getUserName(item.user_id)
+                            const userName = getUserName(item)
                             return (
                                 <li key={idx} className="mb-6 ml-4">
                                     <span className="absolute -left-1.5 flex h-3 w-3 items-center justify-center rounded-full border border-background bg-primary/80 ring-2 ring-primary/20">
@@ -145,5 +148,3 @@ export function BatchHistoryTimeline({ items, className, title = 'Batch History'
 }
 
 export default BatchHistoryTimeline
-
-

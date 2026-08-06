@@ -44,6 +44,11 @@ export async function POST(req: NextRequest) {
       data: { user }
     } = await supabase.auth.getUser();
 
+    const orgId = user?.user_metadata?.org_id as string | undefined;
+    if (!user || !orgId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       batchId,
@@ -67,8 +72,9 @@ export async function POST(req: NextRequest) {
 
     const { data: batch, error: batchLookupError } = await supabase
       .from('batches')
-      .select('batch_id, batch_status, validate_at')
+      .select('batch_id, batch_status, validate_at, org_id')
       .eq('batch_id', batchId)
+      .eq('org_id', orgId)
       .maybeSingle();
 
     if (batchLookupError) {

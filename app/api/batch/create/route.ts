@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { handleDatabaseError } from '@/lib/utils/supabase-error';
+import { touchBatchForAdvice } from '@/lib/batch/touch-batch-for-advice';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Chunk size for processing updates to avoid timeouts
@@ -65,7 +66,8 @@ export async function POST(req: NextRequest) {
         .insert([{ 
           batch_name: batchName || null, 
           validate_at: validate_at || null, 
-          created_by: user?.id || null
+          created_by: user?.id || null,
+          org_id: user?.user_metadata?.org_id || null,
         }])
         .select().single();
       console.log('batch_data', batch_data);
@@ -107,14 +109,22 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Do NOT touch batches after create. INSERT already fires
-        // batch-updates → batch-create (with item-link retries). A post-link
-        // unpaid touch would send a second Batch Advice under the non-URL
-        // refresh rule. Add-to-existing uses /api/batch/add-items touch instead.
+        // Link all items first, then touch once so batch-updates enqueues
+        // create_advice with the full membership (INSERT alone is skipped).
         if (bill_ids.length === 0 && recharge_ids.length === 0) {
           console.warn(
             'Batch created with no bill_ids/recharge_ids — advice may be skipped as empty'
           );
+        } else {
+          const { error: touchError } = await touchBatchForAdvice(
+            supabase,
+            batch_data.batch_id,
+            user?.id || null
+          );
+          if (touchError) {
+            const handledError = handleDatabaseError(touchError);
+            throw handledError.message;
+          }
         }
       }
 

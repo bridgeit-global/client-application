@@ -6,6 +6,11 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     try {
+        const orgId = user?.user_metadata?.org_id as string | undefined;
+        if (!user || !orgId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await req.json();
         const { batchId, transactionReference, paymentMode, remarks, amount, transactionDate } = body;
         const batch_status = body?.batch_status
@@ -19,6 +24,21 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
+
+        const { data: scopedBatch, error: batchLookupError } = await supabase
+            .from('batches')
+            .select('batch_id, org_id')
+            .eq('batch_id', batchId)
+            .eq('org_id', orgId)
+            .maybeSingle();
+        if (batchLookupError) {
+            const handledError = handleDatabaseError(batchLookupError);
+            throw new Error(handledError.message);
+        }
+        if (!scopedBatch) {
+            return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
+        }
+
         const { data: bill_data, error: bill_error } = await supabase
             .from('bills')
             .select('approved_amount')

@@ -3,13 +3,15 @@ import { getNewBillCount } from "@/lib/utils/bill"
 import { isCalendarDateExpired } from "@/lib/utils/date-format"
 import { fetchBillsInBatches, fetchRechargesInBatches } from "@/services/batches"
 import type { SearchParamsProps } from "@/types"
-import { getAfterDueAmount } from '@/lib/utils';
+import { getAfterDueAmount } from '@/lib/utils'
 import { BatchItemTable } from "@/components/tables/batch/batch-item-table"
 import BatchAction from "@/components/tables/batch/batch-item-table/batch-action"
 import BatchHistoryTimeline from "@/components/batch/batch-history-timeline"
+import { getBatchForCurrentOrg } from "@/lib/batch/get-batch-for-current-org"
+import { notFound } from "next/navigation"
 
 // Request-scoped page; also avoids the useSearchParams prerender bailout.
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 export default async function Page(
     props: {
@@ -22,6 +24,11 @@ export default async function Page(
     const [resolvedSearchParams, resolvedParams] = await Promise.all([searchParams, params]);
     const { id } = resolvedParams;
 
+    const scopedBatch = await getBatchForCurrentOrg(id || '')
+    if (!scopedBatch) {
+        notFound()
+    }
+
     const filterBody = resolvedSearchParams?.postpaid ? JSON?.parse(resolvedSearchParams?.postpaid) : {}
     const prepaidFilterBody = resolvedSearchParams?.prepaid ? JSON?.parse(resolvedSearchParams?.prepaid) : {}
     const { pageCount, data, totalCount, allData } = await fetchBillsInBatches({ ...filterBody, batch_id: id || '' })
@@ -32,7 +39,7 @@ export default async function Page(
     const isPaidCount = (allData || []).filter((bill: any) => bill.payment_status === true).length;
     const newBillCount = getNewBillCount(allData || [], 'postpaid')
 
-    const batch = allData && allData.length > 0 ? allData[0].batches : null;
+    const batch = (allData && allData.length > 0 ? allData[0].batches : null) || scopedBatch;
     let historyItems = Array.isArray(batch?.user_actions)
         ? (batch?.user_actions as any[]).map((u: any) => ({
             action: u?.action || 'updated',
@@ -87,7 +94,6 @@ export default async function Page(
                     hasUnresolvedBillsCount={hasUnresolvedBillsCount}
                     isBatchExpired={isBatchExpired}
                 />}
-            {/* Batch history demo; replace with real data when available */}
             {
                 data.length > 0 && (
                     <BatchItemTable

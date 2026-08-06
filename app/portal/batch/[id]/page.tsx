@@ -73,10 +73,8 @@ export default async function Page(
     }).length;
 
     const hasUnresolvedBillsCount = isPaidCount || newBillCount + increasedAmountCount;
-
-    if (data.length === 0 && prepaidPageCount === 0) {
-        return <p>No bills found</p>
-    }
+    const hasPostpaid = (data?.length || 0) > 0;
+    const hasPrepaid = (prepaidData?.length || 0) > 0;
 
     return (
         <div id="bill-batches" className="space-y-6">
@@ -95,7 +93,7 @@ export default async function Page(
                     isBatchExpired={isBatchExpired}
                 />}
             {
-                data.length > 0 && (
+                hasPostpaid && (
                     <BatchItemTable
                         payType="postpaid"
                         data={data}
@@ -106,7 +104,7 @@ export default async function Page(
                 )
             }
             {
-                prepaidData.length > 0 && (
+                hasPrepaid && (
                     <BatchItemTable
                         payType="prepaid"
                         data={prepaidData}
@@ -116,6 +114,9 @@ export default async function Page(
                     />
                 )
             }
+            {!hasPostpaid && !hasPrepaid && (
+                <p className="text-sm text-muted-foreground">No bills found</p>
+            )}
             <BatchHistoryTimeline items={historyItems} title="Batch Activity" />
         </div>
     )

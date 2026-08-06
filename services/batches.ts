@@ -41,18 +41,21 @@ export const fetchBillsInBatches = cache(
     } = searchParams;
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
+    // Left-join nested connection.bills / sites so missing embeds don't drop
+    // batch members. When batch_id is set, membership is the FK — do not
+    // require bill_status='batch' (payment-flow bills stay on the batch).
     let query = supabase
       .from('bills')
       .select(
-        '*,batches!inner(*),connections!inner(*,paytype,sites!inner(type),biller_list!inner(*),bills!inner(bill_amount,is_valid,is_active,approved_amount))',
+        '*,batches!inner(*),connections!inner(*,paytype,sites(type),biller_list!inner(*),bills(bill_amount,is_valid,is_active,approved_amount))',
         {
           count: 'estimated'
         }
       )
       .match({
         is_valid: true,
-        bill_status: 'batch',
-        is_deleted: false
+        is_deleted: false,
+        ...(batch_id ? {} : { bill_status: 'batch' })
       })
 
     if (sort) {
@@ -178,17 +181,19 @@ export const fetchRechargesInBatches = cache(
 
     const pageLimit = Number(limit);
     const offset = (Number(page) - 1) * pageLimit;
+    // Same membership rule as bills: with batch_id, keep payment-status rows.
     let query = supabase
       .from('prepaid_recharge')
       .select(
-        '*,connections!inner(*,sites!inner(*),paytype,biller_list!inner(*)),batches!inner(*)',
+        '*,connections!inner(*,sites(*),paytype,biller_list!inner(*)),batches!inner(*)',
         {
           count: 'estimated'
         }
       )
-      .match({
-        recharge_status: 'batch'
-      })
+
+    if (!batch_id) {
+      query = query.match({ recharge_status: 'batch' });
+    }
 
     let allData: PrepaidRechargeTableProps[] = [];
     if (batch_id) {
@@ -232,7 +237,7 @@ export const fetchRechargesInBatches = cache(
       const modifiedData = data.map((site) => {
         return {
           [`${site_name}_id`]: site.connections.site_id,
-          [`${site_name}_type`]: site.connections.sites.type,
+          [`${site_name}_type`]: site.connections.sites?.type,
           account_number: String(site.connections.account_number),
           biller_board: site.connections.biller_list.board_name,
           state: site.connections.biller_list.state,

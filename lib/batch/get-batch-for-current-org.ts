@@ -17,7 +17,7 @@ export async function getBatchForCurrentOrg(batchId: string) {
 
   const { data, error } = await supabase
     .from('batches')
-    .select('batch_id, org_id, batch_status, validate_at, created_at, batch_name, user_actions')
+    .select('batch_id, org_id, batch_status, validate_at, created_at, created_by, batch_name, user_actions')
     .eq('batch_id', batchId)
     .eq('org_id', orgId)
     .maybeSingle();

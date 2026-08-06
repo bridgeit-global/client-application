@@ -360,7 +360,18 @@ export const columns: ColumnDef<BatchTableProps>[] = [
     header: 'Id',
     size: 200,
     cell: ({ row }) => {
-      const link = row.original.batch_status === 'processing' ? `/portal/batch-payment/${row.original.batch_id}` : `/portal/batch/${row.original.batch_id}`;
+      const hasItemsInPayment =
+        (row.original?.bills || []).some(
+          (bill: { bill_status?: string }) => bill.bill_status === 'payment'
+        ) ||
+        (row.original?.prepaid_recharge || []).some(
+          (recharge: { recharge_status?: string }) =>
+            recharge.recharge_status === 'payment'
+        );
+      const link =
+        row.original.batch_status === 'processing' || hasItemsInPayment
+          ? `/portal/batch-payment/${row.original.batch_id}`
+          : `/portal/batch/${row.original.batch_id}`;
       return <ViewBatchButton link={link} batchId={row.original.batch_id} />
     }
   },

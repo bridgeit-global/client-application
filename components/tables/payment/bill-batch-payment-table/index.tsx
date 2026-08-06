@@ -23,7 +23,7 @@ import TableColumns from '@/components/table-columns';
 import ApproveIncreaseAmountDialog from './approval-increase-amount-dialog';
 import { useIncreaseAmountModalStore } from '@/lib/store/increase-amount-modal-store';
 import BatchHistoryTimeline from '@/components/batch/batch-history-timeline';
-import BillPaymentTimeline from '@/components/bill/bill-payment-timeline';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type DataTableProps = {
   data: ClientPaymentsProps[];
@@ -32,8 +32,18 @@ type DataTableProps = {
   pageCount: number;
   searchParams?: SearchParamsProps;
   batchId: string;
+  batch?: {
+    batch_id: string;
+    batch_status?: string | null;
+    batch_name?: string | null;
+    created_at?: string | null;
+    created_by?: string | null;
+    user_actions?: unknown;
+  } | null;
   increaseAmountRecords?: ClientPaymentsProps[];
   allBills: ClientPaymentsProps[];
+  /** True when showing membership fallback before PG approve creates client_payments. */
+  pendingGatewayPayment?: boolean;
 };
 
 export function BillBatchPaymentTable({
@@ -42,7 +52,10 @@ export function BillBatchPaymentTable({
   pageCount,
   totalCount,
   increaseAmountRecords,
-  allBills
+  allBills,
+  batchId,
+  batch,
+  pendingGatewayPayment = false
 }: DataTableProps) {
   const { isModalOpen, setIsModalOpen } = useIncreaseAmountModalStore();
   const router = useRouter();
@@ -84,23 +97,19 @@ export function BillBatchPaymentTable({
     };
     const newQueryString = createQueryString(searchParams, queryParams);
     const currentQueryString = searchParams.toString();
-    
+
     // Only navigate if the query string actually changed
     if (newQueryString !== currentQueryString) {
       setIsLoading(true);
-      router.push(
-        `${pathname}?${newQueryString}${currentHash}`,
-        {
-          scroll: false
-        }
-      );
+      router.push(`${pathname}?${newQueryString}${currentHash}`, {
+        scroll: false
+      });
     }
-  }, [pageIndex, pageSize, filterBody, router, pathname]);
+  }, [pageIndex, pageSize, filterBody, router, pathname, searchParams]);
 
   useEffect(() => {
     setIsLoading(false);
   }, [data]);
-
 
   const table = useReactTable({
     data: data as any,
@@ -134,8 +143,11 @@ export function BillBatchPaymentTable({
         scroll: false
       }
     );
-  }, [router, pathname, createQueryString, pageSize, filterBody]);
-  const filterCount = useMemo(() => getFilterDataLength(filterBody), [filterBody]);
+  }, [router, pathname, pageSize, filterBody, searchParams]);
+  const filterCount = useMemo(
+    () => getFilterDataLength(filterBody),
+    [filterBody]
+  );
 
   const summary = useMemo(() => {
     let totalBillAmount = 0;
@@ -144,25 +156,32 @@ export function BillBatchPaymentTable({
     let totalRefundAmount = 0;
     let totalReversedAmount = 0;
 
-    // Get batch dates from the first row (all rows should have the same batch)
-    const batchCreatedAt = allBills[0]?.batches?.created_at ? new Date(allBills[0].batches.created_at) : null;
-    const batchUpdatedAt = allBills[0]?.batches?.updated_at ? new Date(allBills[0].batches.updated_at) : batchCreatedAt;
-
-    const isWithinBatchWindow = (dateStr?: string) => {
-      if (!dateStr || !batchCreatedAt || !batchUpdatedAt) return false;
-      const d = new Date(dateStr);
-      return d >= batchCreatedAt;
-    };
-
     allBills.forEach((row) => {
       const billAmount = Number(row.bill_amount) || 0;
-      const clientPaidAmount = Number(row.client_paid_amount) || 0;
-      const approvedAmount = Number(row.bills?.approved_amount) || 0 + Number(row.prepaid_recharge?.recharge_amount) || 0;
-      const refundAmount = row?.bills?.refund_payment_transactions?.length > 0 ? Number(row?.bills?.refund_payment_transactions?.reduce((acc, payment) => acc + (payment.amount || 0), 0)) : 0 + Number(row.prepaid_recharge?.refund_payment_transactions?.length > 0 ? Number(row.prepaid_recharge?.refund_payment_transactions?.reduce((acc, payment) => acc + (payment.amount || 0), 0)) : 0);
+      const refundAmount =
+        row?.bills?.refund_payment_transactions?.length > 0
+          ? Number(
+              row?.bills?.refund_payment_transactions?.reduce(
+                (acc, payment) => acc + (payment.amount || 0),
+                0
+              )
+            )
+          : 0 +
+            Number(
+              row.prepaid_recharge?.refund_payment_transactions?.length > 0
+                ? Number(
+                    row.prepaid_recharge?.refund_payment_transactions?.reduce(
+                      (acc, payment) => acc + (payment.amount || 0),
+                      0
+                    )
+                  )
+                : 0
+            );
 
-      // Calculate paid amount excluding reversals
-      let actualPaidAmount = row.status === 'paid' ? Number(row.paid_amount) : 0;
-      let reversedAmount = row.status === 'refund' ? Number(row.paid_amount) : 0;
+      const actualPaidAmount =
+        row.status === 'paid' ? Number(row.paid_amount) : 0;
+      const reversedAmount =
+        row.status === 'refund' ? Number(row.paid_amount) : 0;
 
       totalBillAmount += billAmount;
       totalPaidAmount += actualPaidAmount;
@@ -176,34 +195,53 @@ export function BillBatchPaymentTable({
       totalIncreaseAmount,
       totalRefundAmount,
       totalReversedAmount,
-      paidPercent: totalBillAmount > 0 ? ((totalPaidAmount) / totalBillAmount) * 100 : 0,
-      increasePercent: totalBillAmount > 0 ? (totalIncreaseAmount / totalBillAmount) * 100 : 0,
-      totalRefundPercent: totalBillAmount > 0 ? (totalRefundAmount / totalBillAmount) * 100 : 0,
-      reversedPercent: totalBillAmount > 0 ? (totalReversedAmount / totalBillAmount) * 100 : 0,
+      paidPercent:
+        totalBillAmount > 0 ? (totalPaidAmount / totalBillAmount) * 100 : 0,
+      increasePercent:
+        totalBillAmount > 0
+          ? (totalIncreaseAmount / totalBillAmount) * 100
+          : 0,
+      totalRefundPercent:
+        totalBillAmount > 0
+          ? (totalRefundAmount / totalBillAmount) * 100
+          : 0,
+      reversedPercent:
+        totalBillAmount > 0
+          ? (totalReversedAmount / totalBillAmount) * 100
+          : 0
     };
   }, [allBills]);
 
+  const historySource = data[0]?.batches || batch;
+  let historyItems = Array.isArray(historySource?.user_actions)
+    ? (historySource?.user_actions as any[]).map((u: any) => ({
+        action: u?.action || 'updated',
+        user_id: u?.user_id || '',
+        status_to:
+          u?.status_to || historySource?.batch_status || 'unpaid',
+        status_from: u?.status_from ?? undefined,
+        timestamp:
+          u?.timestamp ||
+          u?.created_at ||
+          historySource?.created_at ||
+          new Date().toISOString(),
+        note: u?.note || null
+      }))
+    : [];
 
-  let historyItems = Array.isArray(data[0]?.batches?.user_actions)
-    ? (data[0]?.batches?.user_actions as any[]).map((u: any) => ({
-      action: u?.action || 'updated',
-      user_id: u?.user_id || '',
-      status_to: u?.status_to || data[0]?.batches?.batch_status || 'unpaid',
-      status_from: u?.status_from ?? undefined,
-      timestamp: u?.timestamp || u?.created_at || data[0]?.batches?.created_at || new Date().toISOString(),
-      note: u?.note || null
-    }))
-    : []
-
-  if ((historyItems?.length || 0) === 0 && data[0]?.batches) {
-    historyItems = [{
-      action: 'created',
-      user_id: data[0]?.batches?.created_by || '',
-      status_to: 'unpaid',
-      status_from: null,
-      timestamp: data[0]?.batches?.created_at || new Date().toISOString(),
-      note: data[0]?.batches?.batch_name ? `Batch "${data[0]?.batches.batch_name}" created` : null
-    }]
+  if ((historyItems?.length || 0) === 0 && historySource) {
+    historyItems = [
+      {
+        action: 'created',
+        user_id: (historySource as { created_by?: string })?.created_by || '',
+        status_to: 'unpaid',
+        status_from: null,
+        timestamp: historySource?.created_at || new Date().toISOString(),
+        note: historySource?.batch_name
+          ? `Batch "${historySource.batch_name}" created`
+          : null
+      }
+    ];
   }
 
   return (
@@ -212,7 +250,7 @@ export function BillBatchPaymentTable({
         <div className="flex gap-2">
           <div className="space-y-2">
             <h2 className="flex flex-col gap-2 text-2xl font-medium md:flex-row">
-              <span>Manage Batch of Bill ({data[0]?.batch_id})</span>
+              <span>Manage Batch of Bill ({batchId})</span>
             </h2>
           </div>
         </div>
@@ -243,34 +281,74 @@ export function BillBatchPaymentTable({
           fetchData={applyFilters}
         />
       </div>
+      {pendingGatewayPayment && (
+        <Alert className="mb-4">
+          <AlertTitle>Payment submitted — awaiting confirmation</AlertTitle>
+          <AlertDescription>
+            This batch was paid first. Official settlement rows are created after
+            the payment is approved. Showing linked bills and recharges in the
+            meantime.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-wrap gap-4 my-4">
-        {summary.totalPaidAmount > 0 && <div className="flex-1 min-w-[200px] bg-green-50 border border-green-200 rounded p-3">
-          <div className="text-xs text-green-700 font-semibold">Paid Amount</div>
-          <div className="text-lg font-bold text-green-900">{formatRupees(summary.totalPaidAmount)}
-            <span className="ml-2 text-sm font-normal text-green-700">({summary.paidPercent.toFixed(1)}%)</span>
+        {summary.totalPaidAmount > 0 && (
+          <div className="flex-1 min-w-[200px] bg-green-50 border border-green-200 rounded p-3">
+            <div className="text-xs text-green-700 font-semibold">
+              Paid Amount
+            </div>
+            <div className="text-lg font-bold text-green-900">
+              {formatRupees(summary.totalPaidAmount)}
+              <span className="ml-2 text-sm font-normal text-green-700">
+                ({summary.paidPercent.toFixed(1)}%)
+              </span>
+            </div>
           </div>
-        </div>}
+        )}
         {increaseAmountRecords && increaseAmountRecords.length > 0 && (
-          <Button variant="destructive" onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2"
+          >
             <ArrowUpRight className="w-4 h-4" />
-            <div className="text-xs text-white font-semibold">Increase Amount</div>
-            <div className="text-lg font-bold text-white">{formatRupees(summary.totalIncreaseAmount)}
-              <span className="ml-2 text-sm font-normal text-white">({summary.increasePercent.toFixed(1)}%)</span>
+            <div className="text-xs text-white font-semibold">
+              Increase Amount
+            </div>
+            <div className="text-lg font-bold text-white">
+              {formatRupees(summary.totalIncreaseAmount)}
+              <span className="ml-2 text-sm font-normal text-white">
+                ({summary.increasePercent.toFixed(1)}%)
+              </span>
             </div>
           </Button>
         )}
-        {summary.totalRefundAmount > 0 && <div className="flex-1 min-w-[200px] bg-blue-50 border border-blue-200 rounded p-3">
-          <div className="text-xs text-blue-700 font-semibold">Refund Amount</div>
-          <div className="text-lg font-bold text-blue-900">{formatRupees(summary.totalRefundAmount)}
-            <span className="ml-2 text-sm font-normal text-blue-700">({summary.totalRefundPercent.toFixed(1)}%)</span>
+        {summary.totalRefundAmount > 0 && (
+          <div className="flex-1 min-w-[200px] bg-blue-50 border border-blue-200 rounded p-3">
+            <div className="text-xs text-blue-700 font-semibold">
+              Refund Amount
+            </div>
+            <div className="text-lg font-bold text-blue-900">
+              {formatRupees(summary.totalRefundAmount)}
+              <span className="ml-2 text-sm font-normal text-blue-700">
+                ({summary.totalRefundPercent.toFixed(1)}%)
+              </span>
+            </div>
           </div>
-        </div>}
-        {summary.totalReversedAmount > 0 && <div className="flex-1 min-w-[200px] bg-orange-50 border border-orange-200 rounded p-3">
-          <div className="text-xs text-orange-700 font-semibold">Reversed Amount</div>
-          <div className="text-lg font-bold text-orange-900">{formatRupees(summary.totalReversedAmount)}
-            <span className="ml-2 text-sm font-normal text-orange-700">({summary.reversedPercent.toFixed(1)}%)</span>
+        )}
+        {summary.totalReversedAmount > 0 && (
+          <div className="flex-1 min-w-[200px] bg-orange-50 border border-orange-200 rounded p-3">
+            <div className="text-xs text-orange-700 font-semibold">
+              Reversed Amount
+            </div>
+            <div className="text-lg font-bold text-orange-900">
+              {formatRupees(summary.totalReversedAmount)}
+              <span className="ml-2 text-sm font-normal text-orange-700">
+                ({summary.reversedPercent.toFixed(1)}%)
+              </span>
+            </div>
           </div>
-        </div>}
+        )}
       </div>
       <CustomTable
         columns={columns}

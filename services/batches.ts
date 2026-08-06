@@ -185,7 +185,7 @@ export const fetchRechargesInBatches = cache(
     let query = supabase
       .from('prepaid_recharge')
       .select(
-        '*,connections!inner(*,sites(*),paytype,biller_list!inner(*)),batches!inner(*)',
+        '*,connections!inner(*,sites!inner(*),paytype,biller_list!inner(*)),batches!inner(*)',
         {
           count: 'estimated'
         }

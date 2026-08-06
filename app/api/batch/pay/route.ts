@@ -39,19 +39,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
         }
 
+        // bills / prepaid_recharge have no org_id — scope via batches FK.
         const { data: bill_data, error: bill_error } = await supabase
             .from('bills')
-            .select('approved_amount')
+            .select('approved_amount, batches!inner(org_id)')
             .eq('payment_status', false)
             .eq('batch_id', batchId)
+            .eq('batches.org_id', orgId)
         if (bill_error) {
             const handledError = handleDatabaseError(bill_error);
             throw new Error(handledError.message);
         }
         const { data: recharge_data, error: recharge_error } = await supabase
             .from('prepaid_recharge')
-            .select('recharge_amount')
+            .select('id, recharge_amount, batches!inner(org_id)')
             .eq('batch_id', batchId)
+            .eq('batches.org_id', orgId)
         if (recharge_error) {
             const handledError = handleDatabaseError(recharge_error);
             throw new Error(handledError.message);
@@ -103,21 +106,38 @@ export async function POST(req: NextRequest) {
         }
 
         if (totalBillAmount > 0 && batch_status === 'processing') {
-            const { error } = await supabase.from('bills').update({
-                bill_status: 'payment'
-            }).eq('batch_id', batchId);
-            if (error) {
-                const handledError = handleDatabaseError(error);
+            // Update all batch members (not only unpaid); IDs re-fetched without
+            // payment_status so already-paid rows still move to 'payment'.
+            const { data: billRows, error: billIdError } = await supabase
+                .from('bills')
+                .select('id, batches!inner(org_id)')
+                .eq('batch_id', batchId)
+                .eq('batches.org_id', orgId);
+            if (billIdError) {
+                const handledError = handleDatabaseError(billIdError);
                 throw new Error(handledError.message);
+            }
+            const billIds = (billRows || []).map((row) => row.id);
+            if (billIds.length > 0) {
+                const { error } = await supabase.from('bills').update({
+                    bill_status: 'payment'
+                }).in('id', billIds);
+                if (error) {
+                    const handledError = handleDatabaseError(error);
+                    throw new Error(handledError.message);
+                }
             }
         }
         if (totalRechargeAmount > 0 && batch_status === 'processing') {
-            const { error } = await supabase.from('prepaid_recharge').update({
-                recharge_status: 'payment'
-            }).eq('batch_id', batchId);
-            if (error) {
-                const handledError = handleDatabaseError(error);
-                throw new Error(handledError.message);
+            const rechargeIds = (recharge_data || []).map((row) => row.id);
+            if (rechargeIds.length > 0) {
+                const { error } = await supabase.from('prepaid_recharge').update({
+                    recharge_status: 'payment'
+                }).in('id', rechargeIds);
+                if (error) {
+                    const handledError = handleDatabaseError(error);
+                    throw new Error(handledError.message);
+                }
             }
         }
 

@@ -99,15 +99,23 @@ export default async function Page(
   // Pay-first (scenario B): client_payments appear only after PG approve.
   if ((data?.length || 0) === 0) {
     const supabase = await createClient()
+    // payment_gateway_transactions has no org_id — scope via batches FK.
+    // scopedBatch is already org-gated; org_id is required for the join filter.
+    const orgId = scopedBatch.org_id
+    const pgtQuery = orgId
+      ? supabase
+          .from('payment_gateway_transactions')
+          .select('payment_status, batches!inner(org_id)')
+          .eq('batch_id', id)
+          .eq('batches.org_id', orgId)
+          .eq('payment_status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null })
+
     const [{ data: pgt }, billsResult, rechargesResult] = await Promise.all([
-      supabase
-        .from('payment_gateway_transactions')
-        .select('payment_status')
-        .eq('batch_id', id)
-        .eq('payment_status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      pgtQuery,
       fetchBillsInBatches({ batch_id: id, page: '1', limit: '100' }),
       fetchRechargesInBatches({ batch_id: id, page: '1', limit: '100' })
     ])

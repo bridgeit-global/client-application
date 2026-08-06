@@ -107,7 +107,7 @@ export function BillBatchPaymentTable({
         scroll: false
       });
     }
-  }, [pageIndex, pageSize, filterBody, router, pathname, searchParams]);
+  }, [pageIndex, pageSize, filterBody, router, pathname, createQueryString]);
 
   useEffect(() => {
     setIsLoading(false);
@@ -145,7 +145,7 @@ export function BillBatchPaymentTable({
         scroll: false
       }
     );
-  }, [router, pathname, pageSize, filterBody, searchParams]);
+  }, [router, pathname, createQueryString, pageSize, filterBody]);
   const filterCount = useMemo(
     () => getFilterDataLength(filterBody),
     [filterBody]

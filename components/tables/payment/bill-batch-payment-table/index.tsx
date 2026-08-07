@@ -154,7 +154,6 @@ export function BillBatchPaymentTable({
   const summary = useMemo(() => {
     let totalBillAmount = 0;
     let totalPaidAmount = 0;
-    let totalIncreaseAmount = 0;
     let totalRefundAmount = 0;
     let totalReversedAmount = 0;
 
@@ -184,6 +183,22 @@ export function BillBatchPaymentTable({
       totalReversedAmount += reversedAmount;
     });
 
+    // Delta requiring approval: bill_amount above client_paid / approved baseline.
+    const totalIncreaseAmount = (increaseAmountRecords || []).reduce(
+      (acc, row) => {
+        const baseline =
+          Number(row.client_paid_amount) ||
+          Number(row.bills?.approved_amount) ||
+          0;
+        const billAmount = Number(row.bill_amount) || 0;
+        if (billAmount > baseline) {
+          return acc + (billAmount - baseline);
+        }
+        return acc;
+      },
+      0
+    );
+
     return {
       totalBillAmount,
       totalPaidAmount: totalPaidAmount,
@@ -205,7 +220,7 @@ export function BillBatchPaymentTable({
           ? (totalReversedAmount / totalBillAmount) * 100
           : 0
     };
-  }, [allBills]);
+  }, [allBills, increaseAmountRecords]);
 
   return (
     <>

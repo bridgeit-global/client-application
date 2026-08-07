@@ -40,9 +40,11 @@ export async function POST(req: NextRequest) {
         }
 
         // bills / prepaid_recharge have no org_id — scope via batches FK.
+        // Amount and status updates must use the same unpaid bill set so the
+        // payment_gateway_transactions amount matches what moves to 'payment'.
         const { data: bill_data, error: bill_error } = await supabase
             .from('bills')
-            .select('approved_amount, batches!inner(org_id)')
+            .select('id, approved_amount, batches!inner(org_id)')
             .eq('payment_status', false)
             .eq('batch_id', batchId)
             .eq('batches.org_id', orgId)
@@ -106,18 +108,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (totalBillAmount > 0 && batch_status === 'processing') {
-            // Update all batch members (not only unpaid); IDs re-fetched without
-            // payment_status so already-paid rows still move to 'payment'.
-            const { data: billRows, error: billIdError } = await supabase
-                .from('bills')
-                .select('id, batches!inner(org_id)')
-                .eq('batch_id', batchId)
-                .eq('batches.org_id', orgId);
-            if (billIdError) {
-                const handledError = handleDatabaseError(billIdError);
-                throw new Error(handledError.message);
-            }
-            const billIds = (billRows || []).map((row) => row.id);
+            const billIds = (bill_data || []).map((row) => row.id);
             if (billIds.length > 0) {
                 const { error } = await supabase.from('bills').update({
                     bill_status: 'payment'

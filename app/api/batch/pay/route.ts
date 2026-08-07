@@ -63,8 +63,14 @@ export async function POST(req: NextRequest) {
         }
 
 
-        const totalBillAmount = bill_data?.reduce((acc, curr) => acc + curr.approved_amount, 0);
-        const totalRechargeAmount = recharge_data?.reduce((acc, curr) => acc + curr.recharge_amount, 0);
+        const totalBillAmount = (bill_data ?? []).reduce(
+            (acc, curr) => acc + (Number(curr.approved_amount) || 0),
+            0
+        );
+        const totalRechargeAmount = (recharge_data ?? []).reduce(
+            (acc, curr) => acc + (Number(curr.recharge_amount) || 0),
+            0
+        );
         const totalAmount = totalBillAmount + totalRechargeAmount;
         console.log({
             batch_id: batchId,

@@ -53,7 +53,8 @@ export default async function Page(
             dueDate < today;
     }).length;
 
-    const hasUnresolvedBillsCount = isPaidCount || newBillCount + increasedAmountCount;
+    const hasUnresolvedBillsCount =
+      isPaidCount + newBillCount + increasedAmountCount;
     const hasPostpaid = (data?.length || 0) > 0;
     const hasPrepaid = (prepaidData?.length || 0) > 0;
 

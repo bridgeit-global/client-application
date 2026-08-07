@@ -25,7 +25,9 @@ function formatDisplayName(
 async function resolveUserDisplayNames(
   userIds: string[]
 ): Promise<Record<string, string>> {
-  const uniqueIds = [...new Set(userIds.filter((id) => Boolean(id?.trim())))]
+  const uniqueIds = Array.from(
+    new Set(userIds.filter((id) => Boolean(id?.trim())))
+  )
   if (uniqueIds.length === 0) return {}
 
   try {
@@ -60,8 +62,9 @@ async function resolveUserDisplayNames(
 export async function buildBatchHistoryItems(
   batch: BatchHistorySource
 ): Promise<BatchHistoryItem[]> {
-  let items: BatchHistoryItem[] = Array.isArray(batch?.user_actions)
-    ? (batch.user_actions as any[]).map((u) => ({
+  const userActions = batch?.user_actions
+  let items: BatchHistoryItem[] = Array.isArray(userActions)
+    ? (userActions as any[]).map((u) => ({
         action: u?.action || 'updated',
         user_id: u?.user_id || '',
         status_to: u?.status_to || batch?.batch_status || 'unpaid',

@@ -186,10 +186,14 @@ export function BillBatchPaymentTable({
     // Delta requiring approval: bill_amount above client_paid / approved baseline.
     const totalIncreaseAmount = (increaseAmountRecords || []).reduce(
       (acc, row) => {
+        const clientPaid = row.client_paid_amount;
+        const approved = row.bills?.approved_amount;
         const baseline =
-          Number(row.client_paid_amount) ||
-          Number(row.bills?.approved_amount) ||
-          0;
+          clientPaid != null
+            ? Number(clientPaid)
+            : approved != null
+              ? Number(approved)
+              : 0;
         const billAmount = Number(row.bill_amount) || 0;
         if (billAmount > baseline) {
           return acc + (billAmount - baseline);

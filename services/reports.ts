@@ -445,7 +445,7 @@ export const fetchBillHistoryReport = cache(
         bill_date: ddmmyy(site.bill_date),
         due_date: ddmmyy(getDueDate(site.discount_date, site.due_date)),
         bill_amount: site.bill_amount,
-        payment_status: !site.connections?.is_active && !site.payment_status ? 'Carried Forward' : site.payment_status ? 'Paid' : 'Unpaid',
+        payment_status: !site.is_active && !site.payment_status ? 'Carried Forward' : site.payment_status ? 'Paid' : 'Unpaid',
         billed_unit: site.billed_unit,
         start_date: ddmmyy(site.start_date),
         end_date: ddmmyy(site.end_date),

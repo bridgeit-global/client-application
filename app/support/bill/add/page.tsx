@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Heading } from '@/components/ui/heading';
 import axios from 'axios';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,7 +30,13 @@ export default function BillAddPage() {
   const [fileName, setFileName] = useState('');
   const [fileType, setFileType] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const { billers } = useBillerBoardStore();
+  const { billers, fetchBillers } = useBillerBoardStore();
+
+  useEffect(() => {
+    if (!billers || billers.length === 0) {
+      fetchBillers();
+    }
+  }, [billers, fetchBillers]);
 
   // Form validation schema
   const formSchema = z.object({

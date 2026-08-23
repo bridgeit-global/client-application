@@ -3,13 +3,17 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Download, FileText, LucideProps } from 'lucide-react';
+import { Download, FileText, Loader2, LucideProps } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { cn } from '@/lib/utils';
+import {
+  downloadHtmlAsPdf,
+  receiptPrintFilename
+} from '@/lib/utils/html-to-pdf';
 
 export type DocumentViewerLayout = 'page' | 'embedded';
 
@@ -83,6 +87,7 @@ export function HTMLViewer({
 }) {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,19 +110,14 @@ export function HTMLViewer({
   }, [htmlUrl]);
 
   const handleDownload = async () => {
+    if (!htmlContent || isDownloading) return;
+    setIsDownloading(true);
     try {
-      const response = await fetch(htmlUrl);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = htmlUrl.split('/').pop() || 'document.html';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      await downloadHtmlAsPdf(htmlContent, receiptPrintFilename(htmlContent, htmlUrl));
     } catch (error) {
-      console.error('Error downloading HTML:', error);
+      console.error('Error downloading HTML as PDF:', error);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -131,9 +131,18 @@ export function HTMLViewer({
       )}
       style={layout === 'page' ? { height: PAGE_VIEWER_HEIGHT } : undefined}
     >
-      <Button size="sm" onClick={handleDownload} className="shrink-0 self-start">
-        <Download className="mr-2 h-4 w-4" />
-        Download
+      <Button
+        size="sm"
+        onClick={handleDownload}
+        disabled={isLoading || !htmlContent || isDownloading}
+        className="shrink-0 self-start"
+      >
+        {isDownloading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="mr-2 h-4 w-4" />
+        )}
+        {isDownloading ? 'Downloading...' : 'Download'}
       </Button>
       <div className="w-full min-h-0 flex-1 overflow-auto rounded-lg border border-border">
         {isLoading ? (

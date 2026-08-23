@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
-import { Download, FileText, ImageIcon, ZoomIn, ZoomOut, RotateCw } from "lucide-react"
+import { Download, FileText, ImageIcon, ZoomIn, ZoomOut, RotateCw, Loader2 } from "lucide-react"
+import {
+  downloadHtmlAsPdf,
+  receiptPrintFilename
+} from "@/lib/utils/html-to-pdf"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Viewer, Worker } from "@react-pdf-viewer/core"
 import "@react-pdf-viewer/core/lib/styles/index.css"
@@ -97,6 +101,7 @@ export function PDFViewer({ pdfUrl }: { pdfUrl: string }) {
 export function HTMLViewer({ htmlUrl }: { htmlUrl: string }) {
   const [htmlContent, setHtmlContent] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -119,19 +124,14 @@ export function HTMLViewer({ htmlUrl }: { htmlUrl: string }) {
   }, [htmlUrl])
 
   const handleDownload = async () => {
+    if (!htmlContent || isDownloading) return
+    setIsDownloading(true)
     try {
-      const response = await fetch(htmlUrl)
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = htmlUrl.split("/").pop() || "document.html"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      await downloadHtmlAsPdf(htmlContent, receiptPrintFilename(htmlContent, htmlUrl))
     } catch (error) {
-      console.error("Error downloading HTML:", error)
+      console.error("Error downloading HTML as PDF:", error)
+    } finally {
+      setIsDownloading(false)
     }
   }
 
@@ -140,9 +140,17 @@ export function HTMLViewer({ htmlUrl }: { htmlUrl: string }) {
       style={{ height: "calc(100vh - 100px)" }}
       className="items-center space-y-4 bg-background p-2 text-foreground sm:p-4"
     >
-      <Button size="sm" onClick={handleDownload}>
-        <Download className="mr-2 h-4 w-4" />
-        Download
+      <Button
+        size="sm"
+        onClick={handleDownload}
+        disabled={isLoading || !htmlContent || isDownloading}
+      >
+        {isDownloading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="mr-2 h-4 w-4" />
+        )}
+        {isDownloading ? "Downloading..." : "Download"}
       </Button>
       <div className="w-full overflow-auto rounded-lg border" style={{ height: "calc(100vh - 120px)" }}>
         {isLoading ? (
